@@ -1,4 +1,4 @@
-# **Real Estate Listing Platform**
+   # **Real Estate Listing Platform**
 
 ## **Project Description**  
 The Real Estate Listing Platform is a web application that allows users to post, browse, and manage property listings for sale or rent. Designed with both users and administrators in mind, the platform provides seamless functionality to interact with listings, communicate with others, and gain insights through AI-powered features.
@@ -28,7 +28,7 @@ The Real Estate Listing Platform is a web application that allows users to post,
    - Option to manage user information and preferences.
 
 6. **Admin Panel**  
-   - Full management of the platform’s properties, user roles, and other administrative settings.
+   - Full management of the platform's properties, user roles, and other administrative settings.
    - Tools for monitoring listings, flagging inappropriate content, and managing users.
 
 ---
@@ -46,7 +46,7 @@ The Real Estate Listing Platform is a web application that allows users to post,
    - Utilizes machine learning for improved accuracy over time.
 
 3. **AI Chatbot/Assistant**  
-   - A chatbot to answer common questions such as “Are there schools in this area?” or “What’s the nearest public transport?”
+   - A chatbot to answer common questions such as "Are there schools in this area?" or "What's the nearest public transport?"
    - Provides additional information to users about market trends, mortgage rates, and other real estate-related queries.
 
 4. **Fraud Detection System**  
@@ -62,8 +62,8 @@ The Real Estate Listing Platform is a web application that allows users to post,
 - **ASP.NET Core**  
    The backend is built using **ASP.NET Core**, a powerful, high-performance web framework for building APIs. It ensures scalability, security, and maintainability of the system.
 
-- **Database: PostgreSQL**  
-   The platform uses **PostgreSQL** for its relational database management system. PostgreSQL is reliable, highly scalable, and handles complex queries efficiently.
+- **Database: SQL**  
+   The platform uses **SQL** for its relational database management system. PostgreSQL is reliable, highly scalable, and handles complex queries efficiently.
 
 ### **Frontend**
 
@@ -96,7 +96,7 @@ The Real Estate Listing Platform is a web application that allows users to post,
 |-----------------------|------------------------------------------------------------|
 | **Frontend**          | React, TypeScript                |
 | **Backend**           | ASP.NET Core                          |
-| **Database**          | PostgreSQL  |
+| **Database**          | MSSQL  |
 | **AI/ML Integration** | ML.NET, Azure Cognitive Services, ONNX                    |
 | **ORM**               | Entity Framework Core                                      |
 
