@@ -9,6 +9,20 @@ public class UserEntity : IdentityUser<Guid>
     public string DisplayName { get; set; }
     public byte[]? AvatarData { get; set; }
     public string? AvatarContentType { get; set; }
+    
+    // Contact & Location Information
+    public string? Country { get; set; }
+    public string? City { get; set; }
+    public string? Address { get; set; }
+    public string? PostalCode { get; set; }
+    
+    // Professional Information
+    public string? CompanyName { get; set; }
+    public string? Website { get; set; }
+    
+    // Activity Tracking
+    public DateTime? LastActive { get; set; }
+    
     public bool IsDeleted { get; set; } = false;
     public DateTime? DeletedAt { get; set; } = null;
     public virtual ICollection<UserRoleEntity> UserRoles { get; set; }
@@ -27,6 +41,36 @@ public class UserEntityConfiguration : IEntityTypeConfiguration<UserEntity>
 
         builder.Property(x => x.AvatarContentType)
             .HasMaxLength(100)
+            .IsRequired(false);
+
+        // Contact & Location Information
+        builder.Property(x => x.Country)
+            .HasMaxLength(100)
+            .IsRequired(false);
+
+        builder.Property(x => x.City)
+            .HasMaxLength(100)
+            .IsRequired(false);
+
+        builder.Property(x => x.Address)
+            .HasMaxLength(500)
+            .IsRequired(false);
+
+        builder.Property(x => x.PostalCode)
+            .HasMaxLength(20)
+            .IsRequired(false);
+
+        // Professional Information
+        builder.Property(x => x.CompanyName)
+            .HasMaxLength(200)
+            .IsRequired(false);
+
+        builder.Property(x => x.Website)
+            .HasMaxLength(500)
+            .IsRequired(false);
+
+        // Activity Tracking
+        builder.Property(x => x.LastActive)
             .IsRequired(false);
 
         builder.Property(x => x.IsDeleted)

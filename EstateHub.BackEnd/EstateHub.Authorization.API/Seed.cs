@@ -41,6 +41,9 @@ public class Seed
                 await _context.Database.EnsureCreatedAsync();
             }
 
+            // Seed roles if they don't exist
+            await SeedRolesAsync();
+            
             // seed initial data
         }
         catch (Exception ex)
@@ -48,5 +51,28 @@ public class Seed
             _logger.LogError(ex, "Error initializing test data");
             throw;
         }
+    }
+    
+    private async Task SeedRolesAsync()
+    {
+        var roles = new[] { "Admin", "Moderator", "User" };
+        
+        foreach (var roleName in roles)
+        {
+            if (!await _context.Roles.AnyAsync(r => r.Name == roleName))
+            {
+                _logger.LogInformation($"Creating role: {roleName}");
+                await _context.Roles.AddAsync(new EstateHub.Authorization.DataAccess.SqlServer.Entities.RoleEntity
+                {
+                    Id = Guid.NewGuid(),
+                    Name = roleName,
+                    NormalizedName = roleName.ToUpperInvariant(),
+                    ConcurrencyStamp = Guid.NewGuid().ToString()
+                });
+            }
+        }
+        
+        await _context.SaveChangesAsync();
+        _logger.LogInformation("Roles seeded successfully");
     }
 }

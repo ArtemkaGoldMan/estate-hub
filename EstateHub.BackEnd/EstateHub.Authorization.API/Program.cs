@@ -15,6 +15,7 @@ using EstateHub.Authorization.DataAccess.SqlServer.Repositories;
 using EstateHub.Authorization.DataAccess.SqlServer.Services;
 using EstateHub.Authorization.Infrastructure.Services;
 using EstateHub.SharedKernel.API.Middleware;
+using EstateHub.Authorization.Domain.Helpers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -151,7 +152,31 @@ public class Program
                 };
             });
 
-        builder.Services.AddAuthorization();
+        builder.Services.AddAuthorization(options =>
+        {
+            // Core system policies
+            options.AddPolicy(AuthorizationPolicies.AdminAccess, policy => 
+                policy.RequireRole("Admin"));
+            
+            options.AddPolicy(AuthorizationPolicies.ModerationAccess, policy => 
+                policy.RequireRole("Admin", "Moderator"));
+            
+            options.AddPolicy(AuthorizationPolicies.UserAccess, policy => 
+                policy.RequireRole("Admin", "Moderator", "User"));
+            
+            // Future policies for other microservices
+            options.AddPolicy(AuthorizationPolicies.ListingManagement, policy => 
+                policy.RequireRole("Admin", "Moderator", "User"));
+            
+            options.AddPolicy(AuthorizationPolicies.UserManagement, policy => 
+                policy.RequireRole("Admin", "Moderator"));
+            
+            options.AddPolicy(AuthorizationPolicies.SystemSettings, policy => 
+                policy.RequireRole("Admin"));
+            
+            options.AddPolicy(AuthorizationPolicies.AnalyticsAccess, policy => 
+                policy.RequireRole("Admin", "Moderator"));
+        });
 
         builder.Services.AddCors(options =>
         {
