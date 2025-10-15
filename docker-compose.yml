@@ -13,7 +13,7 @@ services:
       - "${AUTH_HTTP_PORT}:8080"
       - "${AUTH_HTTPS_PORT}:8081"
     environment:
-      - ConnectionStrings__DefaultConnection=Server=db;Database=estatehub-auth;User Id=${DB_USER};Password=${DB_PASSWORD};TrustServerCertificate=True; Encrypt=False; MultipleActiveResultSets=True;
+      - ConnectionStrings__DefaultConnection=Server=db;Database=EstateHubAuthDB;User Id=${DB_USER};Password=${DB_PASSWORD};TrustServerCertificate=True;Encrypt=False;MultipleActiveResultSets=True;
       - JWT__Secret=${JWT_SECRET}
       - Smtp__User=${SMTP_USER}
       - Smtp__Password=${SMTP_PASSWORD}
@@ -24,14 +24,38 @@ services:
       - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
       - ASPNETCORE_URLS=http://+:8080;https://+:8081
     depends_on:
-      db:
-        condition: service_healthy
+      - db
+    networks:
+      - estatehub-network
+    restart: unless-stopped
+
+  listing-service:
+    build:
+      context: .
+      dockerfile: EstateHub.BackEnd/EstateHub.ListingService.API/Dockerfile
+      args:
+        - CERT_PASSWORD=${CERT_PASSWORD}
+    container_name: estatehub-listing-service
+    ports:
+      - "${LISTING_HTTP_PORT}:8080"
+      - "${LISTING_HTTPS_PORT}:8081"
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=db;Database=estatehub-listing;User Id=${DB_USER};Password=${DB_PASSWORD};TrustServerCertificate=True;Encrypt=False;MultipleActiveResultSets=True;
+      - Auth__Authority=https://auth-service:8081
+      - Auth__Audience=estatehub-api
+      - ASPNETCORE_ENVIRONMENT=${ENVIRONMENT}
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=${CERT_PASSWORD}
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
+      - ASPNETCORE_URLS=http://+:8080;https://+:8081
+    depends_on:
+      - db
     networks:
       - estatehub-network
     restart: unless-stopped
 
   db:
     image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64
     container_name: estatehub-db
     environment:
       - ACCEPT_EULA=Y
@@ -44,12 +68,6 @@ services:
     networks:
       - estatehub-network
     restart: unless-stopped
-    healthcheck:
-      test: /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$$SA_PASSWORD" -Q "SELECT 1" || exit 1
-      interval: 10s
-      timeout: 10s
-      retries: 10
-      start_period: 10s
 
 networks:
   estatehub-network:
