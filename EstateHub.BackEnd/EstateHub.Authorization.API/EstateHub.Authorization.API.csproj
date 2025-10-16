@@ -23,6 +23,13 @@
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0"/>
         <PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="8.0.2" />
+        <PackageReference Include="Grpc.AspNetCore" Version="2.62.0" />
+        <PackageReference Include="Grpc.AspNetCore.Server.Reflection" Version="2.62.0" />
+        <PackageReference Include="Grpc.Tools" Version="2.62.0" PrivateAssets="All" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Protobuf Include="..\EstateHub.SharedKernel\Contracts\Proto\*.proto" GrpcServices="Server" />
     </ItemGroup>
 
     <ItemGroup>

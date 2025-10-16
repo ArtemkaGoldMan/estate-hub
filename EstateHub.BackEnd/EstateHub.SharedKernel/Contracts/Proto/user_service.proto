@@ -1,0 +1,46 @@
+syntax = "proto3";
+import "google/protobuf/empty.proto";
+
+option csharp_namespace = "EstateHub.SharedKernel.Contracts.Grpc";
+
+service UserService {
+  rpc GetUserIdFromToken(google.protobuf.Empty) returns (GetUserIdFromTokenResponse);
+  rpc GetUserById(GetUserByIdRequest) returns (GetUserResponse);
+  rpc GetUsersByIds(GetUsersByIdsRequest) returns (GetUsersByIdsResponse);
+}
+
+message GetUserIdFromTokenResponse {
+  string user_id = 1;
+}
+
+message GetUserByIdRequest {
+  string id = 1;
+  bool include_deleted = 2;
+}
+
+message GetUsersByIdsRequest {
+  repeated string ids = 1;
+  bool include_deleted = 2;
+}
+
+message GetUserResponse {
+  string id = 1;
+  string email = 2;
+  string user_name = 3;
+  string display_name = 4;
+  optional string phone_number = 5;
+  optional string country = 6;
+  optional string city = 7;
+  optional string address = 8;
+  optional string postal_code = 9;
+  optional string company_name = 10;
+  optional string website = 11;
+  optional string last_active = 12;
+  bool is_deleted = 13;
+  optional string deleted_at = 14;
+  string avatar = 15;
+}
+
+message GetUsersByIdsResponse {
+  repeated GetUserResponse users = 1;
+}

@@ -9,6 +9,7 @@
     <ItemGroup>
       <ProjectReference Include="..\EstateHub.Authorization.DataAccess.SqlServer\EstateHub.Authorization.DataAccess.SqlServer.csproj" />
       <ProjectReference Include="..\EstateHub.Authorization.Domain\EstateHub.Authorization.Domain.csproj" />
+      <ProjectReference Include="..\EstateHub.SharedKernel\EstateHub.SharedKernel.csproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -17,6 +18,12 @@
       <PackageReference Include="DotNetEnv" Version="3.1.1" />
       <PackageReference Include="JWT" Version="11.0.0" />
       <PackageReference Include="MailKit" Version="4.11.0" />
+      <PackageReference Include="Grpc.AspNetCore" Version="2.62.0" />
+      <PackageReference Include="Grpc.Tools" Version="2.62.0" PrivateAssets="All" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Protobuf Include="..\EstateHub.SharedKernel\Contracts\Proto\*.proto" GrpcServices="Server" />
     </ItemGroup>
 
 </Project>

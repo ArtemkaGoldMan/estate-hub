@@ -10,6 +10,12 @@
       <PackageReference Include="CSharpFunctionalExtensions" Version="3.6.0" />
       <PackageReference Include="Microsoft.AspNetCore.Http.Features" Version="2.3.0" />
       <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+      <PackageReference Include="Grpc.Tools" Version="2.62.0" PrivateAssets="All" />
+      <PackageReference Include="Grpc.AspNetCore" Version="2.62.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Protobuf Include="Contracts/Proto/*.proto" GrpcServices="Client" />
     </ItemGroup>
 
 </Project>

@@ -1,6 +1,7 @@
 using EstateHub.ListingService.API.Types;
 using EstateHub.ListingService.Core.Extensions;
 using EstateHub.ListingService.Infrastructure.Extensions;
+using EstateHub.SharedKernel.API.Extensions;
 using EstateHub.SharedKernel.API.Middleware;
 using HotChocolate.AspNetCore;
 using HotChocolate.AspNetCore.Authorization;
@@ -36,6 +37,9 @@ public class Program
         
         // Add Core Services
         builder.Services.AddListingCore();
+
+        // Add Microservice Authentication (HTTP or gRPC based on configuration)
+        builder.Services.AddMicroserviceAuthentication(builder.Configuration);
 
         // Add Authentication & Authorization
         builder.Services.AddAuthentication(options =>

@@ -12,6 +12,7 @@ services:
     ports:
       - "${AUTH_HTTP_PORT}:8080"
       - "${AUTH_HTTPS_PORT}:8081"
+      - "${AUTH_GRPC_PORT}:8082"
     environment:
       - ConnectionStrings__DefaultConnection=Server=db;Database=EstateHubAuthDB;User Id=${DB_USER};Password=${DB_PASSWORD};TrustServerCertificate=True;Encrypt=False;MultipleActiveResultSets=True;
       - JWT__Secret=${JWT_SECRET}
@@ -22,7 +23,11 @@ services:
       - ASPNETCORE_ENVIRONMENT=${ENVIRONMENT}
       - ASPNETCORE_Kestrel__Certificates__Default__Password=${CERT_PASSWORD}
       - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
-      - ASPNETCORE_URLS=http://+:8080;https://+:8081
+      - ASPNETCORE_URLS=http://+:8080;https://+:8081;https://+:8082
+      - Kestrel__Endpoints__Http__Url=http://+:8080
+      - Kestrel__Endpoints__Https__Url=https://+:8081
+      - Kestrel__Endpoints__gRPC__Url=https://+:8082
+      - Kestrel__Endpoints__gRPC__Protocols=Http2
     depends_on:
       - db
     networks:
@@ -41,12 +46,14 @@ services:
       - "${LISTING_HTTPS_PORT}:8081"
     environment:
       - ConnectionStrings__DefaultConnection=Server=db;Database=estatehub-listing;User Id=${DB_USER};Password=${DB_PASSWORD};TrustServerCertificate=True;Encrypt=False;MultipleActiveResultSets=True;
+      - JWT__Secret=${JWT_SECRET}
       - Auth__Authority=https://auth-service:8081
       - Auth__Audience=estatehub-api
       - ASPNETCORE_ENVIRONMENT=${ENVIRONMENT}
       - ASPNETCORE_Kestrel__Certificates__Default__Password=${CERT_PASSWORD}
       - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
       - ASPNETCORE_URLS=http://+:8080;https://+:8081
+      - AuthService__GrpcUrl=${AUTH_SERVICE_GRPC_URL:-https://auth-service:8082}
     depends_on:
       - db
     networks:

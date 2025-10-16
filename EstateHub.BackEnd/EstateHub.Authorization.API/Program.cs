@@ -38,6 +38,11 @@ public class Program
 
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddHttpContextAccessor();
+
+        // Add gRPC services
+        builder.Services.AddGrpc();
+        builder.Services.AddGrpcReflection(); // For development
 
         builder.Services.AddSwaggerGen(options =>
         {
@@ -225,6 +230,10 @@ public class Program
         app.UseExceptionHandler();
 
         app.MapControllers();
+
+        // Map gRPC services
+        app.MapGrpcService<UserGrpcService>();
+        app.MapGrpcReflectionService(); // For development
 
         app.Run();
     }

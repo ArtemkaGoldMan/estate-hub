@@ -1,4 +1,4 @@
-﻿using EstateHub.SharedKernel.Contracts.AuthorizationMicroservice.Requests;
+using EstateHub.SharedKernel.Contracts.AuthorizationMicroservice.Requests;
 using EstateHub.SharedKernel.Contracts.AuthorizationMicroservice.Responses;
 
 namespace EstateHub.SharedKernel.API.Interfaces;
