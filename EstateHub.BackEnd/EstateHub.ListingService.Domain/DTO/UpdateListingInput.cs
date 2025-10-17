@@ -1,6 +1,6 @@
 using EstateHub.ListingService.Domain.Enums;
 
-namespace EstateHub.ListingService.Core.DTO;
+namespace EstateHub.ListingService.Domain.DTO;
 
 public record UpdateListingInput(
     string? Title,

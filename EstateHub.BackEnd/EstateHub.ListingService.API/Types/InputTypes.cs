@@ -1,4 +1,3 @@
-using EstateHub.ListingService.Core.DTO;
 using EstateHub.ListingService.Domain.DTO;
 using EstateHub.ListingService.Domain.Enums;
 using HotChocolate;
@@ -31,7 +30,7 @@ public class CreateListingInputType
     public ListingCategory Category { get; set; }
     public PropertyType PropertyType { get; set; }
 
-    public Core.DTO.CreateListingInput ToDto() => new(
+    public Domain.DTO.CreateListingInput ToDto() => new(
         Category,
         PropertyType,
         Title,
@@ -82,7 +81,7 @@ public class UpdateListingInputType
     public decimal? PricePln { get; set; }
     public decimal? MonthlyRentPln { get; set; }
 
-    public Core.DTO.UpdateListingInput ToDto() => new(
+    public Domain.DTO.UpdateListingInput ToDto() => new(
         Title,
         Description,
         AddressLine,
@@ -111,7 +110,7 @@ public class ChangeStatusInputType
 {
     public ListingStatus NewStatus { get; set; }
 
-    public Core.DTO.ChangeStatusInput ToDto() => new(NewStatus);
+    public Domain.DTO.ChangeStatusInput ToDto() => new(NewStatus);
 }
 
 public class PaginationInputType
@@ -119,7 +118,7 @@ public class PaginationInputType
     public int Page { get; set; } = 1;
     public int PageSize { get; set; } = 20;
 
-    public Core.DTO.PaginationInput ToDto() => new(Page, PageSize);
+    public Domain.DTO.PaginationInput ToDto() => new(Page, PageSize);
 }
 
 public class BoundsInputType
@@ -129,7 +128,7 @@ public class BoundsInputType
     public decimal LonMin { get; set; }
     public decimal LonMax { get; set; }
 
-    public Core.DTO.BoundsInput ToDto() => new(LatMin, LatMax, LonMin, LonMax);
+    public Domain.DTO.BoundsInput ToDto() => new(LatMin, LatMax, LonMin, LonMax);
 }
 
 public class ListingFilterType

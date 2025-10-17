@@ -1,5 +1,4 @@
 using EstateHub.ListingService.Core.Abstractions;
-using EstateHub.ListingService.Core.DTO;
 using EstateHub.ListingService.Domain.DTO;
 using EstateHub.ListingService.Domain.Enums;
 using EstateHub.ListingService.Domain.Interfaces;

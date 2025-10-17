@@ -10,12 +10,17 @@ public static class PermissionDefinitions
     public const string SystemAdmin = "SystemAdmin";
     public const string UserManagement = "UserManagement";
     public const string ContentModeration = "ContentModeration";
+    public const string RoleManagement = "RoleManagement";
     
     // Business permissions
     public const string CreateListings = "CreateListings";
     public const string ManageListings = "ManageListings";
-    public const string SendMessages = "SendMessages";
     public const string ViewAnalytics = "ViewAnalytics";
+    
+    // Report permissions
+    public const string CreateReports = "CreateReports";
+    public const string ManageReports = "ManageReports";
+    public const string ViewReports = "ViewReports";
     
     /// <summary>
     /// Maps roles to their permissions
@@ -24,19 +29,22 @@ public static class PermissionDefinitions
     {
         ["Admin"] = new List<string>
         {
-            SystemAdmin, UserManagement, ContentModeration,
-            CreateListings, ManageListings, SendMessages, ViewAnalytics
+            SystemAdmin, UserManagement, ContentModeration, RoleManagement,
+            CreateListings, ManageListings, ViewAnalytics,
+            CreateReports, ManageReports, ViewReports
         },
         
         ["Moderator"] = new List<string>
         {
-            UserManagement, ContentModeration,
-            CreateListings, ManageListings, SendMessages, ViewAnalytics
+            ContentModeration,
+            CreateListings, ManageListings, ViewAnalytics,
+            CreateReports, ManageReports, ViewReports
         },
         
         ["User"] = new List<string>
         {
-            CreateListings, ManageListings, SendMessages
+            CreateListings, ManageListings,
+            CreateReports
         }
     };
     

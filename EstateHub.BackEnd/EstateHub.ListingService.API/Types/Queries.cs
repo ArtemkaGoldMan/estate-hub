@@ -1,4 +1,4 @@
-using EstateHub.ListingService.Core.DTO;
+using EstateHub.ListingService.Domain.DTO;
 using EstateHub.ListingService.Core.Abstractions;
 using HotChocolate;
 using HotChocolate.Authorization;

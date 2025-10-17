@@ -23,6 +23,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IListingRepository, ListingRepository>();
         services.AddScoped<ILikedListingRepository, LikedListingRepository>();
         services.AddScoped<IPhotoRepository, PhotoRepository>();
+        services.AddScoped<IReportRepository, ReportRepository>();
 
         // Add Infrastructure Services
         services.AddScoped<ICurrentUserService, CurrentUserService>();

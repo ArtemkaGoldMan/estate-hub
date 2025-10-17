@@ -1,4 +1,4 @@
-using EstateHub.ListingService.Core.DTO;
+using EstateHub.ListingService.Domain.DTO;
 using HotChocolate;
 
 namespace EstateHub.ListingService.API.Types;

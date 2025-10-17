@@ -1,4 +1,4 @@
-namespace EstateHub.ListingService.Core.DTO;
+namespace EstateHub.ListingService.Domain.DTO;
 
 public record PaginationInput(
     int Page = 1,

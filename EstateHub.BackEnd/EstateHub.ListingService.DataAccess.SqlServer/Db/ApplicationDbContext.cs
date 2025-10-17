@@ -13,6 +13,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<ListingEntity> Listings { get; set; }
     public DbSet<ListingPhotoEntity> ListingPhotos { get; set; }
     public DbSet<LikedListingEntity> LikedListings { get; set; }
+    public DbSet<ReportEntity> Reports { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -90,6 +91,36 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(l => l.UserId);
             entity.HasIndex(l => l.ListingId);
             entity.HasIndex(l => l.CreatedAt);
+        });
+
+        // Configure Reports
+        modelBuilder.Entity<ReportEntity>(entity =>
+        {
+            entity.ToTable("Reports");
+            
+            entity.HasKey(r => r.Id);
+            
+            entity.Property(r => r.Id).ValueGeneratedNever();
+            entity.Property(r => r.Description).IsRequired().HasMaxLength(1000);
+            entity.Property(r => r.ModeratorNotes).HasMaxLength(2000);
+            entity.Property(r => r.Resolution).HasMaxLength(2000);
+            entity.Property(r => r.Reason).IsRequired();
+            entity.Property(r => r.Status).IsRequired();
+            
+            // Indexes
+            entity.HasIndex(r => r.ReporterId);
+            entity.HasIndex(r => r.ListingId);
+            entity.HasIndex(r => r.ModeratorId);
+            entity.HasIndex(r => r.Status);
+            entity.HasIndex(r => r.CreatedAt);
+            entity.HasIndex(r => new { r.Status, r.CreatedAt });
+            
+            // Relationships
+            entity.HasOne(r => r.Listing)
+                .WithMany()
+                .HasForeignKey(r => r.ListingId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .IsRequired();
         });
     }
 }

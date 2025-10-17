@@ -12,6 +12,8 @@ public static class ServiceCollectionExtensions
     {
         // Register services
         services.AddScoped<IListingService, UseCases.ListingService>();
+        services.AddScoped<IReportService, UseCases.ReportService>();
+        services.AddScoped<IAdminService, UseCases.AdminService>();
         
         // Register validators
         services.AddValidatorsFromAssemblyContaining<CreateListingInputValidator>();
