@@ -8,4 +8,5 @@ public interface IPhotoRepository
     Task RemovePhotoAsync(Guid listingId, Guid photoId);
     Task ReorderPhotosAsync(Guid listingId, IEnumerable<Guid> orderedIds);
     Task<IEnumerable<ListingPhoto>> GetPhotosByListingIdAsync(Guid listingId);
+    Task<ListingPhoto?> GetByIdAsync(Guid photoId);
 }

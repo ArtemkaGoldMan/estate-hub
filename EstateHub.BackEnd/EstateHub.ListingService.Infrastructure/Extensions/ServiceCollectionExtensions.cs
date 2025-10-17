@@ -27,6 +27,7 @@ public static class ServiceCollectionExtensions
 
         // Add Infrastructure Services
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<IFileStorageService, Services.LocalFileStorageService>();
 
         return services;
     }

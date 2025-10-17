@@ -71,9 +71,11 @@ public class Program
             .AddQueryType<Queries>()
             .AddQueryType<ReportQueries>()
             .AddQueryType<AdminQueries>()
+            .AddQueryType<PhotoQueries>()
             .AddMutationType<Mutations>()
             .AddMutationType<ReportMutations>()
             .AddMutationType<AdminMutations>()
+            .AddMutationType<PhotoMutations>()
             .AddType<ListingType>()
             .AddType<PagedListingsType>()
             .AddType<CreateListingInputType>()
@@ -93,6 +95,9 @@ public class Program
             .AddType<UserStatsType>()
             .AddType<ListingStatsType>()
             .AddType<SystemStatsType>()
+            .AddType<PhotoType>()
+            .AddType<AddPhotoInputType>()
+            .AddType<ReorderPhotosInputType>()
             .AddAuthorization()
             .ModifyRequestOptions(opt => opt.IncludeExceptionDetails = builder.Environment.IsDevelopment());
 
@@ -126,6 +131,10 @@ public class Program
 
         app.UseHttpsRedirection();
         app.UseCors("Any");
+        
+        // Enable static file serving for uploaded photos
+        app.UseStaticFiles();
+        
         app.UseAuthentication();
         app.UseAuthorization();
         app.UseExceptionHandler();

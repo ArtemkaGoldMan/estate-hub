@@ -77,4 +77,13 @@ public class PhotoRepository : IPhotoRepository
 
         return entities.Select(p => new ListingPhoto(p.ListingId, p.Url, p.Order) { Id = p.Id });
     }
+
+    public async Task<ListingPhoto?> GetByIdAsync(Guid photoId)
+    {
+        var entity = await _context.ListingPhotos
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == photoId);
+
+        return entity != null ? new ListingPhoto(entity.ListingId, entity.Url, entity.Order) { Id = entity.Id } : null;
+    }
 }
