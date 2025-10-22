@@ -1,10 +1,11 @@
 using EstateHub.ListingService.Domain.DTO;
 using EstateHub.ListingService.Core.Abstractions;
 using EstateHub.ListingService.Domain.Enums;
+using EstateHub.ListingService.API.Types.InputTypes;
 using HotChocolate;
 using HotChocolate.Authorization;
 
-namespace EstateHub.ListingService.API.Types;
+namespace EstateHub.ListingService.API.Types.Mutations;
 
 public class Mutations
 {

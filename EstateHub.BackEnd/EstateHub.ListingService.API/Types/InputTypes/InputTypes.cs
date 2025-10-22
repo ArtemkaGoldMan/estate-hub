@@ -2,7 +2,7 @@ using EstateHub.ListingService.Domain.DTO;
 using EstateHub.ListingService.Domain.Enums;
 using HotChocolate;
 
-namespace EstateHub.ListingService.API.Types;
+namespace EstateHub.ListingService.API.Types.InputTypes;
 
 public class CreateListingInputType
 {
@@ -168,4 +168,22 @@ public class ListingFilterType
         HasSecurity,
         HasStorageRoom
     );
+}
+
+public class AddPhotoInputType
+{
+    public Guid ListingId { get; set; }
+    public string PhotoUrl { get; set; } = string.Empty;
+}
+
+public class ReorderPhotosInputType
+{
+    public Guid ListingId { get; set; }
+    public List<PhotoOrderInput> PhotoOrders { get; set; } = new();
+}
+
+public class PhotoOrderInput
+{
+    public Guid PhotoId { get; set; }
+    public int Order { get; set; }
 }

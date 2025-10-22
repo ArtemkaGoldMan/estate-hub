@@ -154,4 +154,126 @@ public class UsersService : IUsersService
                 }
             });
     }
+
+    // Admin methods implementation
+    public Task<Result<PagedResult<TProjectTo>>> GetUsersAsync<TProjectTo>(int page, int pageSize, bool includeDeleted)
+        where TProjectTo : class
+    {
+        return _resultExecutor.ExecuteAsync(
+            async () =>
+            {
+                var users = await _usersRepository.GetUsersAsync<TProjectTo>(page, pageSize, includeDeleted);
+                var total = await _usersRepository.GetUsersCountAsync(includeDeleted);
+                
+                return new PagedResult<TProjectTo>(users, total, page, pageSize);
+            });
+    }
+
+    public Task<Result<UserStatsDto>> GetUserStatsAsync()
+    {
+        return _resultExecutor.ExecuteAsync(
+            async () =>
+            {
+                var totalUsers = await _usersRepository.GetUsersCountAsync(false);
+                var activeUsers = await _usersRepository.GetActiveUsersCountAsync();
+                var suspendedUsers = await _usersRepository.GetSuspendedUsersCountAsync();
+                var newUsersThisMonth = await _usersRepository.GetNewUsersThisMonthCountAsync();
+                
+                return new UserStatsDto(totalUsers, activeUsers, suspendedUsers, newUsersThisMonth);
+            });
+    }
+
+    public Task<Result> AssignUserRoleAsync(Guid userId, string role)
+    {
+        return _resultExecutor.ExecuteWithTransactionAsync(
+            async () =>
+            {
+                if (userId == Guid.Empty)
+                {
+                    throw new ArgumentException(UserErrors.NotFoundById(userId).ToString());
+                }
+
+                var success = await _usersRepository.AssignUserRoleAsync(userId, role);
+                if (!success)
+                {
+                    throw new ArgumentException($"Failed to assign role '{role}' to user {userId}");
+                }
+            });
+    }
+
+    public Task<Result> RemoveUserRoleAsync(Guid userId, string role)
+    {
+        return _resultExecutor.ExecuteWithTransactionAsync(
+            async () =>
+            {
+                if (userId == Guid.Empty)
+                {
+                    throw new ArgumentException(UserErrors.NotFoundById(userId).ToString());
+                }
+
+                var success = await _usersRepository.RemoveUserRoleAsync(userId, role);
+                if (!success)
+                {
+                    throw new ArgumentException($"Failed to remove role '{role}' from user {userId}");
+                }
+            });
+    }
+
+    public Task<Result> SuspendUserAsync(Guid userId, string reason)
+    {
+        return _resultExecutor.ExecuteWithTransactionAsync(
+            async () =>
+            {
+                if (userId == Guid.Empty)
+                {
+                    throw new ArgumentException(UserErrors.NotFoundById(userId).ToString());
+                }
+
+                var success = await _usersRepository.SuspendUserAsync(userId, reason);
+                if (!success)
+                {
+                    throw new ArgumentException($"Failed to suspend user {userId}");
+                }
+            });
+    }
+
+    public Task<Result> ActivateUserAsync(Guid userId)
+    {
+        return _resultExecutor.ExecuteWithTransactionAsync(
+            async () =>
+            {
+                if (userId == Guid.Empty)
+                {
+                    throw new ArgumentException(UserErrors.NotFoundById(userId).ToString());
+                }
+
+                var success = await _usersRepository.ActivateUserAsync(userId);
+                if (!success)
+                {
+                    throw new ArgumentException($"Failed to activate user {userId}");
+                }
+            });
+    }
+
+    public Task<Result> AdminDeleteUserAsync(Guid userId)
+    {
+        return _resultExecutor.ExecuteWithTransactionAsync(
+            async () =>
+            {
+                if (userId == Guid.Empty)
+                {
+                    throw new ArgumentException(UserErrors.NotFoundById(userId).ToString());
+                }
+
+                // Admin can delete any user (including themselves)
+                var success = await _usersRepository.DeleteByIdAsync(userId);
+                if (!success)
+                {
+                    throw new ArgumentException(UserErrors.DeletionFailed(userId).ToString());
+                }
+
+                // Also clean up sessions
+                await _sessionsRepository.DeleteByUserIdAsync(userId);
+            });
+    }
 }

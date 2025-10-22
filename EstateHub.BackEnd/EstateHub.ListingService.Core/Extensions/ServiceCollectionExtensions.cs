@@ -13,7 +13,6 @@ public static class ServiceCollectionExtensions
         // Register services
         services.AddScoped<IListingService, UseCases.ListingService>();
         services.AddScoped<IReportService, UseCases.ReportService>();
-        services.AddScoped<IAdminService, UseCases.AdminService>();
         services.AddScoped<IPhotoService, UseCases.PhotoService>();
         
         // Register validators

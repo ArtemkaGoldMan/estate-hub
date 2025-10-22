@@ -1,8 +1,9 @@
 using EstateHub.ListingService.Core.Abstractions;
+using EstateHub.ListingService.API.Types.OutputTypes;
 using HotChocolate;
 using HotChocolate.Authorization;
 
-namespace EstateHub.ListingService.API.Types;
+namespace EstateHub.ListingService.API.Types.Queries;
 
 public class PhotoQueries
 {

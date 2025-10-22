@@ -1,4 +1,7 @@
-using EstateHub.ListingService.API.Types;
+using EstateHub.ListingService.API.Types.Queries;
+using EstateHub.ListingService.API.Types.Mutations;
+using EstateHub.ListingService.API.Types.InputTypes;
+using EstateHub.ListingService.API.Types.OutputTypes;
 using EstateHub.ListingService.Core.Extensions;
 using EstateHub.ListingService.Infrastructure.Extensions;
 using EstateHub.SharedKernel.API.Middleware;
@@ -86,11 +89,9 @@ public class Program
             .AddGraphQLServer()
             .AddQueryType<Queries>()
             .AddType<ReportQueries>()
-            .AddType<AdminQueries>()
             .AddType<PhotoQueries>()
             .AddMutationType<Mutations>()
             .AddType<ReportMutations>()
-            .AddType<AdminMutations>()
             .AddType<PhotoMutations>()
             .AddType<ListingType>()
             .AddType<PagedListingsType>()
@@ -106,11 +107,6 @@ public class Program
             .AddType<ResolveReportInputType>()
             .AddType<DismissReportInputType>()
             .AddType<ReportFilterType>()
-            .AddType<UserType>()
-            .AddType<PagedUsersType>()
-            .AddType<UserStatsType>()
-            .AddType<ListingStatsType>()
-            .AddType<SystemStatsType>()
             .AddType<PhotoType>()
             .AddType<AddPhotoInputType>()
             .AddType<ReorderPhotosInputType>()

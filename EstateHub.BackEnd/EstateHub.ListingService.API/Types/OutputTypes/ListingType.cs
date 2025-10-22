@@ -2,7 +2,7 @@ using EstateHub.ListingService.Domain.DTO;
 using EstateHub.ListingService.Domain.Enums;
 using HotChocolate;
 
-namespace EstateHub.ListingService.API.Types;
+namespace EstateHub.ListingService.API.Types.OutputTypes;
 
 public class ListingType
 {

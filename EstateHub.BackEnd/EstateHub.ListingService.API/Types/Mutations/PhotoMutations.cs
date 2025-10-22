@@ -1,8 +1,9 @@
 using EstateHub.ListingService.Core.Abstractions;
+using EstateHub.ListingService.API.Types.InputTypes;
 using HotChocolate;
 using HotChocolate.Authorization;
 
-namespace EstateHub.ListingService.API.Types;
+namespace EstateHub.ListingService.API.Types.Mutations;
 
 public class PhotoMutations
 {
@@ -29,10 +30,8 @@ public class PhotoMutations
         ReorderPhotosInputType input,
         [Service] IPhotoService photoService)
     {
-        await photoService.ReorderPhotosAsync(input.ListingId, input.OrderedPhotoIds);
+        var orderedPhotoIds = input.PhotoOrders.OrderBy(p => p.Order).Select(p => p.PhotoId).ToList();
+        await photoService.ReorderPhotosAsync(input.ListingId, orderedPhotoIds);
         return true;
     }
-
-    // Note: UploadPhoto with IFormFile is handled via REST API controller, not GraphQL
-    // GraphQL doesn't support file uploads directly - use the PhotoController instead
 }

@@ -17,4 +17,18 @@ public interface IUsersRepository
 
     Task<bool> UpdateByIdAsync(Guid id, UserUpdateDto user);
     Task<bool> DeleteByIdAsync(Guid id);
+
+    // Admin methods
+    Task<List<TProjectTo>> GetUsersAsync<TProjectTo>(int page, int pageSize, bool includeDeleted = false)
+        where TProjectTo : class;
+
+    Task<int> GetUsersCountAsync(bool includeDeleted = false);
+    Task<int> GetActiveUsersCountAsync();
+    Task<int> GetSuspendedUsersCountAsync();
+    Task<int> GetNewUsersThisMonthCountAsync();
+
+    Task<bool> AssignUserRoleAsync(Guid userId, string role);
+    Task<bool> RemoveUserRoleAsync(Guid userId, string role);
+    Task<bool> SuspendUserAsync(Guid userId, string reason);
+    Task<bool> ActivateUserAsync(Guid userId);
 }

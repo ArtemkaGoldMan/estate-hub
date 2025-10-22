@@ -1,10 +1,12 @@
 using EstateHub.ListingService.Core.Abstractions;
 using EstateHub.ListingService.Domain.DTO;
+using EstateHub.ListingService.API.Types.OutputTypes;
+using EstateHub.ListingService.API.Types.InputTypes;
 using EstateHub.SharedKernel.API.Authorization.Attributes;
 using HotChocolate;
 using HotChocolate.Authorization;
 
-namespace EstateHub.ListingService.API.Types;
+namespace EstateHub.ListingService.API.Types.Queries;
 
 public class ReportQueries
 {

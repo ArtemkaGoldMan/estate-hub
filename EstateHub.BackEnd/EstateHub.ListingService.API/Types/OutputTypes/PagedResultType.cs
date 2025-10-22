@@ -1,7 +1,7 @@
 using EstateHub.ListingService.Domain.DTO;
 using HotChocolate;
 
-namespace EstateHub.ListingService.API.Types;
+namespace EstateHub.ListingService.API.Types.OutputTypes;
 
 public class PagedListingsType
 {
