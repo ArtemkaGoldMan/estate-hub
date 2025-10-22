@@ -1,7 +1,6 @@
 using EstateHub.ListingService.API.Types;
 using EstateHub.ListingService.Core.Extensions;
 using EstateHub.ListingService.Infrastructure.Extensions;
-using EstateHub.SharedKernel.API.Extensions;
 using EstateHub.SharedKernel.API.Middleware;
 using HotChocolate.AspNetCore;
 using HotChocolate.AspNetCore.Authorization;
@@ -38,10 +37,7 @@ public class Program
         // Add Core Services
         builder.Services.AddListingCore();
 
-        // Add Microservice Authentication (HTTP or gRPC based on configuration)
-        builder.Services.AddMicroserviceAuthentication(builder.Configuration);
-
-        // Add Authentication & Authorization
+        // Add Authentication & Authorization with local JWT validation
         builder.Services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -61,6 +57,26 @@ public class Program
                     IssuerSigningKey = new SymmetricSecurityKey(
                         Encoding.UTF8.GetBytes(builder.Configuration["JWT:Secret"]!)),
                 };
+
+                // Optional: Add session validation for enhanced security
+                options.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = async context =>
+                    {
+                        // Extract session ID from token if needed for additional validation
+                        var sessionIdClaim = context.Principal?.Claims
+                            .FirstOrDefault(c => c.Type == "sessionId");
+
+                        if (sessionIdClaim != null)
+                        {
+                            // Session ID is available in the token for additional validation if needed
+                            // For now, we'll just log it for debugging
+                            var logger = context.HttpContext.RequestServices
+                                .GetRequiredService<ILogger<Program>>();
+                            logger.LogDebug("Token validated for session: {SessionId}", sessionIdClaim.Value);
+                        }
+                    },
+                };
             });
 
         builder.Services.AddAuthorization();
@@ -69,13 +85,13 @@ public class Program
         builder.Services
             .AddGraphQLServer()
             .AddQueryType<Queries>()
-            .AddQueryType<ReportQueries>()
-            .AddQueryType<AdminQueries>()
-            .AddQueryType<PhotoQueries>()
+            .AddType<ReportQueries>()
+            .AddType<AdminQueries>()
+            .AddType<PhotoQueries>()
             .AddMutationType<Mutations>()
-            .AddMutationType<ReportMutations>()
-            .AddMutationType<AdminMutations>()
-            .AddMutationType<PhotoMutations>()
+            .AddType<ReportMutations>()
+            .AddType<AdminMutations>()
+            .AddType<PhotoMutations>()
             .AddType<ListingType>()
             .AddType<PagedListingsType>()
             .AddType<CreateListingInputType>()

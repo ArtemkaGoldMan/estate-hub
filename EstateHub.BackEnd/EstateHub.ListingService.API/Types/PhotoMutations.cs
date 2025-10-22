@@ -33,18 +33,6 @@ public class PhotoMutations
         return true;
     }
 
-    [Authorize]
-    public async Task<Guid> UploadPhoto(
-        Guid listingId,
-        IFormFile file,
-        [Service] IPhotoService photoService)
-    {
-        if (file == null || file.Length == 0)
-        {
-            throw new ArgumentException("No file uploaded.");
-        }
-
-        using var stream = file.OpenReadStream();
-        return await photoService.UploadPhotoAsync(listingId, stream, file.FileName, file.ContentType);
-    }
+    // Note: UploadPhoto with IFormFile is handled via REST API controller, not GraphQL
+    // GraphQL doesn't support file uploads directly - use the PhotoController instead
 }

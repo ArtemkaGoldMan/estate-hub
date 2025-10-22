@@ -23,14 +23,16 @@ public class AdminService : IAdminService
 
     public async Task<PagedResult<UserDto>> GetUsersAsync(int page, int pageSize)
     {
-        // TODO: Implement user management through UserService or direct database access
-        // For now, return empty result
+        // Note: This would require a new gRPC method to get paginated users
+        // For now, return empty result as this is not implemented in auth service
         return new PagedResult<UserDto>(new List<UserDto>(), 0, page, pageSize);
     }
 
     public async Task<UserDto?> GetUserByIdAsync(Guid userId)
     {
         // TODO: Implement user retrieval through UserService
+        // This would require implementing a user service that uses gRPC client
+        // For now, return null as this is not implemented yet
         return null;
     }
 
