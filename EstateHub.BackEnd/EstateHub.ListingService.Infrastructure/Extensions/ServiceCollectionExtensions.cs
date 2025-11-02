@@ -1,7 +1,6 @@
-using EstateHub.ListingService.Core.Abstractions;
+using EstateHub.ListingService.Domain.Interfaces;
 using EstateHub.ListingService.DataAccess.SqlServer.Db;
 using EstateHub.ListingService.DataAccess.SqlServer.Repositories;
-using EstateHub.ListingService.Domain.Interfaces;
 using EstateHub.ListingService.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -27,7 +26,12 @@ public static class ServiceCollectionExtensions
 
         // Add Infrastructure Services
         services.AddScoped<ICurrentUserService, CurrentUserService>();
-        services.AddScoped<IFileStorageService, Services.LocalFileStorageService>();
+        
+        // Register GridFS storage service (internal)
+        services.AddScoped<Services.MongoGridFSStorageService>();
+        
+        // Register photo storage service (implements IPhotoStorageService)
+        services.AddScoped<Domain.Interfaces.IPhotoStorageService, Services.PhotoStorageService>();
 
         return services;
     }

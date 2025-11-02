@@ -1,6 +1,12 @@
-namespace EstateHub.ListingService.Core.Abstractions;
+using EstateHub.ListingService.Domain.DTO;
 
-public interface IFileStorageService
+namespace EstateHub.ListingService.Domain.Interfaces;
+
+/// <summary>
+/// Interface for photo file storage operations.
+/// Minimal abstraction for file upload, delete, and streaming.
+/// </summary>
+public interface IPhotoStorageService
 {
     /// <summary>
     /// Upload a photo file and return the URL
@@ -13,9 +19,9 @@ public interface IFileStorageService
     Task DeletePhotoAsync(string photoUrl);
     
     /// <summary>
-    /// Get the full URL for a photo
+    /// Get file stream for serving a photo file
     /// </summary>
-    string GetPhotoUrl(string relativePath);
+    Task<(Stream Stream, string ContentType, string FileName)?> GetPhotoStreamAsync(string photoUrl);
     
     /// <summary>
     /// Validate file before upload
@@ -23,9 +29,3 @@ public interface IFileStorageService
     Task<FileValidationResult> ValidateFileAsync(Stream fileStream, string fileName, string contentType);
 }
 
-public record FileValidationResult(
-    bool IsValid,
-    string? ErrorMessage = null,
-    long FileSize = 0,
-    string? DetectedContentType = null
-);

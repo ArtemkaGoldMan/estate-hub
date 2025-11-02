@@ -1,4 +1,4 @@
-namespace EstateHub.ListingService.Core.Abstractions;
+namespace EstateHub.ListingService.Domain.Interfaces;
 
 public interface ICurrentUserService
 {
@@ -15,4 +15,12 @@ public interface ICurrentUserService
     /// <param name="role">Role name to check</param>
     /// <returns>True if user is in the role, false otherwise</returns>
     bool IsInRole(string role);
+    
+    /// <summary>
+    /// Checks if the current user has the specified permission
+    /// </summary>
+    /// <param name="permission">Permission name to check</param>
+    /// <returns>True if user has the permission, false otherwise</returns>
+    bool HasPermission(string permission);
 }
+

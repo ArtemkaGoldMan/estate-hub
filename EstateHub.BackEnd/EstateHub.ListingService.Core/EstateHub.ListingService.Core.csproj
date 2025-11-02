@@ -9,6 +9,7 @@
     <ItemGroup>
       <ProjectReference Include="..\EstateHub.ListingService.Domain\EstateHub.ListingService.Domain.csproj" />
       <ProjectReference Include="..\EstateHub.SharedKernel\EstateHub.SharedKernel.csproj" />
+      <ProjectReference Include="..\EstateHub.SharedKernel.API\EstateHub.SharedKernel.API.csproj" />
     </ItemGroup>
 
     <ItemGroup>

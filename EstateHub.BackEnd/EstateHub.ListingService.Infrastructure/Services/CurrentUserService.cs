@@ -1,4 +1,5 @@
-using EstateHub.ListingService.Core.Abstractions;
+using EstateHub.ListingService.Domain.Interfaces;
+using EstateHub.SharedKernel.API.Authorization;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 
@@ -37,5 +38,11 @@ public class CurrentUserService : ICurrentUserService
     {
         var user = _httpContextAccessor.HttpContext?.User;
         return user?.IsInRole(role) ?? false;
+    }
+
+    public bool HasPermission(string permission)
+    {
+        var user = _httpContextAccessor.HttpContext?.User;
+        return PermissionChecker.HasPermission(user, permission);
     }
 }

@@ -4,6 +4,7 @@ using EstateHub.ListingService.API.Types.InputTypes;
 using EstateHub.ListingService.API.Types.OutputTypes;
 using EstateHub.ListingService.Core.Extensions;
 using EstateHub.ListingService.Infrastructure.Extensions;
+using EstateHub.SharedKernel.API.Extensions;
 using EstateHub.SharedKernel.API.Middleware;
 using HotChocolate.AspNetCore;
 using HotChocolate.AspNetCore.Authorization;
@@ -39,6 +40,9 @@ public class Program
         
         // Add Core Services
         builder.Services.AddListingCore();
+
+        // Add gRPC services for fetching user information from Authorization Service
+        builder.Services.AddGrpcServices(builder.Configuration);
 
         // Add Authentication & Authorization with local JWT validation
         builder.Services.AddAuthentication(options =>
@@ -144,7 +148,8 @@ public class Program
         app.UseHttpsRedirection();
         app.UseCors("Any");
         
-        // Enable static file serving for uploaded photos
+        // Static file serving is kept for backward compatibility with old locally-stored files
+        // New photos are served via /api/photo/gridfs/{fileId} endpoint from MongoDB GridFS
         app.UseStaticFiles();
         
         app.UseAuthentication();

@@ -1,6 +1,5 @@
-using EstateHub.ListingService.Core.Abstractions;
-using EstateHub.ListingService.Domain.DTO;
 using EstateHub.ListingService.Domain.Interfaces;
+using EstateHub.ListingService.Domain.DTO;
 using EstateHub.ListingService.Domain.Models;
 
 namespace EstateHub.ListingService.Core.UseCases;
@@ -10,18 +9,18 @@ public class PhotoService : IPhotoService
     private readonly IPhotoRepository _photoRepository;
     private readonly IListingRepository _listingRepository;
     private readonly ICurrentUserService _currentUserService;
-    private readonly IFileStorageService _fileStorageService;
+    private readonly IPhotoStorageService _photoStorageService;
 
     public PhotoService(
         IPhotoRepository photoRepository,
         IListingRepository listingRepository,
         ICurrentUserService currentUserService,
-        IFileStorageService fileStorageService)
+        IPhotoStorageService photoStorageService)
     {
         _photoRepository = photoRepository;
         _listingRepository = listingRepository;
         _currentUserService = currentUserService;
-        _fileStorageService = fileStorageService;
+        _photoStorageService = photoStorageService;
     }
 
     public async Task<Guid> AddPhotoAsync(Guid listingId, string photoUrl)
@@ -69,8 +68,18 @@ public class PhotoService : IPhotoService
             throw new InvalidOperationException("Forbidden: You can only add photos to your own listings.");
         }
 
+        // Validate file first
+        var validation = await _photoStorageService.ValidateFileAsync(fileStream, fileName, contentType);
+        if (!validation.IsValid)
+        {
+            throw new ArgumentException(validation.ErrorMessage ?? "File validation failed");
+        }
+
+        // Reset stream position after validation
+        fileStream.Position = 0;
+
         // Upload file and get URL
-        var photoUrl = await _fileStorageService.UploadPhotoAsync(listingId, fileStream, fileName, contentType);
+        var photoUrl = await _photoStorageService.UploadPhotoAsync(listingId, fileStream, fileName, contentType);
         
         // Save photo URL to database
         var photo = await _photoRepository.AddPhotoAsync(listingId, photoUrl);
@@ -92,6 +101,23 @@ public class PhotoService : IPhotoService
             throw new InvalidOperationException("Forbidden: You can only remove photos from your own listings.");
         }
 
+        // Get photo to retrieve its URL before deletion
+        var photo = await _photoRepository.GetByIdAsync(photoId);
+        if (photo == null)
+        {
+            throw new ArgumentException($"Photo with ID {photoId} not found.");
+        }
+
+        // Verify photo belongs to this listing
+        if (photo.ListingId != listingId)
+        {
+            throw new ArgumentException($"Photo does not belong to listing {listingId}.");
+        }
+
+        // Delete file from storage
+        await _photoStorageService.DeletePhotoAsync(photo.Url);
+
+        // Remove photo from database
         await _photoRepository.RemovePhotoAsync(listingId, photoId);
     }
 
@@ -138,6 +164,11 @@ public class PhotoService : IPhotoService
     {
         var photo = await _photoRepository.GetByIdAsync(photoId);
         return photo != null ? MapToDto(photo) : null;
+    }
+
+    public async Task<(Stream Stream, string ContentType, string FileName)?> GetPhotoStreamAsync(string photoUrl)
+    {
+        return await _photoStorageService.GetPhotoStreamAsync(photoUrl);
     }
 
     private static PhotoDto MapToDto(ListingPhoto photo) => new PhotoDto(

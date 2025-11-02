@@ -1,6 +1,6 @@
 using EstateHub.ListingService.Domain.DTO;
 
-namespace EstateHub.ListingService.Core.Abstractions;
+namespace EstateHub.ListingService.Domain.Interfaces;
 
 public interface IPhotoService
 {
@@ -33,4 +33,10 @@ public interface IPhotoService
     /// Get a specific photo by ID
     /// </summary>
     Task<PhotoDto?> GetPhotoAsync(Guid photoId);
+    
+    /// <summary>
+    /// Get file stream for serving a photo file
+    /// </summary>
+    Task<(Stream Stream, string ContentType, string FileName)?> GetPhotoStreamAsync(string photoUrl);
 }
+

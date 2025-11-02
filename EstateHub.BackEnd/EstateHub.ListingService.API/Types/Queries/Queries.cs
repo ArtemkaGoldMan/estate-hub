@@ -1,5 +1,5 @@
 using EstateHub.ListingService.Domain.DTO;
-using EstateHub.ListingService.Core.Abstractions;
+using EstateHub.ListingService.Domain.Interfaces;
 using EstateHub.ListingService.API.Types.OutputTypes;
 using EstateHub.ListingService.API.Types.InputTypes;
 using HotChocolate;

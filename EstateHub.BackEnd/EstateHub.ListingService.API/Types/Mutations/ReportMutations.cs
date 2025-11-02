@@ -1,4 +1,4 @@
-using EstateHub.ListingService.Core.Abstractions;
+using EstateHub.ListingService.Domain.Interfaces;
 using EstateHub.ListingService.API.Types.InputTypes;
 using EstateHub.SharedKernel.API.Authorization.Attributes;
 using HotChocolate;

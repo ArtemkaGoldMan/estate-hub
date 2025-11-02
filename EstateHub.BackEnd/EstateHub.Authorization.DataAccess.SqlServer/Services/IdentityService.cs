@@ -74,6 +74,7 @@ public class IdentityService : IIdentityService
             UserName = request.UserName,
             Email = request.Email,
             DisplayName = request.DisplayName,
+            CreatedAt = DateTime.UtcNow
         };
 
         var result = await _userManager.CreateAsync(

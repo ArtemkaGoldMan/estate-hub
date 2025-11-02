@@ -23,6 +23,9 @@ public class UserEntity : IdentityUser<Guid>
     // Activity Tracking
     public DateTime? LastActive { get; set; }
     
+    // Timestamps
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    
     public bool IsDeleted { get; set; } = false;
     public DateTime? DeletedAt { get; set; } = null;
     public virtual ICollection<UserRoleEntity> UserRoles { get; set; }
@@ -72,6 +75,11 @@ public class UserEntityConfiguration : IEntityTypeConfiguration<UserEntity>
         // Activity Tracking
         builder.Property(x => x.LastActive)
             .IsRequired(false);
+
+        // Timestamps
+        builder.Property(x => x.CreatedAt)
+            .IsRequired(true)
+            .HasDefaultValueSql("GETUTCDATE()");
 
         builder.Property(x => x.IsDeleted)
             .IsRequired(true);

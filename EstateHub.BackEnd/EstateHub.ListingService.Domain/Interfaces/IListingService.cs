@@ -1,7 +1,7 @@
 using EstateHub.ListingService.Domain.DTO;
 using EstateHub.ListingService.Domain.Enums;
 
-namespace EstateHub.ListingService.Core.Abstractions;
+namespace EstateHub.ListingService.Domain.Interfaces;
 
 public interface IListingService
 {
@@ -21,3 +21,4 @@ public interface IListingService
     Task LikeAsync(Guid listingId);
     Task UnlikeAsync(Guid listingId);
 }
+

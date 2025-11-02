@@ -156,11 +156,12 @@ public class ReportRepository : IReportRepository
 
     private Report MapToDomain(ReportEntity entity)
     {
+        // Use object initializer to set all properties including computed ones
         return new Report(
             entity.ReporterId,
             entity.ListingId,
             (ReportReason)entity.Reason,
-            entity.Description)
+            entity.Description) with
         {
             Id = entity.Id,
             Status = (ReportStatus)entity.Status,

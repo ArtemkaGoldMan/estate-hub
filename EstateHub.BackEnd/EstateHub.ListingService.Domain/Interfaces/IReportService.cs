@@ -1,6 +1,6 @@
 using EstateHub.ListingService.Domain.DTO;
 
-namespace EstateHub.ListingService.Core.Abstractions;
+namespace EstateHub.ListingService.Domain.Interfaces;
 
 public interface IReportService
 {
@@ -19,3 +19,4 @@ public interface IReportService
     Task CloseAsync(Guid reportId);
     Task DeleteAsync(Guid id);
 }
+

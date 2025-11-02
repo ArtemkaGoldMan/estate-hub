@@ -1,6 +1,7 @@
-using EstateHub.ListingService.Core.Abstractions;
+using EstateHub.ListingService.Domain.Interfaces;
 using EstateHub.ListingService.Core.UseCases;
 using EstateHub.ListingService.Core.Validators;
+using EstateHub.ListingService.Core.Mappers;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -14,6 +15,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IListingService, UseCases.ListingService>();
         services.AddScoped<IReportService, UseCases.ReportService>();
         services.AddScoped<IPhotoService, UseCases.PhotoService>();
+        
+        // Register mappers
+        services.AddScoped<ReportDtoMapper>();
+        services.AddScoped<ListingDtoMapper>();
         
         // Register validators
         services.AddValidatorsFromAssemblyContaining<CreateListingInputValidator>();
