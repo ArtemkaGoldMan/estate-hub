@@ -1,0 +1,114 @@
+.input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.input-wrapper--full-width {
+  width: 100%;
+}
+
+.input-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: inherit;
+}
+
+.input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input {
+  width: 100%;
+  padding: 0.6rem 1rem;
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 1rem;
+  color: inherit;
+  transition: all 0.2s ease-in-out;
+  outline: none;
+}
+
+.input::placeholder {
+  color: #888;
+}
+
+.input:hover:not(:disabled) {
+  border-color: #444;
+}
+
+.input:focus {
+  border-color: #646cff;
+  outline: 2px solid #646cff;
+  outline-offset: 2px;
+}
+
+.input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.input--with-left-icon {
+  padding-left: 2.5rem;
+}
+
+.input--with-right-icon {
+  padding-right: 2.5rem;
+}
+
+.input-icon {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #888;
+  pointer-events: none;
+}
+
+.input-icon--left {
+  left: 0.75rem;
+}
+
+.input-icon--right {
+  right: 0.75rem;
+}
+
+.input-wrapper--error .input {
+  border-color: #dc3545;
+}
+
+.input-wrapper--error .input:focus {
+  outline-color: #dc3545;
+}
+
+.input-error {
+  font-size: 0.875rem;
+  color: #dc3545;
+}
+
+.input-helper {
+  font-size: 0.875rem;
+  color: #888;
+}
+
+/* Light mode */
+@media (prefers-color-scheme: light) {
+  .input {
+    background-color: #ffffff;
+    border-color: #ddd;
+    color: #213547;
+  }
+
+  .input:hover:not(:disabled) {
+    border-color: #bbb;
+  }
+
+  .input::placeholder {
+    color: #999;
+  }
+}
+
