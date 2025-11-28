@@ -37,9 +37,11 @@ export const Button: React.FC<ButtonProps> = ({
     <button
       className={classes}
       disabled={disabled || isLoading}
+      aria-busy={isLoading}
+      aria-disabled={disabled || isLoading}
       {...props}
     >
-      {isLoading && <span className="btn__spinner" />}
+      {isLoading && <span className="btn__spinner" aria-hidden="true" />}
       <span className={isLoading ? 'btn__content--hidden' : 'btn__content'}>
         {children}
       </span>

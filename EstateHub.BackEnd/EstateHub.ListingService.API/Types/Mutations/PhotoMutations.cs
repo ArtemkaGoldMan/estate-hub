@@ -5,6 +5,7 @@ using HotChocolate.Authorization;
 
 namespace EstateHub.ListingService.API.Types.Mutations;
 
+[ExtendObjectType(typeof(Mutations))]
 public class PhotoMutations
 {
     /// <summary>

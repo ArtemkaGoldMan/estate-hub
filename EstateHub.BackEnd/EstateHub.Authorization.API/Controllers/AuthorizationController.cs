@@ -180,6 +180,7 @@ public class AuthorizationController : SessionAwareControllerBase
         return Results.Ok(result.Value);
     }
 
+    [AllowAnonymous]
     [HttpPost("/logout")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(bool))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

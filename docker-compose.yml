@@ -7,29 +7,38 @@ services:
       context: .
       dockerfile: EstateHub.BackEnd/EstateHub.Authorization.API/Dockerfile
       args:
-        - CERT_PASSWORD=${CERT_PASSWORD}
+        BUILD_CONFIGURATION: Release
     container_name: estatehub-auth-service
     ports:
       - "${AUTH_HTTP_PORT}:8080"
-      - "${AUTH_HTTPS_PORT}:8081"
       - "${AUTH_GRPC_PORT}:8082"
     environment:
       - ConnectionStrings__DefaultConnection=Server=db;Database=EstateHubAuthDB;User Id=${DB_USER};Password=${DB_PASSWORD};TrustServerCertificate=True;Encrypt=False;MultipleActiveResultSets=True;
       - JWT__Secret=${JWT_SECRET}
+      - JWT__Issuer=${JWT_ISSUER:-https://api.estatehub.com}
+      - JWT__Audience=${JWT_AUDIENCE:-https://app.estatehub.com}
+      - JWT__ExpirationMinutes=10
       - Smtp__User=${SMTP_USER}
       - Smtp__Password=${SMTP_PASSWORD}
       - Smtp__Host=${SMTP_HOST}
       - Smtp__Port=${SMTP_PORT}
+      - Cors__AllowedOrigins__0=${CORS_ORIGIN_1:-https://estatehub.com}
+      - Cors__AllowedOrigins__1=${CORS_ORIGIN_2:-https://www.estatehub.com}
+      - Cors__AllowedOrigins__2=${CORS_ORIGIN_3:-https://app.estatehub.com}
+      - Cors__AllowLocalhost=true
       - ASPNETCORE_ENVIRONMENT=${ENVIRONMENT}
-      - ASPNETCORE_Kestrel__Certificates__Default__Password=${CERT_PASSWORD}
-      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
-      - ASPNETCORE_URLS=http://+:8080;https://+:8081;https://+:8082
+      - ASPNETCORE_URLS=http://+:8080;http://+:8082
       - Kestrel__Endpoints__Http__Url=http://+:8080
-      - Kestrel__Endpoints__Https__Url=https://+:8081
-      - Kestrel__Endpoints__gRPC__Url=https://+:8082
+      - Kestrel__Endpoints__gRPC__Url=http://+:8082
       - Kestrel__Endpoints__gRPC__Protocols=Http2
+      - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+      - ASPNETCORE_FORWARDEDHEADERS__FORWARDEDHEADERS=All
+      - ASPNETCORE_FORWARDEDHEADERS__KNOWNNETWORKS__0__PREFIX=0.0.0.0
+      - ASPNETCORE_FORWARDEDHEADERS__KNOWNNETWORKS__0__PREFIXLENGTH=0
+      - EnforceHttpsRedirect=false
     depends_on:
       - db
+      - mailhog
     networks:
       - estatehub-network
     restart: unless-stopped
@@ -39,27 +48,55 @@ services:
       context: .
       dockerfile: EstateHub.BackEnd/EstateHub.ListingService.API/Dockerfile
       args:
-        - CERT_PASSWORD=${CERT_PASSWORD}
+        BUILD_CONFIGURATION: Release
     container_name: estatehub-listing-service
     ports:
       - "${LISTING_HTTP_PORT}:8080"
-      - "${LISTING_HTTPS_PORT}:8081"
     environment:
       - ConnectionStrings__DefaultConnection=Server=db;Database=estatehub-listing;User Id=${DB_USER};Password=${DB_PASSWORD};TrustServerCertificate=True;Encrypt=False;MultipleActiveResultSets=True;
       - JWT__Secret=${JWT_SECRET}
-      - Auth__Authority=https://auth-service:8081
+      - JWT__Issuer=${JWT_ISSUER:-https://api.estatehub.com}
+      - JWT__Audience=${JWT_AUDIENCE:-https://app.estatehub.com}
+      - Auth__Authority=http://auth-service:8080
       - Auth__Audience=estatehub-api
+      - Cors__AllowedOrigins__0=${CORS_ORIGIN_1:-https://estatehub.com}
+      - Cors__AllowedOrigins__1=${CORS_ORIGIN_2:-https://www.estatehub.com}
+      - Cors__AllowedOrigins__2=${CORS_ORIGIN_3:-https://app.estatehub.com}
+      - Cors__AllowLocalhost=true
       - ASPNETCORE_ENVIRONMENT=${ENVIRONMENT}
-      - ASPNETCORE_Kestrel__Certificates__Default__Password=${CERT_PASSWORD}
-      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
-      - ASPNETCORE_URLS=http://+:8080;https://+:8081
-      - AuthService__GrpcUrl=${AUTH_SERVICE_GRPC_URL:-https://auth-service:8082}
+      - ASPNETCORE_URLS=http://+:8080
+      - AuthService__GrpcUrl=${AUTH_SERVICE_GRPC_URL:-http://auth-service:8082}
       - MongoDB__ConnectionString=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017
       - MongoDB__DatabaseName=${MONGO_DATABASE:-estatehub-files}
       - MongoDB__GridFSBucket=${MONGO_GRIDFS_BUCKET:-photos}
+      - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+      - ASPNETCORE_FORWARDEDHEADERS__FORWARDEDHEADERS=All
+      - ASPNETCORE_FORWARDEDHEADERS__KNOWNNETWORKS__0__PREFIX=0.0.0.0
+      - ASPNETCORE_FORWARDEDHEADERS__KNOWNNETWORKS__0__PREFIXLENGTH=0
+      - EnforceHttpsRedirect=false
     depends_on:
       - db
       - mongodb
+    networks:
+      - estatehub-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: EstateHub.Frontend/Dockerfile
+      args:
+        - VITE_ENVIRONMENT=${VITE_ENVIRONMENT}
+        - VITE_ENABLE_DEBUG=${VITE_ENABLE_DEBUG}
+        - VITE_LISTING_SERVICE_GRAPHQL_URL=${VITE_LISTING_SERVICE_GRAPHQL_URL}
+        - VITE_LISTING_SERVICE_ASSETS_URL=${VITE_LISTING_SERVICE_ASSETS_URL}
+        - VITE_AUTHORIZATION_SERVICE_URL=${VITE_AUTHORIZATION_SERVICE_URL}
+    container_name: estatehub-frontend
+    ports:
+      - "${FRONTEND_PORT:-3001}:3001"
+    depends_on:
+      - auth-service
+      - listing-service
     networks:
       - estatehub-network
     restart: unless-stopped
@@ -80,8 +117,20 @@ services:
       - estatehub-network
     restart: unless-stopped
 
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: estatehub-mailhog
+    ports:
+      - "${MAILHOG_SMTP_PORT:-1025}:1025"
+      - "${MAILHOG_UI_PORT:-8025}:8025"
+    networks:
+      - estatehub-network
+    restart: unless-stopped
+
   db:
     image: mcr.microsoft.com/mssql/server:2022-latest
+    # For Mac M1/M2, use linux/amd64 for SQL Server (no native ARM support)
+    # For Intel Macs, this also works
     platform: linux/amd64
     container_name: estatehub-db
     environment:

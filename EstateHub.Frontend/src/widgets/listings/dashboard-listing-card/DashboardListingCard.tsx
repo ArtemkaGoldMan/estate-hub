@@ -1,0 +1,226 @@
+import { memo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import clsx from 'clsx';
+import type { Listing } from '../../../entities/listing/model/types';
+import { useChangeListingStatus } from '../../../entities/listing/api/publish-listing';
+import { useDeleteListing } from '../../../entities/listing/api/delete-listing';
+import { useToast } from '../../../shared/context/ToastContext';
+import { formatCurrency } from '../../../shared';
+import { Button } from '../../../shared/ui';
+import './DashboardListingCard.css';
+
+interface DashboardListingCardProps {
+  listing: Listing;
+  onStatusChange?: () => void;
+  className?: string;
+}
+
+const FALLBACK_IMAGE =
+  'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80';
+
+const getPriceLabel = (listing: Listing) => {
+  if (listing.category === 'RENT') {
+    return `${formatCurrency(listing.monthlyRentPln)} / month`;
+  }
+  return formatCurrency(listing.pricePln);
+};
+
+export const DashboardListingCard = memo(
+  ({ listing, onStatusChange, className }: DashboardListingCardProps) => {
+    const navigate = useNavigate();
+    const { showSuccess, showError } = useToast();
+    const { publishListing, unpublishListing, loading: statusLoading } = useChangeListingStatus();
+    const { deleteListing, loading: deleteLoading } = useDeleteListing();
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+    const coverUrl = listing.firstPhotoUrl ?? FALLBACK_IMAGE;
+    const priceLabel = getPriceLabel(listing);
+    const isPublished = listing.status === 'Published';
+    const isDraft = listing.status === 'Draft';
+    const isArchived = listing.status === 'Archived';
+
+    const handleView = () => {
+      navigate(`/listings/${listing.id}`, { state: { from: '/dashboard' } });
+    };
+
+    const handleEdit = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      navigate(`/listings/${listing.id}/edit`);
+    };
+
+    const handlePublish = async (e: React.MouseEvent) => {
+      e.stopPropagation();
+      try {
+        await publishListing(listing.id);
+        onStatusChange?.();
+        showSuccess('Listing published successfully');
+      } catch (error) {
+        showError(error instanceof Error ? error.message : 'Failed to publish listing');
+      }
+    };
+
+    const handleUnpublish = async (e: React.MouseEvent) => {
+      e.stopPropagation();
+      try {
+        await unpublishListing(listing.id);
+        onStatusChange?.();
+        showSuccess('Listing unpublished successfully');
+      } catch (error) {
+        showError(error instanceof Error ? error.message : 'Failed to unpublish listing');
+      }
+    };
+
+    const handleDelete = async (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!showDeleteConfirm) {
+        setShowDeleteConfirm(true);
+        return;
+      }
+
+      try {
+        await deleteListing(listing.id);
+        onStatusChange?.();
+        showSuccess('Listing deleted successfully');
+      } catch (error) {
+        showError(error instanceof Error ? error.message : 'Failed to delete listing');
+        setShowDeleteConfirm(false);
+      }
+    };
+
+    const handleCancelDelete = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setShowDeleteConfirm(false);
+    };
+
+    return (
+      <article
+        className={clsx('dashboard-listing-card', className)}
+        onClick={handleView}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleView();
+          }
+        }}
+        aria-label={`View listing: ${listing.title}`}
+      >
+        <div
+          className="dashboard-listing-card__media"
+          style={{ backgroundImage: `url(${coverUrl})` }}
+        >
+          <span className="dashboard-listing-card__badge">
+            {listing.category === 'RENT' ? 'For Rent' : 'For Sale'}
+          </span>
+          {isDraft && (
+            <span className="dashboard-listing-card__badge dashboard-listing-card__badge--draft">
+              Draft
+            </span>
+          )}
+          {isArchived && (
+            <span className="dashboard-listing-card__badge dashboard-listing-card__badge--archived">
+              Archived
+            </span>
+          )}
+        </div>
+        <div className="dashboard-listing-card__body">
+          <header className="dashboard-listing-card__header">
+            <h3 className="dashboard-listing-card__title">{listing.title}</h3>
+            <span className="dashboard-listing-card__price">{priceLabel}</span>
+          </header>
+          <p className="dashboard-listing-card__location">
+            {listing.city}, {listing.district}
+          </p>
+          <dl className="dashboard-listing-card__meta">
+            <div>
+              <dt>Area</dt>
+              <dd>{listing.squareMeters} m²</dd>
+            </div>
+            <div>
+              <dt>Rooms</dt>
+              <dd>{listing.rooms}</dd>
+            </div>
+            {listing.floor !== null && listing.floor !== undefined && (
+              <div>
+                <dt>Floor</dt>
+                <dd>
+                  {listing.floor}
+                  {listing.floorCount ? ` / ${listing.floorCount}` : ''}
+                </dd>
+              </div>
+            )}
+          </dl>
+          <div className="dashboard-listing-card__status">
+            <strong>Status:</strong> {listing.status}
+          </div>
+          <div className="dashboard-listing-card__actions" onClick={(e) => e.stopPropagation()}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleEdit}
+              disabled={statusLoading || deleteLoading}
+            >
+              ✏️ Edit
+            </Button>
+            {isDraft && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handlePublish}
+                disabled={statusLoading || deleteLoading}
+                isLoading={statusLoading}
+              >
+                📢 Publish
+              </Button>
+            )}
+            {isPublished && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleUnpublish}
+                disabled={statusLoading || deleteLoading}
+                isLoading={statusLoading}
+              >
+                📝 Unpublish
+              </Button>
+            )}
+            {!showDeleteConfirm ? (
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={handleDelete}
+                disabled={statusLoading || deleteLoading}
+              >
+                🗑️ Delete
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={handleDelete}
+                  disabled={statusLoading || deleteLoading}
+                  isLoading={deleteLoading}
+                >
+                  ✓ Confirm
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCancelDelete}
+                  disabled={statusLoading || deleteLoading}
+                >
+                  Cancel
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      </article>
+    );
+  }
+);
+
+DashboardListingCard.displayName = 'DashboardListingCard';
+

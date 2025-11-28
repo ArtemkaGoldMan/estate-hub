@@ -1,17 +1,8 @@
-import { Routes, Route } from 'react-router-dom';
-import { Home, ComponentShowcase } from '../pages';
-import { Navigation } from '../widgets/navigation';
-import './index.css';
-
+// App component now just renders the router
+// Router configuration is handled in RouterProvider.tsx
 export const App = () => {
-  return (
-    <>
-      <Navigation />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/components" element={<ComponentShowcase />} />
-      </Routes>
-    </>
-  );
+  return null;
 };
+
+
 

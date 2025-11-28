@@ -14,27 +14,40 @@ public class JwtHelper
     
     public static TokenResult CreateAccessToken(UserInformation information, JWTOptions options)
     {
-        var accessToken = JwtBuilder.Create()
+        var expirationMinutes = options.ExpirationMinutes > 0 ? options.ExpirationMinutes : 10;
+        var builder = JwtBuilder.Create()
             .WithAlgorithm(new HMACSHA256Algorithm())
             .WithSecret(Encoding.UTF8.GetBytes(options.Secret))
-            .ExpirationTime(DateTimeOffset.UtcNow.AddMinutes(10).ToUnixTimeSeconds())
+            .ExpirationTime(DateTimeOffset.UtcNow.AddMinutes(expirationMinutes).ToUnixTimeSeconds())
             .AddClaim(ClaimTypes.Name, information.UserName)
             .AddClaim(ClaimTypes.NameIdentifier, information.UserId)
             .AddClaim(ClaimTypes.Role, information.Role)
             .AddClaim(SessionIdClaimName, information.SessionId)
-            .WithVerifySignature(true)
-            .Encode();
+            .WithVerifySignature(true);
+
+        // Add issuer and audience if configured
+        if (!string.IsNullOrEmpty(options.Issuer))
+        {
+            builder = builder.AddClaim("iss", options.Issuer);
+        }
+
+        if (!string.IsNullOrEmpty(options.Audience))
+        {
+            builder = builder.AddClaim("aud", options.Audience);
+        }
+
+        var accessToken = builder.Encode();
 
         return new TokenResult
         {
             Token = accessToken,
-            ExpirationDate = DateTimeOffset.UtcNow.AddMinutes(10)
+            ExpirationDate = DateTimeOffset.UtcNow.AddMinutes(expirationMinutes)
         };
     }
 
     public static TokenResult CreateRefreshToken(UserInformation information, JWTOptions options)
     {
-        var refreshToken = JwtBuilder.Create()
+        var builder = JwtBuilder.Create()
             .WithAlgorithm(new HMACSHA256Algorithm())
             .WithSecret(options.Secret)
             .ExpirationTime(DateTimeOffset.UtcNow.AddMonths(1).ToUnixTimeSeconds())
@@ -42,8 +55,20 @@ public class JwtHelper
             .AddClaim(ClaimTypes.NameIdentifier, information.UserId)
             .AddClaim(ClaimTypes.Role, information.Role)
             .AddClaim(SessionIdClaimName, information.SessionId)
-            .WithVerifySignature(true)
-            .Encode();
+            .WithVerifySignature(true);
+
+        // Add issuer and audience if configured
+        if (!string.IsNullOrEmpty(options.Issuer))
+        {
+            builder = builder.AddClaim("iss", options.Issuer);
+        }
+
+        if (!string.IsNullOrEmpty(options.Audience))
+        {
+            builder = builder.AddClaim("aud", options.Audience);
+        }
+
+        var refreshToken = builder.Encode();
 
         return new TokenResult
         {

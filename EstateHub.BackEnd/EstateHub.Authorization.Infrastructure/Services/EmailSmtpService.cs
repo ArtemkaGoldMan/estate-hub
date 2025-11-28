@@ -18,14 +18,18 @@ public class EmailSmtpService : IEmailSmtpService
         {
             var emailMessage = new MimeMessage();
 
-            emailMessage.From.Add(new MailboxAddress("", options.User));
+            // Use a default "From" address if SMTP user is empty (for MailHog)
+            var fromAddress = string.IsNullOrWhiteSpace(options.User) ? "noreply@estatehub.local" : options.User;
+            emailMessage.From.Add(new MailboxAddress("EstateHub", fromAddress));
             emailMessage.To.Add(new MailboxAddress("", email));
 
             emailMessage.Subject = "Forget Password Token";
 
+            // URL-encode the token to handle special characters (+, /, =) in ASP.NET Identity tokens
+            var encodedToken = Uri.EscapeDataString(token);
             var bodyBuilder = new BodyBuilder
             {
-                HtmlBody = $"<a href='{returnUrl}?token={token}&id={userId}'>Click here to reset your password</a>",
+                HtmlBody = $"<a href='{returnUrl}?token={encodedToken}&id={userId}'>Click here to reset your password</a>",
             };
 
             emailMessage.Body = bodyBuilder.ToMessageBody();
@@ -51,14 +55,18 @@ public class EmailSmtpService : IEmailSmtpService
         {
             var emailMessage = new MimeMessage();
 
-            emailMessage.From.Add(new MailboxAddress("", options.User));
+            // Use a default "From" address if SMTP user is empty (for MailHog)
+            var fromAddress = string.IsNullOrWhiteSpace(options.User) ? "noreply@estatehub.local" : options.User;
+            emailMessage.From.Add(new MailboxAddress("EstateHub", fromAddress));
             emailMessage.To.Add(new MailboxAddress("", email));
 
             emailMessage.Subject = "Email Confirmation";
 
+            // URL-encode the token to handle special characters (+, /, =) in ASP.NET Identity tokens
+            var encodedToken = Uri.EscapeDataString(token);
             var bodyBuilder = new BodyBuilder
             {
-                HtmlBody = $"<a href='{returnUrl}?token={token}&id={userId}'>Click here to confirm your email</a>",
+                HtmlBody = $"<a href='{returnUrl}?token={encodedToken}&id={userId}'>Click here to confirm your email</a>",
             };
 
             emailMessage.Body = bodyBuilder.ToMessageBody();
@@ -90,7 +98,9 @@ public class EmailSmtpService : IEmailSmtpService
         {
             var emailMessage = new MimeMessage();
 
-            emailMessage.From.Add(new MailboxAddress("", smtpOptions.User));
+            // Use a default "From" address if SMTP user is empty (for MailHog)
+            var fromAddress = string.IsNullOrWhiteSpace(smtpOptions.User) ? "noreply@estatehub.local" : smtpOptions.User;
+            emailMessage.From.Add(new MailboxAddress("EstateHub", fromAddress));
             emailMessage.To.Add(new MailboxAddress("", userResultEmail));
 
             emailMessage.Subject = actionType switch
@@ -100,9 +110,11 @@ public class EmailSmtpService : IEmailSmtpService
                 _ => throw new ArgumentException(AuthorizationErrors.NotFoundAccountAction().ToString())
             };
 
+            // URL-encode the token to handle special characters (+, /, =) in ASP.NET Identity tokens
+            var encodedToken = Uri.EscapeDataString(token);
             var bodyBuilder = new BodyBuilder
             {
-                HtmlBody = $"<a href='{returnUrl}?token={token}&id={userResultId}'>Click here to {actionType.ToString()}</a>",
+                HtmlBody = $"<a href='{returnUrl}?token={encodedToken}&id={userResultId}'>Click here to {actionType.ToString()}</a>",
             };
 
             emailMessage.Body = bodyBuilder.ToMessageBody();
@@ -128,7 +140,13 @@ public class EmailSmtpService : IEmailSmtpService
         using var smtp = new SmtpClient();
 
         await smtp.ConnectAsync(smtpHost, smtpPort, false);
-        await smtp.AuthenticateAsync(user, password);
+        
+        // Only authenticate if credentials are provided (MailHog doesn't require auth)
+        if (!string.IsNullOrWhiteSpace(user) && !string.IsNullOrWhiteSpace(password))
+        {
+            await smtp.AuthenticateAsync(user, password);
+        }
+        
         await smtp.SendAsync(email);
         await smtp.DisconnectAsync(true);
     }

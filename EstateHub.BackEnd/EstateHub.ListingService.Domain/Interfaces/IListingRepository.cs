@@ -9,7 +9,7 @@ public interface IListingRepository
     Task<Listing?> GetByIdAsync(Guid id);
     Task<IEnumerable<Listing>> GetAllAsync(int page, int pageSize, ListingFilter? filter = null);
     Task<IEnumerable<Listing>> GetByOwnerIdAsync(Guid ownerId);
-    Task<IEnumerable<Listing>> GetWithinBoundsAsync(decimal latMin, decimal latMax, decimal lonMin, decimal lonMax);
+    Task<IEnumerable<Listing>> GetWithinBoundsAsync(decimal latMin, decimal latMax, decimal lonMin, decimal lonMax, ListingFilter? filter = null);
     Task<IEnumerable<Listing>> SearchAsync(string? text, ListingFilter? filter = null);
     Task AddAsync(Listing listing);
     Task UpdateAsync(Listing listing);

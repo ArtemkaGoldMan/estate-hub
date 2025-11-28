@@ -50,6 +50,18 @@
   color: #646cff;
 }
 
+.navigation__actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.navigation__user {
+  color: inherit;
+  font-size: 0.875rem;
+  margin-right: 0.5rem;
+}
+
 /* Light mode */
 @media (prefers-color-scheme: light) {
   .navigation {

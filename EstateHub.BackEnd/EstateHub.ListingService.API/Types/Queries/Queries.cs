@@ -62,14 +62,16 @@ public class Queries
         BoundsInputType bounds,
         int page,
         int pageSize,
+        ListingFilterType? filter,
         [Service] IListingService listingService)
     {
         // Enforce page size limit
         pageSize = Math.Min(pageSize, 50);
         
         var boundsDto = bounds.ToDto();
+        var filterDto = filter?.ToDto();
         
-        var result = await listingService.GetWithinBoundsAsync(boundsDto, page, pageSize);
+        var result = await listingService.GetWithinBoundsAsync(boundsDto, page, pageSize, filterDto);
         return PagedListingsType.FromDto(result);
     }
 

@@ -1,0 +1,68 @@
+.listings-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.listings-grid__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.listings-grid__header h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.listings-grid__count {
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.listings-grid__loading,
+.listings-grid__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px 24px;
+  border-radius: 20px;
+  background: rgba(30, 64, 175, 0.05);
+  color: #1e3a8a;
+  text-align: center;
+}
+
+.listings-grid__loading span {
+  font-size: 15px;
+}
+
+.listings-grid__empty h3 {
+  margin: 0;
+  font-size: 20px;
+  color: #1e293b;
+}
+
+.listings-grid__empty p {
+  margin: 0;
+  color: #64748b;
+}
+
+.listings-grid__content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .listings-grid__content {
+    grid-template-columns: 1fr;
+  }
+}
+
+

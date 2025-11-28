@@ -1,0 +1,4 @@
+export { PhotoManager } from './PhotoManager';
+
+
+

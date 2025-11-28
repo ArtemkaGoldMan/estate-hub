@@ -25,12 +25,12 @@ public static class AuthorizationPolicies
         return policyName switch
         {
             AdminAccess => new[] { "Admin" },
-            ModerationAccess => new[] { "Admin", "Moderator" },
-            UserAccess => new[] { "Admin", "Moderator", "User" },
-            ListingManagement => new[] { "Admin", "Moderator", "User" },
-            UserManagement => new[] { "Admin", "Moderator" },
+            ModerationAccess => new[] { "Admin" },
+            UserAccess => new[] { "Admin", "User" },
+            ListingManagement => new[] { "Admin", "User" },
+            UserManagement => new[] { "Admin" },
             SystemSettings => new[] { "Admin" },
-            AnalyticsAccess => new[] { "Admin", "Moderator" },
+            AnalyticsAccess => new[] { "Admin" },
             _ => throw new ArgumentException($"Unknown policy: {policyName}")
         };
     }

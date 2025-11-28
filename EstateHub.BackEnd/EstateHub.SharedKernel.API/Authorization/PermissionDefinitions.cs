@@ -34,13 +34,6 @@ public static class PermissionDefinitions
             CreateReports, ManageReports, ViewReports
         },
         
-        ["Moderator"] = new List<string>
-        {
-            ContentModeration,
-            CreateListings, ManageListings, ViewAnalytics,
-            CreateReports, ManageReports, ViewReports
-        },
-        
         ["User"] = new List<string>
         {
             CreateListings, ManageListings,

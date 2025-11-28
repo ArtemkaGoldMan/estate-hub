@@ -1,0 +1,32 @@
+.listings-map {
+  width: 100%;
+  height: 100%;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.15);
+}
+
+.listings-map__container {
+  width: 100%;
+  height: 100%;
+  min-height: 360px;
+}
+
+.listings-map__popup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.listings-map__popup strong {
+  font-size: 15px;
+  color: #0f172a;
+}
+
+.listings-map__popup p {
+  margin: 0;
+  color: #475569;
+}
+
+

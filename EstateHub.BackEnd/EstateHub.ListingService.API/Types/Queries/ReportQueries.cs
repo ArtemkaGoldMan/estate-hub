@@ -8,10 +8,11 @@ using HotChocolate.Authorization;
 
 namespace EstateHub.ListingService.API.Types.Queries;
 
+[ExtendObjectType(typeof(Queries))]
 public class ReportQueries
 {
     [Authorize]
-    [RequirePermission("ViewReports")] // Only Moderators and Admins
+    [RequirePermission("ViewReports")] // Only Admins
     public async Task<ReportType?> GetReport(
         Guid id,
         [Service] IReportService reportService)
@@ -21,7 +22,7 @@ public class ReportQueries
     }
 
     [Authorize]
-    [RequirePermission("ViewReports")] // Only Moderators and Admins
+    [RequirePermission("ViewReports")] // Only Admins
     public async Task<PagedReportsType> GetReports(
         ReportFilterType? filter,
         int page,
@@ -64,7 +65,7 @@ public class ReportQueries
     }
 
     [Authorize]
-    [RequirePermission("ViewReports")] // Only Moderators and Admins
+    [RequirePermission("ViewReports")] // Only Admins
     public async Task<List<ReportType>> GetReportsByListing(
         Guid listingId,
         [Service] IReportService reportService)

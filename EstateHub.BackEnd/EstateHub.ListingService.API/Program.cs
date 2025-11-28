@@ -6,10 +6,16 @@ using EstateHub.ListingService.Core.Extensions;
 using EstateHub.ListingService.Infrastructure.Extensions;
 using EstateHub.SharedKernel.API.Extensions;
 using EstateHub.SharedKernel.API.Middleware;
+using EstateHub.ListingService.Domain.Enums;
 using HotChocolate.AspNetCore;
 using HotChocolate.AspNetCore.Authorization;
+using HotChocolate.Types;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
+using System.Threading.RateLimiting;
+using EstateHub.SharedKernel.API.Options;
 using Serilog;
 using System.Text;
 
@@ -34,6 +40,12 @@ public class Program
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddHttpContextAccessor();
+        builder.Services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            options.ForwardedHeaders = ForwardedHeaders.All;
+            options.KnownNetworks.Clear();
+            options.KnownProxies.Clear();
+        });
 
         // Add Data Access
         builder.Services.AddListingServiceDataAccess(builder.Configuration);
@@ -54,15 +66,22 @@ public class Program
             .AddJwtBearer(options =>
             {
                 options.SaveToken = true;
-                options.RequireHttpsMetadata = false;
+                options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+                
+                var jwtIssuer = builder.Configuration["JWT:Issuer"];
+                var jwtAudience = builder.Configuration["JWT:Audience"];
+                var jwtSecret = builder.Configuration["JWT:Secret"]!;
+                
                 options.TokenValidationParameters = new TokenValidationParameters()
                 {
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
+                    ValidateIssuer = !string.IsNullOrEmpty(jwtIssuer),
+                    ValidateAudience = !string.IsNullOrEmpty(jwtAudience),
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
+                    ValidIssuer = jwtIssuer,
+                    ValidAudience = jwtAudience,
                     IssuerSigningKey = new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(builder.Configuration["JWT:Secret"]!)),
+                        Encoding.UTF8.GetBytes(jwtSecret)),
                 };
 
                 // Optional: Add session validation for enhanced security
@@ -112,25 +131,68 @@ public class Program
             .AddType<DismissReportInputType>()
             .AddType<ReportFilterType>()
             .AddType<PhotoType>()
-            .AddType<AddPhotoInputType>()
-            .AddType<ReorderPhotosInputType>()
             .AddAuthorization()
+            .AddType<UploadType>()
             .ModifyRequestOptions(opt => opt.IncludeExceptionDetails = builder.Environment.IsDevelopment());
 
+        // Configure CORS
+        builder.Services.Configure<CorsOptions>(builder.Configuration.GetSection(CorsOptions.Cors));
+        
         builder.Services.AddCors(options =>
         {
-            options.AddPolicy("Any", corsPolicyBuilder =>
+            options.AddPolicy("Production", corsPolicyBuilder =>
             {
-                corsPolicyBuilder
-                    .SetIsOriginAllowed(_ => true)
-                    .AllowAnyHeader()
-                    .AllowAnyMethod()
-                    .AllowCredentials();
+                var corsConfig = builder.Configuration.GetSection(CorsOptions.Cors).Get<CorsOptions>();
+                var allowedOrigins = corsConfig?.AllowedOrigins ?? Array.Empty<string>();
+                
+                if (builder.Environment.IsDevelopment() && corsConfig?.AllowLocalhost == true)
+                {
+                    corsPolicyBuilder
+                        .SetIsOriginAllowed(origin => 
+                            allowedOrigins.Contains(origin) || 
+                            origin.StartsWith("http://localhost", StringComparison.OrdinalIgnoreCase) ||
+                            origin.StartsWith("https://localhost", StringComparison.OrdinalIgnoreCase))
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials();
+                }
+                else
+                {
+                    corsPolicyBuilder
+                        .SetIsOriginAllowed(origin => allowedOrigins.Contains(origin))
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials();
+                }
             });
         });
 
         builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
         builder.Services.AddProblemDetails();
+
+        // Add Rate Limiting
+        builder.Services.AddRateLimiter(options =>
+        {
+            options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: context.User.Identity?.Name ?? context.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+                    factory: partition => new FixedWindowRateLimiterOptions
+                    {
+                        AutoReplenishment = true,
+                        PermitLimit = 100,
+                        Window = TimeSpan.FromMinutes(1)
+                    }));
+
+            options.AddPolicy("graphql", context =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: context.User.Identity?.Name ?? context.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+                    factory: partition => new FixedWindowRateLimiterOptions
+                    {
+                        AutoReplenishment = true,
+                        PermitLimit = 50,
+                        Window = TimeSpan.FromMinutes(1)
+                    }));
+        });
 
         // Add Seed service
         builder.Services.AddTransient<Seed>();
@@ -145,8 +207,17 @@ public class Program
             app.UseDeveloperExceptionPage();
         }
 
-        app.UseHttpsRedirection();
-        app.UseCors("Any");
+        app.UseForwardedHeaders();
+
+        var enforceHttpsRedirect = builder.Configuration.GetValue<bool?>("EnforceHttpsRedirect") ?? true;
+
+        if (enforceHttpsRedirect)
+        {
+            app.UseHttpsRedirection();
+        }
+        
+        app.UseRateLimiter();
+        app.UseCors("Production");
         
         // Static file serving is kept for backward compatibility with old locally-stored files
         // New photos are served via /api/photo/gridfs/{fileId} endpoint from MongoDB GridFS
@@ -159,7 +230,8 @@ public class Program
         app.MapControllers();
 
         // Map GraphQL endpoint
-        app.MapGraphQL("/graphql");
+        app.MapGraphQL("/graphql")
+            .RequireRateLimiting("graphql");
 
         app.Run();
     }

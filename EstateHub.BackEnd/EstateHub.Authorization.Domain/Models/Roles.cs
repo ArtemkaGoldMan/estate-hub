@@ -2,7 +2,6 @@
 
 public enum Roles
 {
-    Admin,      // Full system control
-    Moderator,  // Content moderation + user management
-    User        // Regular users - can do everything normal users do
+    Admin,      // Full system control (users, roles, content moderation, reports)
+    User        // Regular users - can create listings and reports
 }

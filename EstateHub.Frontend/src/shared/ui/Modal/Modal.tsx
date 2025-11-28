@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import './Modal.css';
 import { Button } from '../Button';
 
@@ -23,18 +23,22 @@ export const Modal: React.FC<ModalProps> = ({
   closeOnBackdropClick = true,
   closeOnEscape = true,
 }) => {
-  useEffect(() => {
-    if (!isOpen || !closeOnEscape) return;
-
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+  // Memoize onClose to avoid dependency issues
+  const handleEscape = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && closeOnEscape) {
         onClose();
       }
-    };
+    },
+    [onClose, closeOnEscape]
+  );
+
+  useEffect(() => {
+    if (!isOpen) return;
 
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen, closeOnEscape, onClose]);
+  }, [isOpen, handleEscape]);
 
   useEffect(() => {
     if (isOpen) {
@@ -57,11 +61,17 @@ export const Modal: React.FC<ModalProps> = ({
   };
 
   return (
-    <div className="modal-overlay" onClick={handleBackdropClick}>
+    <div 
+      className="modal-overlay" 
+      onClick={handleBackdropClick}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={title ? "modal-title" : undefined}
+    >
       <div className={`modal modal--${size}`} onClick={(e) => e.stopPropagation()}>
         {title && (
           <div className="modal__header">
-            <h2 className="modal__title">{title}</h2>
+            <h2 id="modal-title" className="modal__title">{title}</h2>
             <Button
               variant="ghost"
               size="sm"
@@ -69,7 +79,7 @@ export const Modal: React.FC<ModalProps> = ({
               className="modal__close"
               aria-label="Close modal"
             >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <path
                   d="M15 5L5 15M5 5L15 15"
                   stroke="currentColor"

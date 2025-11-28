@@ -4,6 +4,7 @@ using EstateHub.ListingService.Domain.Enums;
 using EstateHub.ListingService.Domain.Models;
 using EstateHub.ListingService.Domain.Errors;
 using EstateHub.ListingService.Core.Mappers;
+using EstateHub.SharedKernel.API.Authorization;
 using FluentValidation;
 using Microsoft.Extensions.Logging;
 
@@ -81,11 +82,15 @@ public class ListingService : IListingService
             }
 
             // Check visibility: only Published listings are globally visible
+            // Owners can see their own listings regardless of status
+            // Admins can only see Published listings
             var currentUserId = GetCurrentUserIdIfAuthenticated();
-            if (listing.Status != ListingStatus.Published && 
-                (currentUserId == null || listing.OwnerId != currentUserId))
+            var isOwner = currentUserId != null && listing.OwnerId == currentUserId;
+            
+            if (listing.Status != ListingStatus.Published && !isOwner)
             {
-                _logger.LogDebug("Listing {ListingId} is not visible to user {UserId}", id, currentUserId);
+                _logger.LogDebug("Listing {ListingId} is not visible to user {UserId} (Status: {Status}, IsOwner: {IsOwner})", 
+                    id, currentUserId, listing.Status, isOwner);
                 return null; // Return null instead of throwing to maintain consistency
             }
 
@@ -159,17 +164,17 @@ public class ListingService : IListingService
         }
     }
 
-    public async Task<PagedResult<ListingDto>> GetWithinBoundsAsync(BoundsInput bounds, int page, int pageSize)
+    public async Task<PagedResult<ListingDto>> GetWithinBoundsAsync(BoundsInput bounds, int page, int pageSize, ListingFilter? filter = null)
     {
-        _logger.LogInformation("Getting listings within bounds - Bounds: {@Bounds}, Page: {Page}, PageSize: {PageSize}", 
-            bounds, page, pageSize);
+        _logger.LogInformation("Getting listings within bounds - Bounds: {@Bounds}, Page: {Page}, PageSize: {PageSize}, Filter: {@Filter}", 
+            bounds, page, pageSize, filter);
         
         try
         {
             pageSize = Math.Min(pageSize, 50);
             page = Math.Max(page, 1);
 
-            var listings = await _listingRepository.GetWithinBoundsAsync(bounds.LatMin, bounds.LatMax, bounds.LonMin, bounds.LonMax);
+            var listings = await _listingRepository.GetWithinBoundsAsync(bounds.LatMin, bounds.LatMax, bounds.LonMin, bounds.LonMax, filter);
             var total = listings.Count();
 
             var pagedListings = listings
@@ -185,7 +190,7 @@ public class ListingService : IListingService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting listings within bounds - Bounds: {@Bounds}", bounds);
+            _logger.LogError(ex, "Error getting listings within bounds - Bounds: {@Bounds}, Filter: {@Filter}", bounds, filter);
             throw;
         }
     }

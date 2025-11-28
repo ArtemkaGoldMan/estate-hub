@@ -32,6 +32,7 @@ public class ListingRepository : IListingRepository
         var query = _context.Listings
             .AsNoTracking()
             .Include(l => l.Photos)
+            .Where(l => l.Status == ListingStatus.Published) // Only show published listings
             .AsQueryable();
 
         if (filter != null)
@@ -74,13 +75,22 @@ public class ListingRepository : IListingRepository
         await _context.SaveChangesAsync();
     }
 
-    public async Task<IEnumerable<Listing>> GetWithinBoundsAsync(decimal latMin, decimal latMax, decimal lonMin, decimal lonMax)
+    public async Task<IEnumerable<Listing>> GetWithinBoundsAsync(decimal latMin, decimal latMax, decimal lonMin, decimal lonMax, ListingFilter? filter = null)
     {
-        var entities = await _context.Listings
+        var query = _context.Listings
             .AsNoTracking()
             .Include(l => l.Photos)
-            .Where(l => l.Latitude >= latMin && l.Latitude <= latMax &&
+            .Where(l => l.Status == ListingStatus.Published && // Only show published listings
+                       l.Latitude >= latMin && l.Latitude <= latMax &&
                        l.Longitude >= lonMin && l.Longitude <= lonMax)
+            .AsQueryable();
+
+        if (filter != null)
+        {
+            query = ApplyFilter(query, filter);
+        }
+
+        var entities = await query
             .OrderByDescending(l => l.CreatedAt)
             .ToListAsync();
 
@@ -92,6 +102,7 @@ public class ListingRepository : IListingRepository
         var query = _context.Listings
             .AsNoTracking()
             .Include(l => l.Photos)
+            .Where(l => l.Status == ListingStatus.Published) // Only show published listings
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(text))

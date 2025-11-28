@@ -1,0 +1,247 @@
+.edit-listing-page {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 32px clamp(16px, 4vw, 48px) 48px;
+  background: linear-gradient(180deg, #f8fafc 0%, #eff6ff 100%);
+  min-height: 100vh;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.edit-listing-page__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.edit-listing-page__header h1 {
+  margin: 0;
+  font-size: clamp(28px, 4vw, 40px);
+  color: #0f172a;
+}
+
+.edit-listing-page__loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+.edit-listing-page__error {
+  padding: 24px 28px;
+  border-radius: 16px;
+  background: rgba(239, 68, 68, 0.08);
+  color: #b91c1c;
+  text-align: center;
+}
+
+.edit-listing-page__error h2 {
+  margin: 0 0 12px;
+}
+
+.edit-listing-page__error-banner {
+  padding: 16px 20px;
+  border-radius: 12px;
+  background: rgba(239, 68, 68, 0.08);
+  color: #b91c1c;
+}
+
+.edit-listing-page__error-banner p {
+  margin: 0;
+}
+
+.edit-listing-page__form {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.edit-listing-page__section {
+  padding: 24px 28px;
+  border-radius: 16px;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.edit-listing-page__section h2 {
+  margin: 0 0 24px;
+  font-size: 20px;
+  color: #0f172a;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 12px;
+}
+
+.edit-listing-page__field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.edit-listing-page__field:last-child {
+  margin-bottom: 0;
+}
+
+.edit-listing-page__field label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.edit-listing-page__field input[type="text"],
+.edit-listing-page__field input[type="number"],
+.edit-listing-page__field select,
+.edit-listing-page__field textarea {
+  padding: 12px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 15px;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.edit-listing-page__field input[type="text"]:focus,
+.edit-listing-page__field input[type="number"]:focus,
+.edit-listing-page__field select:focus,
+.edit-listing-page__field textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.edit-listing-page__field input.error,
+.edit-listing-page__field select.error,
+.edit-listing-page__field textarea.error {
+  border-color: #ef4444;
+}
+
+.edit-listing-page__field textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.edit-listing-page__field-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.edit-listing-page__hint {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.error-message {
+  color: #ef4444;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.edit-listing-page__map {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid #e2e8f0;
+}
+
+.edit-listing-page__features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.edit-listing-page__checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 12px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.edit-listing-page__checkbox:hover {
+  background: #f1f5f9;
+}
+
+.edit-listing-page__checkbox input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #2563eb;
+}
+
+.edit-listing-page__checkbox span {
+  font-size: 15px;
+  color: #0f172a;
+}
+
+.edit-listing-page__actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding-top: 24px;
+  border-top: 2px solid #e2e8f0;
+}
+
+.edit-listing-page__delete-button {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.edit-listing-page__delete-button:hover {
+  background: #ef4444;
+  color: white;
+}
+
+.edit-listing-page__delete-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.edit-listing-page__delete-modal p {
+  margin: 0;
+  color: #475569;
+}
+
+.edit-listing-page__delete-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+  .edit-listing-page {
+    padding: 24px 16px 40px;
+  }
+
+  .edit-listing-page__header {
+    flex-direction: column;
+  }
+
+  .edit-listing-page__section {
+    padding: 20px;
+  }
+
+  .edit-listing-page__field-row {
+    grid-template-columns: 1fr;
+  }
+
+  .edit-listing-page__features {
+    grid-template-columns: 1fr;
+  }
+
+  .edit-listing-page__actions {
+    flex-direction: column;
+  }
+
+  .edit-listing-page__actions .btn {
+    width: 100%;
+  }
+}
+
+
+

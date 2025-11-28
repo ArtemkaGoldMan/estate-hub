@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import './Input.css';
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -25,7 +25,8 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     },
     ref
   ) => {
-    const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
+    const generatedId = useId();
+    const inputId = id || generatedId;
     const hasError = !!error;
 
     const classes = [

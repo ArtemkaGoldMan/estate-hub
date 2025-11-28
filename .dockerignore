@@ -1,30 +1,110 @@
-**/.classpath
-**/.dockerignore
+# Build artifacts - these are huge and not needed
+**/bin/
+**/obj/
+**/dist/
+**/build/
+**/out/
+**/.vs/
+**/.vscode/
+**/.idea/
+**/*.user
+**/*.suo
+**/*.userosscache
+**/*.sln.docstates
+
+# Dependencies - node_modules is huge
+**/node_modules/
+**/packages/
+**/.npm/
+**/.yarn/
+**/.pnp/
+**/.pnp.js
+
+# Logs
+**/logs/
+**/*.log
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/lerna-debug.log*
+
+# Testing
+**/coverage/
+**/.nyc_output/
+**/__tests__/
+**/test/
+**/tests/
+
+# Environment files
 **/.env
-**/.git
-**/.gitignore
+**/.env.local
+**/.env.development.local
+**/.env.test.local
+**/.env.production.local
+
+# Git - not needed in Docker
+.git/
+.gitignore
+.gitattributes
+.gitmodules
+
+# Docker files themselves
+docker-compose*.yml
+**/.dockerignore
+
+# Documentation - not needed for build
+docs/
+out.docs/
+**/README.md
+**/LICENSE
+**/CHANGELOG.md
+**/*.md
+
+# Archive and data files - large CSV files
+archive/
+**/*.csv
+**/*.xlsx
+**/*.xls
+
+# IDE and editor files
+**/.vs/
+**/.vscode/
+**/.idea/
+**/*.swp
+**/*.swo
+**/*.swn
+**/.DS_Store
+**/Thumbs.db
+
+# Temporary files
+**/tmp/
+**/temp/
+**/*.tmp
+**/*.cache
+**/.cache/
+
+# OS files
+**/.DS_Store
+**/Thumbs.db
+**/Desktop.ini
+
+# Project specific configs
+**/secrets.dev.yaml
+**/values.dev.yaml
+**/azds.yaml
+**/.classpath
 **/.project
 **/.settings
 **/.toolstarget
-**/.vs
-**/.vscode
-**/*.*proj.user
-**/*.dbmdl
-**/*.jfm
-**/azds.yaml
-**/bin
-**/charts
-**/docker-compose*
-**/Dockerfile*
-**/node_modules
-**/npm-debug.log
-**/obj
-**/secrets.dev.yaml
-**/values.dev.yaml
-LICENSE
-README.md
-!**/.gitignore
-!.git/HEAD
-!.git/config
-!.git/packed-refs
-!.git/refs/heads/**
+
+# NuGet packages cache
+**/.nuget/
+**/*.nupkg
+
+# TypeScript build info
+**/*.tsbuildinfo
+
+# Misc caches
+**/.eslintcache
+**/.stylelintcache
+**/.parcel-cache
