@@ -1,0 +1,65 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'archive/**'
+
+jobs:
+  build-and-test-backend:
+    name: Build and Test Backend
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        working-directory: EstateHub.BackEnd
+        run: dotnet restore
+
+      - name: Build solution
+        working-directory: EstateHub.BackEnd
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Run unit tests
+        working-directory: EstateHub.BackEnd
+        run: dotnet test --no-build --configuration Release --verbosity normal
+
+  build-frontend:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: EstateHub.Frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: EstateHub.Frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: EstateHub.Frontend
+        run: npm run build
+
+      - name: Lint frontend
+        working-directory: EstateHub.Frontend
+        run: npm run lint
+        continue-on-error: true
+
