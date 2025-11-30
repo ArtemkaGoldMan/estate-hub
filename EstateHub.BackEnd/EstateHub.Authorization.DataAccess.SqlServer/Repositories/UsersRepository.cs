@@ -63,6 +63,17 @@ public class UsersRepository : IUsersRepository
             userEntity.AvatarContentType = user.AvatarContentType;
         }
 
+        // Update contact & location information (allow setting to null/empty)
+        userEntity.PhoneNumber = user.PhoneNumber;
+        userEntity.Country = user.Country;
+        userEntity.City = user.City;
+        userEntity.Address = user.Address;
+        userEntity.PostalCode = user.PostalCode;
+
+        // Update professional information (allow setting to null/empty)
+        userEntity.CompanyName = user.CompanyName;
+        userEntity.Website = user.Website;
+
         _context.Users.Update(userEntity);
 
         int result = await _context.SaveChangesAsync();
