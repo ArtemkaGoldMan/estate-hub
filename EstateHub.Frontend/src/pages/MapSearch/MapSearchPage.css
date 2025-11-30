@@ -20,7 +20,15 @@
 .map-search-page__filters-toggle,
 .map-search-page__close-details {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  background: white;
+}
+
+.map-search-page__filters-toggle {
+  background: #646cff !important;
+  color: white !important;
+}
+
+.map-search-page__filters-toggle:hover {
+  background: #535bf2 !important;
 }
 
 .map-search-page__filters-panel {

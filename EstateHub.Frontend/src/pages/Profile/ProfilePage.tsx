@@ -237,6 +237,91 @@ export const ProfilePage = () => {
           </div>
 
           <div className="profile-page__field">
+            <label htmlFor="phoneNumber">Phone Number</label>
+            <Input
+              id="phoneNumber"
+              type="tel"
+              value={profile.phoneNumber || ''}
+              disabled
+              readOnly
+              placeholder="Not provided"
+            />
+            <p className="profile-page__field-hint">Phone number cannot be changed here</p>
+          </div>
+
+          <div className="profile-page__field">
+            <label htmlFor="country">Country</label>
+            <Input
+              id="country"
+              type="text"
+              value={profile.country || ''}
+              disabled
+              readOnly
+              placeholder="Not provided"
+            />
+          </div>
+
+          <div className="profile-page__field">
+            <label htmlFor="city">City</label>
+            <Input
+              id="city"
+              type="text"
+              value={profile.city || ''}
+              disabled
+              readOnly
+              placeholder="Not provided"
+            />
+          </div>
+
+          <div className="profile-page__field">
+            <label htmlFor="address">Address</label>
+            <Input
+              id="address"
+              type="text"
+              value={profile.address || ''}
+              disabled
+              readOnly
+              placeholder="Not provided"
+            />
+          </div>
+
+          <div className="profile-page__field">
+            <label htmlFor="postalCode">Postal Code</label>
+            <Input
+              id="postalCode"
+              type="text"
+              value={profile.postalCode || ''}
+              disabled
+              readOnly
+              placeholder="Not provided"
+            />
+          </div>
+
+          <div className="profile-page__field">
+            <label htmlFor="companyName">Company Name</label>
+            <Input
+              id="companyName"
+              type="text"
+              value={profile.companyName || ''}
+              disabled
+              readOnly
+              placeholder="Not provided"
+            />
+          </div>
+
+          <div className="profile-page__field">
+            <label htmlFor="website">Website</label>
+            <Input
+              id="website"
+              type="url"
+              value={profile.website || ''}
+              disabled
+              readOnly
+              placeholder="Not provided"
+            />
+          </div>
+
+          <div className="profile-page__field">
             <label>User ID</label>
             <Input
               type="text"

@@ -23,7 +23,11 @@ public class PhotoMutations
         }
 
         await using var stream = file.OpenReadStream();
-        return await photoService.UploadPhotoAsync(listingId, stream, file.Name, file.ContentType);
+        return await photoService.UploadPhotoAsync(
+            listingId, 
+            stream, 
+            file.Name ?? "photo", 
+            file.ContentType ?? "application/octet-stream");
     }
 
     /// <summary>

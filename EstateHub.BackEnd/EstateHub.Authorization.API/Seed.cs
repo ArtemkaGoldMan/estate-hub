@@ -55,6 +55,9 @@ public class Seed
             // Seed admin user if it doesn't exist
             await SeedAdminUserAsync();
             
+            // Seed test user for listing service seed data
+            await SeedTestUserAsync();
+            
             // seed initial data
         }
         catch (Exception ex)
@@ -139,6 +142,56 @@ public class Seed
         else
         {
             _logger.LogWarning("Admin role not found. Admin user created but without Admin role.");
+        }
+    }
+    
+    private async Task SeedTestUserAsync()
+    {
+        // Test user ID used by Listing Service seed data
+        var testUserId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+        const string testUserEmail = "test@example.com";
+        const string testUserPassword = "Test12345!@#"; // Must be at least 12 characters
+        
+        // Check if test user already exists
+        var testUser = await _userManager.FindByIdAsync(testUserId.ToString());
+        if (testUser != null)
+        {
+            _logger.LogInformation("Test user already exists");
+            return;
+        }
+        
+        // Create test user with specific ID
+        _logger.LogInformation("Creating test user for seed data");
+        testUser = new UserEntity
+        {
+            Id = testUserId,
+            UserName = testUserEmail,
+            Email = testUserEmail,
+            EmailConfirmed = true,
+            NormalizedEmail = testUserEmail.ToUpperInvariant(),
+            NormalizedUserName = testUserEmail.ToUpperInvariant(),
+            DisplayName = "Test User",
+            CreatedAt = DateTime.UtcNow
+        };
+        
+        var result = await _userManager.CreateAsync(testUser, testUserPassword);
+        if (!result.Succeeded)
+        {
+            _logger.LogError("Failed to create test user: {Errors}", 
+                string.Join(", ", result.Errors.Select(e => e.Description)));
+            return;
+        }
+        
+        // Assign User role
+        var userRole = await _roleManager.FindByNameAsync("User");
+        if (userRole != null)
+        {
+            await _userManager.AddToRoleAsync(testUser, "User");
+            _logger.LogInformation("Test user created successfully with email: {Email}", testUserEmail);
+        }
+        else
+        {
+            _logger.LogWarning("User role not found. Test user created but without User role.");
         }
     }
 }

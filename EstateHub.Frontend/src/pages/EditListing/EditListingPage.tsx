@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../shared/context/AuthContext';
 import { useToast } from '../../shared/context/ToastContext';
+import { UserFriendlyError } from '../../shared/lib/errorParser';
 import {
   useListingQuery,
   useUpdateListing,
@@ -9,7 +10,7 @@ import {
   type UpdateListingInput,
   type ListingCondition,
 } from '../../entities/listing';
-import { Button, Input, LoadingSpinner, Modal } from '../../shared';
+import { Button, Input, LoadingSpinner, Modal, RichTextEditor } from '../../shared';
 import { PhotoManager } from '../../features/listings/photos/ui/PhotoManager';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -178,7 +179,11 @@ export const EditListingPage = () => {
       await deleteListing(id);
       navigate('/dashboard', { replace: true });
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to delete listing');
+      if (err instanceof UserFriendlyError) {
+        showError(err.userMessage);
+      } else {
+        showError(err instanceof Error ? err.message : 'Failed to delete listing');
+      }
     }
   }, [id, deleteListing, navigate]);
 
@@ -294,14 +299,14 @@ export const EditListingPage = () => {
 
           <div className="edit-listing-page__field">
             <label htmlFor="description">Description *</label>
-            <textarea
+            <RichTextEditor
               id="description"
               value={formData.description || ''}
-              onChange={(e) => handleInputChange('description', e.target.value)}
+              onChange={(value) => handleInputChange('description', value)}
+              placeholder="Describe your property... You can use formatting like bold, italic, paragraphs, and lists."
               rows={6}
-              className={errors.description ? 'error' : ''}
+              error={errors.description}
             />
-            {errors.description && <span className="error-message">{errors.description}</span>}
           </div>
 
           <div className="edit-listing-page__field">
@@ -496,7 +501,7 @@ export const EditListingPage = () => {
           </div>
         </div>
 
-        <div className="edit-listing-page__section">
+        <div className="edit-listing-page__section" onClick={(e) => e.stopPropagation()}>
           <h2>Photos</h2>
           <PhotoManager listingId={id} />
         </div>

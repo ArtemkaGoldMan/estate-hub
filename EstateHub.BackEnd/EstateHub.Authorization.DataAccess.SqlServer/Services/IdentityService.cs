@@ -6,6 +6,8 @@ using EstateHub.Authorization.Domain.Interfaces.DataAccessInterfaces;
 using EstateHub.Authorization.Domain.Models;
 using EstateHub.Authorization.DataAccess.SqlServer.Entities;
 using EstateHub.Authorization.DataAccess.SqlServer.Repositories;
+using EstateHub.SharedKernel;
+using EstateHub.SharedKernel.Helpers;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -84,7 +86,9 @@ public class IdentityService : IIdentityService
         if (!result.Succeeded)
         {
             _logger.LogError("{errors}", result.Errors);
-            throw new ArgumentException(UserErrors.UserNotCreated().ToString());
+            var userMessage = EstateHub.SharedKernel.Helpers.IdentityErrorExtractor.ToUserMessage(result);
+            var error = UserErrors.UserNotCreated().WithUserMessage(userMessage);
+            throw new ArgumentException(error.ToString()) { Data = { ["Error"] = error } };
         }
 
         var roleExists = await _roleManager.RoleExistsAsync(nameof(Roles.User));
@@ -102,7 +106,9 @@ public class IdentityService : IIdentityService
         if (!isSuccess.Succeeded)
         {
             _logger.LogError("{errors}", isSuccess.Errors);
-            throw new ArgumentException(UserErrors.UserNotAddedToRole().ToString());
+            var userMessage = EstateHub.SharedKernel.Helpers.IdentityErrorExtractor.ToUserMessage(isSuccess);
+            var error = UserErrors.UserNotAddedToRole().WithUserMessage(userMessage);
+            throw new ArgumentException(error.ToString()) { Data = { ["Error"] = error } };
         }
 
         var generatedEmailConfirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(newUser);
@@ -113,7 +119,9 @@ public class IdentityService : IIdentityService
             if (!confirmEmailResult.Succeeded)
             {
                 _logger.LogError("{errors}", confirmEmailResult.Errors);
-                throw new ArgumentException(AuthorizationErrors.EmailNotConfirmed().ToString());
+                var userMessage = EstateHub.SharedKernel.Helpers.IdentityErrorExtractor.ToUserMessage(confirmEmailResult);
+                var error = AuthorizationErrors.EmailNotConfirmed().WithUserMessage(userMessage);
+                throw new ArgumentException(error.ToString()) { Data = { ["Error"] = error } };
             }
 
             generatedEmailConfirmationToken = string.Empty;
@@ -195,11 +203,13 @@ public class IdentityService : IIdentityService
             user.IsDeleted = false;
             user.DeletedAt = null;
             var resultRecover = await _userManager.UpdateAsync(user);
-            if (!resultRecover.Succeeded)
-            {
-                _logger.LogError("{errors}", resultRecover.Errors);
-                throw new ArgumentException(UserErrors.UserNotRecovered().ToString());
-            }
+        if (!resultRecover.Succeeded)
+        {
+            _logger.LogError("{errors}", resultRecover.Errors);
+            var userMessage = IdentityErrorExtractor.ToUserMessage(resultRecover);
+            var error = UserErrors.UserNotRecovered().WithUserMessage(userMessage);
+            ErrorHelper.ThrowError(error);
+        }
         }
     }
 
@@ -210,16 +220,17 @@ public class IdentityService : IIdentityService
 
         if (userResult is null)
         {
-            var error = UserErrors.NotFoundById(userId).ToString();
-            _logger.LogError("{error}", error);
-            throw new ArgumentException(error);
+            _logger.LogError("{error}", UserErrors.NotFoundById(userId).ToString());
+            ErrorHelper.ThrowError(UserErrors.NotFoundById(userId));
         }
 
         var result = await _userManager.ConfirmEmailAsync(userResult, token);
         if (!result.Succeeded)
         {
             _logger.LogError("{errors}", result.Errors);
-            throw new AggregateException(AuthorizationErrors.EmailNotConfirmed().ToString());
+            var userMessage = IdentityErrorExtractor.ToUserMessage(result);
+            var error = AuthorizationErrors.EmailNotConfirmed().WithUserMessage(userMessage);
+            ErrorHelper.ThrowError(error);
         }
     }
 
@@ -231,13 +242,13 @@ public class IdentityService : IIdentityService
         if (userResult is null)
         {
             _logger.LogError("{error}", UserErrors.NotFoundById(userId).ToString());
-            throw new ArgumentException(UserErrors.NotFoundById(userId).ToString());
+            ErrorHelper.ThrowError(UserErrors.NotFoundById(userId));
         }
 
         if (!userResult.EmailConfirmed)
         {
             _logger.LogError("{error}", AuthorizationErrors.EmailNotConfirmed().ToString());
-            throw new ArgumentException(AuthorizationErrors.EmailNotConfirmed().ToString());
+            ErrorHelper.ThrowError(AuthorizationErrors.EmailNotConfirmed());
         }
 
         return await _userManager.GeneratePasswordResetTokenAsync(userResult);
@@ -251,21 +262,30 @@ public class IdentityService : IIdentityService
         if (userResult is null)
         {
             _logger.LogError("{error}", UserErrors.NotFoundById(userId).ToString());
-            throw new ArgumentException(UserErrors.NotFoundById(userId).ToString());
+            ErrorHelper.ThrowError(UserErrors.NotFoundById(userId));
         }
 
         var userValidationResult = User.Create(userResult.Email, userResult.DisplayName, userResult.UserName, password);
 
         if (userValidationResult.IsFailure)
         {
-            throw new ArgumentException(userValidationResult.Error);
+            // Parse error from Result string format
+            var errorParts = userValidationResult.Error.Split(TextDelimiters.Separator);
+            if (errorParts.Length >= 4)
+            {
+                var error = new Error(errorParts[0], errorParts[1], errorParts[2], errorParts[3]);
+                ErrorHelper.ThrowError(error);
+            }
+            ErrorHelper.ThrowError(UserErrors.InvalidPassword());
         }
 
         var result = await _userManager.ResetPasswordAsync(userResult, token, password);
         if (!result.Succeeded)
         {
             _logger.LogError("{errors}", result.Errors);
-            throw new ArgumentException(AuthorizationErrors.IncorrectPasswordOrUsername().ToString());
+            var userMessage = IdentityErrorExtractor.ToUserMessage(result);
+            var error = AuthorizationErrors.IncorrectPasswordOrUsername().WithUserMessage(userMessage);
+            ErrorHelper.ThrowError(error);
         }
     }
 }

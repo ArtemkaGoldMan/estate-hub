@@ -59,7 +59,7 @@ public class Queries
     }
 
     public async Task<PagedListingsType> GetListingsOnMap(
-        BoundsInputType bounds,
+        BoundsInputType? bounds,
         int page,
         int pageSize,
         ListingFilterType? filter,
@@ -67,6 +67,12 @@ public class Queries
     {
         // Enforce page size limit
         pageSize = Math.Min(pageSize, 50);
+        
+        // If bounds is not provided, return empty result
+        if (bounds == null)
+        {
+            return PagedListingsType.FromDto(new PagedResult<ListingDto>(new List<ListingDto>(), 0, page, pageSize));
+        }
         
         var boundsDto = bounds.ToDto();
         var filterDto = filter?.ToDto();

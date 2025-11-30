@@ -165,26 +165,49 @@ public class MongoGridFSStorageService
     {
         try
         {
-            var filter = Builders<GridFSFileInfo>.Filter.Eq(x => x.Id, fileId);
+            // Use BSON document filter instead of LINQ expression for GridFS
+            // MongoDB driver doesn't support LINQ expressions like x.Id for GridFSFileInfo
+            var filter = Builders<GridFSFileInfo>.Filter.Eq("_id", fileId);
             var fileInfo = await _gridFSBucket.Find(filter).FirstOrDefaultAsync();
 
             if (fileInfo == null)
             {
+                _logger.LogWarning("File not found in GridFS: FileId: {FileId}", fileId);
                 return null;
             }
 
-            var stream = new MemoryStream();
-            await _gridFSBucket.DownloadToStreamAsync(fileId, stream);
-            stream.Position = 0;
+            // Open download stream directly from GridFS
+            // This is more efficient than downloading to MemoryStream for large files
+            var downloadStream = await _gridFSBucket.OpenDownloadStreamAsync(fileId);
+            
+            // Read the stream into a MemoryStream so we can close the GridFS stream
+            // and return a stream that ASP.NET Core can properly dispose
+            var memoryStream = new MemoryStream();
+            try
+            {
+                await downloadStream.CopyToAsync(memoryStream);
+                memoryStream.Position = 0;
+            }
+            finally
+            {
+                await downloadStream.DisposeAsync();
+            }
 
             var contentType = fileInfo.Metadata?.GetValue("contentType")?.AsString ?? "application/octet-stream";
             var fileName = fileInfo.Filename;
 
-            return (stream, contentType, fileName);
+            return (memoryStream, contentType, fileName);
+        }
+        catch (MongoDB.Driver.MongoException mongoEx)
+        {
+            _logger.LogError(mongoEx, "MongoDB error retrieving file from GridFS: FileId: {FileId}, Error: {Error}", 
+                fileId, mongoEx.Message);
+            throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving file from GridFS: FileId: {FileId}", fileId);
+            _logger.LogError(ex, "Error retrieving file from GridFS: FileId: {FileId}, Error: {Error}", 
+                fileId, ex.Message);
             throw;
         }
     }

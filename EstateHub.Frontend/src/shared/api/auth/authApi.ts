@@ -1,4 +1,5 @@
 import { API_CONFIG } from '../../config/api';
+import { throwUserFriendlyError } from '../../lib/errorParser';
 import type {
   UserRegistrationRequest,
   LoginRequest,
@@ -29,8 +30,7 @@ export const authApi = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Registration failed' }));
-      throw new Error(error.message || 'Registration failed');
+      await throwUserFriendlyError(response);
     }
 
     // Check if response has content
@@ -65,8 +65,7 @@ export const authApi = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Login failed' }));
-      throw new Error(error.message || 'Login failed');
+      await throwUserFriendlyError(response);
     }
 
     return response.json();
@@ -83,8 +82,7 @@ export const authApi = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Email confirmation failed' }));
-      throw new Error(error.message || 'Email confirmation failed');
+      await throwUserFriendlyError(response);
     }
 
     return response.json();
@@ -110,7 +108,7 @@ export const authApi = {
     // Don't throw error for 401 - token might be expired, but logout should still work
     // The backend will use refresh token from cookies
     if (!response.ok && response.status !== 401) {
-      throw new Error('Logout failed');
+      await throwUserFriendlyError(response);
     }
     // For 401, we silently succeed since we're logging out anyway
   },
@@ -122,7 +120,7 @@ export const authApi = {
     });
 
     if (!response.ok) {
-      throw new Error('Token refresh failed');
+      await throwUserFriendlyError(response);
     }
 
     return response.json();
@@ -139,8 +137,7 @@ export const authApi = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to send password reset email' }));
-      throw new Error(error.message || 'Failed to send password reset email');
+      await throwUserFriendlyError(response);
     }
   },
 
@@ -165,8 +162,7 @@ export const authApi = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to reset password' }));
-      throw new Error(error.message || 'Failed to reset password');
+      await throwUserFriendlyError(response);
     }
   },
 
@@ -189,8 +185,7 @@ export const authApi = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to request account action' }));
-      throw new Error(error.message || 'Failed to request account action');
+      await throwUserFriendlyError(response);
     }
   },
 
@@ -213,8 +208,7 @@ export const authApi = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to confirm account action' }));
-      throw new Error(error.message || 'Failed to confirm account action');
+      await throwUserFriendlyError(response);
     }
   },
 };

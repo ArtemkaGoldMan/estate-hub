@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../shared/context/AuthContext';
 import { Button, Input } from '../../shared/ui';
+import { UserFriendlyError } from '../../shared/lib/errorParser';
 import './AuthPages.css';
 
 export const LoginPage = () => {
@@ -10,6 +11,7 @@ export const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
 
   // Redirect if already authenticated (use useEffect to avoid conditional hook calls)
@@ -26,13 +28,31 @@ export const LoginPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setFieldErrors({});
     setIsLoading(true);
 
     try {
       await login(email, password);
       navigate('/listings');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
+      if (err instanceof UserFriendlyError) {
+        setError(err.userMessage);
+        // Map field errors to form fields
+        const mappedFieldErrors: Record<string, string> = {};
+        if (err.fieldErrors) {
+          Object.keys(err.fieldErrors).forEach((field) => {
+            const formField = field.toLowerCase();
+            if (formField.includes('email')) {
+              mappedFieldErrors.email = err.getFieldError(field) || '';
+            } else if (formField.includes('password')) {
+              mappedFieldErrors.password = err.getFieldError(field) || '';
+            }
+          });
+        }
+        setFieldErrors(mappedFieldErrors);
+      } else {
+        setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -52,22 +72,42 @@ export const LoginPage = () => {
               type="email"
               label="Email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (fieldErrors.email) {
+                  setFieldErrors((prev) => {
+                    const next = { ...prev };
+                    delete next.email;
+                    return next;
+                  });
+                }
+              }}
               required
               fullWidth
               placeholder="Enter your email"
               autoComplete="email"
+              error={fieldErrors.email}
             />
 
             <Input
               type="password"
               label="Password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (fieldErrors.password) {
+                  setFieldErrors((prev) => {
+                    const next = { ...prev };
+                    delete next.password;
+                    return next;
+                  });
+                }
+              }}
               required
               fullWidth
               placeholder="Enter your password"
               autoComplete="current-password"
+              error={fieldErrors.password}
             />
 
             <Button

@@ -21,10 +21,14 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Threading.RateLimiting;
 using Swashbuckle.AspNetCore.Filters;
+using HealthChecks.UI.Client;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Serilog;
 
 namespace EstateHub.Authorization.API;
 
@@ -34,6 +38,15 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
+        // Configure Serilog
+        Log.Logger = new LoggerConfiguration()
+            .ReadFrom.Configuration(builder.Configuration)
+            .Enrich.FromLogContext()
+            .CreateLogger();
+
+        // Use Serilog for logging
+        builder.Host.UseSerilog();
+
         builder.Services.Configure<JWTOptions>(builder.Configuration.GetSection(JWTOptions.JWT));
 
         builder.Services.Configure<SmtpOptions>(
@@ -42,6 +55,25 @@ public class Program
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddHttpContextAccessor();
+        
+        // Configure request size limits for file uploads (avatar uploads)
+        builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+        {
+            options.MultipartBodyLengthLimit = 5 * 1024 * 1024; // 5MB for avatar uploads
+            options.ValueLengthLimit = 5 * 1024 * 1024; // 5MB
+            options.ValueCountLimit = 1024; // Maximum number of form values
+            options.MultipartBoundaryLengthLimit = 128; // Boundary length limit
+            options.MultipartHeadersCountLimit = 32; // Maximum number of headers
+            options.MultipartHeadersLengthLimit = 16384; // 16KB headers
+        });
+        
+        // Configure Kestrel server limits
+        builder.Services.Configure<Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions>(options =>
+        {
+            options.Limits.MaxRequestBodySize = 5 * 1024 * 1024; // 5MB for avatar uploads
+            options.Limits.MaxRequestHeadersTotalSize = 32 * 1024; // 32KB
+            options.Limits.MaxRequestHeaderCount = 100;
+        });
 
         // Add gRPC services
         builder.Services.AddGrpc();
@@ -235,6 +267,11 @@ public class Program
         builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
         builder.Services.AddProblemDetails();
 
+        // Add Health Checks
+        builder.Services.AddHealthChecks()
+            .AddDbContextCheck<ApplicationDbContext>("sqlserver", tags: new[] { "db", "sqlserver", "ready" })
+            .AddCheck("self", () => HealthCheckResult.Healthy(), tags: new[] { "self", "live" });
+
         // Add Rate Limiting
         builder.Services.AddRateLimiter(options =>
         {
@@ -298,6 +335,24 @@ public class Program
 
         app.MapControllers()
             .RequireRateLimiting("auth");
+
+        // Map Health Check endpoints
+        app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+        {
+            ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+        });
+
+        app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+        {
+            Predicate = check => check.Tags.Contains("ready"),
+            ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+        });
+
+        app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+        {
+            Predicate = check => check.Tags.Contains("live"),
+            ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+        });
 
         // Map gRPC services
         app.MapGrpcService<UserGrpcService>();

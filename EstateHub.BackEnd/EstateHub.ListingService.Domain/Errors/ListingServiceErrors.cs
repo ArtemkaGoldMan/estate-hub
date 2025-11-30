@@ -42,6 +42,30 @@ public static class ListingServiceErrors
         "404", "Listing.PhotoNotFound", "2301", 
         $"Photo with ID {id} not found");
 
+    public static Error PhotoUrlEmpty() => new(
+        "400", "Listing.PhotoUrlEmpty", "2303", 
+        "Photo URL cannot be empty");
+
+    public static Error PhotoUrlInvalid() => new(
+        "400", "Listing.PhotoUrlInvalid", "2304", 
+        "Photo URL must be a valid absolute URL");
+
+    public static Error PhotoOrderIdsEmpty() => new(
+        "400", "Listing.PhotoOrderIdsEmpty", "2305", 
+        "Ordered photo IDs cannot be empty");
+
+    public static Error PhotoNotBelongsToListing(Guid photoId, Guid listingId) => new(
+        "400", "Listing.PhotoNotBelongsToListing", "2306", 
+        $"Photo with ID {photoId} does not belong to listing {listingId}");
+
+    public static Error PhotosNotBelongToListing(List<Guid> photoIds) => new(
+        "400", "Listing.PhotosNotBelongToListing", "2307", 
+        $"Photos with IDs {string.Join(", ", photoIds)} do not belong to this listing");
+
+    public static Error FileValidationFailed(string? message = null) => new(
+        "400", "Listing.FileValidationFailed", "2308", 
+        message ?? "File validation failed");
+
     public static Error ReportNotFound(Guid id) => new(
         "404", "Listing.ReportNotFound", "2302", 
         $"Report with ID {id} not found");

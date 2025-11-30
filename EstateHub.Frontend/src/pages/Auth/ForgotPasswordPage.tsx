@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { authApi } from '../../shared/api/auth/authApi';
 import { Button, Input } from '../../shared/ui';
+import { UserFriendlyError } from '../../shared/lib/errorParser';
 import './AuthPages.css';
 
 export const ForgotPasswordPage = () => {
@@ -19,7 +20,11 @@ export const ForgotPasswordPage = () => {
       await authApi.forgotPassword(email);
       setIsSuccess(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send password reset email. Please try again.');
+      if (err instanceof UserFriendlyError) {
+        setError(err.userMessage);
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to send password reset email. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }

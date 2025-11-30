@@ -7,6 +7,8 @@ using EstateHub.Authorization.Domain.Interfaces.CoreInterfaces;
 using EstateHub.Authorization.Domain.Interfaces.DataAccessInterfaces;
 using EstateHub.Authorization.Domain.Models;
 using EstateHub.Authorization.Core.Helpers;
+using EstateHub.SharedKernel;
+using EstateHub.SharedKernel.Helpers;
 using Microsoft.Extensions.Logging;
 
 namespace EstateHub.Authorization.Core.Services;
@@ -38,13 +40,13 @@ public class UsersService : IUsersService
             {
                 if (id == Guid.Empty)
                 {
-                    throw new ArgumentException(UserErrors.NotFoundById(id).ToString());
+                    ErrorHelper.ThrowError(UserErrors.NotFoundById(id));
                 }
 
                 var user = await _usersRepository.GetByIdAsync<TProjectTo>(id, includeDeleted);
                 if (user == null)
                 {
-                    throw new ArgumentNullException(UserErrors.NotFoundById(id).ToString());
+                    ErrorHelper.ThrowErrorNull(UserErrors.NotFoundById(id));
                 }
 
                 return user;
@@ -59,13 +61,13 @@ public class UsersService : IUsersService
             {
                 if (ids.Count == 0)
                 {
-                    throw new ArgumentException(UserErrors.NotFoundByIds(ids).ToString());
+                    ErrorHelper.ThrowError(UserErrors.NotFoundByIds(ids));
                 }
 
                 var users = await _usersRepository.GetByIdsAsync<TProjectTo>(ids, includeDeleted);
                 if (users.Count == 0)
                 {
-                    throw new ArgumentNullException(UserErrors.NotFoundByIds(ids).ToString());
+                    ErrorHelper.ThrowErrorNull(UserErrors.NotFoundByIds(ids));
                 }
 
                 return users;
@@ -80,7 +82,7 @@ public class UsersService : IUsersService
                 var user = await _usersRepository.GetByIdAsync<UserDto>(id);
                 if (user == null)
                 {
-                    throw new ArgumentNullException(UserErrors.NotFoundById(id).ToString());
+                    ErrorHelper.ThrowErrorNull(UserErrors.NotFoundById(id));
                 }
 
                 if (string.IsNullOrWhiteSpace(request.DisplayName))
@@ -107,7 +109,15 @@ public class UsersService : IUsersService
 
                 if (validationResult.IsFailure)
                 {
-                    throw new ArgumentException(validationResult.Error);
+                    // Parse error from Result string format
+                    var errorParts = validationResult.Error.Split(TextDelimiters.Separator);
+                    if (errorParts.Length >= 4)
+                    {
+                        var error = new Error(errorParts[0], errorParts[1], errorParts[2], errorParts[3],
+                            errorParts.Length > 4 ? errorParts[4] : null);
+                        ErrorHelper.ThrowError(error);
+                    }
+                    ErrorHelper.ThrowError(UserErrors.UpdateFailed(id));
                 }
 
                 var updateData = new UserUpdateDto
@@ -120,7 +130,7 @@ public class UsersService : IUsersService
                 var updateResult = await _usersRepository.UpdateByIdAsync(id, updateData);
                 if (!updateResult)
                 {
-                    throw new ArgumentException(UserErrors.UpdateFailed(id).ToString());
+                    ErrorHelper.ThrowError(UserErrors.UpdateFailed(id));
                 }
             });
     }
@@ -132,25 +142,25 @@ public class UsersService : IUsersService
             {
                 if (id == Guid.Empty)
                 {
-                    throw new ArgumentException(UserErrors.NotFoundById(id).ToString());
+                    ErrorHelper.ThrowError(UserErrors.NotFoundById(id));
                 }
 
                 var user = await _usersRepository.GetByIdAsync<UserDto>(id);
                 if (user == null)
                 {
-                    throw new ArgumentNullException(UserErrors.NotFoundById(id).ToString());
+                    ErrorHelper.ThrowErrorNull(UserErrors.NotFoundById(id));
                 }
 
                 bool userDeletionResult = await _usersRepository.DeleteByIdAsync(id);
                 if (!userDeletionResult)
                 {
-                    throw new ArgumentException(UserErrors.DeletionFailed(id).ToString());
+                    ErrorHelper.ThrowError(UserErrors.DeletionFailed(id));
                 }
 
                 bool sessionsDeletionResult = await _sessionsRepository.DeleteByUserIdAsync(id);
                 if (!sessionsDeletionResult)
                 {
-                    throw new ArgumentException(SessionErrors.DeletionFailedByUserId(id).ToString());
+                    ErrorHelper.ThrowError(SessionErrors.DeletionFailedByUserId(id));
                 }
             });
     }
@@ -190,13 +200,13 @@ public class UsersService : IUsersService
             {
                 if (userId == Guid.Empty)
                 {
-                    throw new ArgumentException(UserErrors.NotFoundById(userId).ToString());
+                    ErrorHelper.ThrowError(UserErrors.NotFoundById(userId));
                 }
 
                 var success = await _usersRepository.AssignUserRoleAsync(userId, role);
                 if (!success)
                 {
-                    throw new ArgumentException($"Failed to assign role '{role}' to user {userId}");
+                    ErrorHelper.ThrowError(UserErrors.UserNotAddedToRole());
                 }
             });
     }
@@ -208,13 +218,13 @@ public class UsersService : IUsersService
             {
                 if (userId == Guid.Empty)
                 {
-                    throw new ArgumentException(UserErrors.NotFoundById(userId).ToString());
+                    ErrorHelper.ThrowError(UserErrors.NotFoundById(userId));
                 }
 
                 var success = await _usersRepository.RemoveUserRoleAsync(userId, role);
                 if (!success)
                 {
-                    throw new ArgumentException($"Failed to remove role '{role}' from user {userId}");
+                    ErrorHelper.ThrowError(UserErrors.UserNotAddedToRole());
                 }
             });
     }
@@ -226,13 +236,13 @@ public class UsersService : IUsersService
             {
                 if (userId == Guid.Empty)
                 {
-                    throw new ArgumentException(UserErrors.NotFoundById(userId).ToString());
+                    ErrorHelper.ThrowError(UserErrors.NotFoundById(userId));
                 }
 
                 var success = await _usersRepository.SuspendUserAsync(userId, reason);
                 if (!success)
                 {
-                    throw new ArgumentException($"Failed to suspend user {userId}");
+                    ErrorHelper.ThrowError(UserErrors.UpdateFailed(userId));
                 }
             });
     }
@@ -244,13 +254,13 @@ public class UsersService : IUsersService
             {
                 if (userId == Guid.Empty)
                 {
-                    throw new ArgumentException(UserErrors.NotFoundById(userId).ToString());
+                    ErrorHelper.ThrowError(UserErrors.NotFoundById(userId));
                 }
 
                 var success = await _usersRepository.ActivateUserAsync(userId);
                 if (!success)
                 {
-                    throw new ArgumentException($"Failed to activate user {userId}");
+                    ErrorHelper.ThrowError(UserErrors.UpdateFailed(userId));
                 }
             });
     }
@@ -262,14 +272,14 @@ public class UsersService : IUsersService
             {
                 if (userId == Guid.Empty)
                 {
-                    throw new ArgumentException(UserErrors.NotFoundById(userId).ToString());
+                    ErrorHelper.ThrowError(UserErrors.NotFoundById(userId));
                 }
 
                 // Admin can delete any user (including themselves)
                 var success = await _usersRepository.DeleteByIdAsync(userId);
                 if (!success)
                 {
-                    throw new ArgumentException(UserErrors.DeletionFailed(userId).ToString());
+                    ErrorHelper.ThrowError(UserErrors.DeletionFailed(userId));
                 }
 
                 // Also clean up sessions

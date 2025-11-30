@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Diagnostics;
+﻿using EstateHub.SharedKernel;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -23,7 +24,7 @@ public class GlobalExceptionHandler : IExceptionHandler
     {
         _logger.LogError(exception, "Exception occurred: {Message}", exception.Message);
 
-        var (statusCode, title, errorCode) = MapExceptionToError(exception);
+        var (statusCode, title, errorCode, error) = MapExceptionToError(exception);
 
         var problemDetails = new ProblemDetails
         {
@@ -33,10 +34,20 @@ public class GlobalExceptionHandler : IExceptionHandler
             Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1"
         };
 
-        // Add error code if available
-        if (!string.IsNullOrEmpty(errorCode))
+        // If exception has Error object in Data, use it for user-friendly message
+        if (error != null)
         {
-            problemDetails.Extensions["errorCode"] = errorCode;
+            problemDetails.Extensions["userMessage"] = error.GetUserMessage();
+            problemDetails.Extensions["errorCode"] = error.Code;
+            problemDetails.Extensions["error"] = new { error.Code, error.Description };
+        }
+        else
+        {
+            problemDetails.Extensions["userMessage"] = exception.Message;
+            if (!string.IsNullOrEmpty(errorCode))
+            {
+                problemDetails.Extensions["errorCode"] = errorCode;
+            }
         }
 
         // Add exception type for debugging (only in development)
@@ -53,29 +64,35 @@ public class GlobalExceptionHandler : IExceptionHandler
         return true;
     }
 
-    private static (int StatusCode, string Title, string? ErrorCode) MapExceptionToError(Exception exception)
+    private static (int StatusCode, string Title, string? ErrorCode, Error? Error) MapExceptionToError(Exception exception)
     {
+        // Check if exception has Error object in Data dictionary
+        if (exception.Data.Contains("Error") && exception.Data["Error"] is Error error)
+        {
+            var statusCode = int.TryParse(error.Status, out var status) ? status : StatusCodes.Status400BadRequest;
+            return (statusCode, GetTitleFromStatusCode(statusCode), error.Code, error);
+        }
+
         // Check if exception has error code in Data dictionary
         if (exception.Data.Contains("ErrorCode") && exception.Data["ErrorCode"] is string errorCode)
         {
-            // Extract status code from error code (first digit indicates HTTP status)
             var statusCode = GetStatusCodeFromErrorCode(errorCode);
-            return (statusCode, GetTitleFromStatusCode(statusCode), errorCode);
+            return (statusCode, GetTitleFromStatusCode(statusCode), errorCode, null);
         }
 
         // Map common exception types
         return exception switch
         {
             ArgumentException or ArgumentNullException => 
-                (StatusCodes.Status400BadRequest, "Bad Request", null),
+                (StatusCodes.Status400BadRequest, "Bad Request", null, null),
             KeyNotFoundException => 
-                (StatusCodes.Status404NotFound, "Not Found", null),
+                (StatusCodes.Status404NotFound, "Not Found", null, null),
             InvalidOperationException => 
-                (StatusCodes.Status403Forbidden, "Forbidden", null),
+                (StatusCodes.Status403Forbidden, "Forbidden", null, null),
             UnauthorizedAccessException => 
-                (StatusCodes.Status403Forbidden, "Forbidden", null),
+                (StatusCodes.Status403Forbidden, "Forbidden", null, null),
             _ => 
-                (StatusCodes.Status500InternalServerError, "Internal Server Error", null)
+                (StatusCodes.Status500InternalServerError, "Internal Server Error", null, null)
         };
     }
 

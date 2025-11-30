@@ -13,11 +13,15 @@ using HotChocolate.Types;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using System.Threading.RateLimiting;
 using EstateHub.SharedKernel.API.Options;
 using Serilog;
 using System.Text;
+using HealthChecks.UI.Client;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using EstateHub.ListingService.DataAccess.SqlServer.Db;
 
 namespace EstateHub.ListingService.API;
 
@@ -31,7 +35,6 @@ public class Program
         Log.Logger = new LoggerConfiguration()
             .ReadFrom.Configuration(builder.Configuration)
             .Enrich.FromLogContext()
-            .WriteTo.Console()
             .CreateLogger();
 
         builder.Host.UseSerilog();
@@ -40,6 +43,26 @@ public class Program
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddHttpContextAccessor();
+        
+        // Configure request size limits for file uploads
+        builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+        {
+            options.MultipartBodyLengthLimit = 10 * 1024 * 1024; // 10MB
+            options.ValueLengthLimit = 10 * 1024 * 1024; // 10MB
+            options.ValueCountLimit = 1024; // Maximum number of form values
+            options.MultipartBoundaryLengthLimit = 128; // Boundary length limit
+            options.MultipartHeadersCountLimit = 32; // Maximum number of headers
+            options.MultipartHeadersLengthLimit = 16384; // 16KB headers
+        });
+        
+        // Configure Kestrel server limits
+        builder.Services.Configure<Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions>(options =>
+        {
+            options.Limits.MaxRequestBodySize = 10 * 1024 * 1024; // 10MB
+            options.Limits.MaxRequestHeadersTotalSize = 32 * 1024; // 32KB
+            options.Limits.MaxRequestHeaderCount = 100;
+        });
+        
         builder.Services.Configure<ForwardedHeadersOptions>(options =>
         {
             options.ForwardedHeaders = ForwardedHeaders.All;
@@ -131,8 +154,8 @@ public class Program
             .AddType<DismissReportInputType>()
             .AddType<ReportFilterType>()
             .AddType<PhotoType>()
+            .AddType<UploadType>() // Required for IFile file uploads
             .AddAuthorization()
-            .AddType<UploadType>()
             .ModifyRequestOptions(opt => opt.IncludeExceptionDetails = builder.Environment.IsDevelopment());
 
         // Configure CORS
@@ -169,6 +192,16 @@ public class Program
 
         builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
         builder.Services.AddProblemDetails();
+
+        // Add Health Checks
+        builder.Services.AddHealthChecks()
+            .AddDbContextCheck<ApplicationDbContext>("sqlserver", tags: new[] { "db", "sqlserver", "ready" })
+            .AddMongoDb(
+                mongodbConnectionString: builder.Configuration["MongoDB:ConnectionString"] ?? throw new InvalidOperationException("MongoDB:ConnectionString is not configured"),
+                name: "mongodb",
+                timeout: TimeSpan.FromSeconds(3),
+                tags: new[] { "db", "mongodb", "ready" })
+            .AddCheck("self", () => HealthCheckResult.Healthy(), tags: new[] { "self", "live" });
 
         // Add Rate Limiting
         builder.Services.AddRateLimiter(options =>
@@ -232,6 +265,24 @@ public class Program
         // Map GraphQL endpoint
         app.MapGraphQL("/graphql")
             .RequireRateLimiting("graphql");
+
+        // Map Health Check endpoints
+        app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+        {
+            ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+        });
+
+        app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+        {
+            Predicate = check => check.Tags.Contains("ready"),
+            ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+        });
+
+        app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+        {
+            Predicate = check => check.Tags.Contains("live"),
+            ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+        });
 
         app.Run();
     }

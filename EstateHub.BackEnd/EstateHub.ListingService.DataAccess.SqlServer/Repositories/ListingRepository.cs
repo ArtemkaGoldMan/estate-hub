@@ -1,5 +1,6 @@
 using EstateHub.ListingService.DataAccess.SqlServer.Db;
 using EstateHub.ListingService.DataAccess.SqlServer.Entities;
+using EstateHub.ListingService.DataAccess.SqlServer.Helpers;
 using EstateHub.ListingService.Domain.DTO;
 using EstateHub.ListingService.Domain.Enums;
 using EstateHub.ListingService.Domain.Interfaces;
@@ -32,7 +33,7 @@ public class ListingRepository : IListingRepository
         var query = _context.Listings
             .AsNoTracking()
             .Include(l => l.Photos)
-            .Where(l => l.Status == ListingStatus.Published) // Only show published listings
+            .Where(l => l.Status == ListingStatus.Published && !l.IsDeleted)
             .AsQueryable();
 
         if (filter != null)
@@ -47,6 +48,21 @@ public class ListingRepository : IListingRepository
             .ToListAsync();
 
         return entities.Select(MapToDomain);
+    }
+
+    public async Task<int> GetTotalCountAsync(ListingFilter? filter = null)
+    {
+        var query = _context.Listings
+            .AsNoTracking()
+            .Where(l => l.Status == ListingStatus.Published && !l.IsDeleted)
+            .AsQueryable();
+
+        if (filter != null)
+        {
+            query = ApplyFilter(query, filter);
+        }
+
+        return await query.GetCountAsync();
     }
 
     public async Task<IEnumerable<Listing>> GetByOwnerIdAsync(Guid ownerId)
@@ -75,12 +91,12 @@ public class ListingRepository : IListingRepository
         await _context.SaveChangesAsync();
     }
 
-    public async Task<IEnumerable<Listing>> GetWithinBoundsAsync(decimal latMin, decimal latMax, decimal lonMin, decimal lonMax, ListingFilter? filter = null)
+    public async Task<IEnumerable<Listing>> GetWithinBoundsAsync(decimal latMin, decimal latMax, decimal lonMin, decimal lonMax, int page, int pageSize, ListingFilter? filter = null)
     {
         var query = _context.Listings
             .AsNoTracking()
             .Include(l => l.Photos)
-            .Where(l => l.Status == ListingStatus.Published && // Only show published listings
+            .Where(l => l.Status == ListingStatus.Published && !l.IsDeleted &&
                        l.Latitude >= latMin && l.Latitude <= latMax &&
                        l.Longitude >= lonMin && l.Longitude <= lonMax)
             .AsQueryable();
@@ -92,17 +108,35 @@ public class ListingRepository : IListingRepository
 
         var entities = await query
             .OrderByDescending(l => l.CreatedAt)
+            .ApplyPagination(page, pageSize)
             .ToListAsync();
 
         return entities.Select(MapToDomain);
     }
 
-    public async Task<IEnumerable<Listing>> SearchAsync(string? text, ListingFilter? filter = null)
+    public async Task<int> GetWithinBoundsCountAsync(decimal latMin, decimal latMax, decimal lonMin, decimal lonMax, ListingFilter? filter = null)
+    {
+        var query = _context.Listings
+            .AsNoTracking()
+            .Where(l => l.Status == ListingStatus.Published && !l.IsDeleted &&
+                       l.Latitude >= latMin && l.Latitude <= latMax &&
+                       l.Longitude >= lonMin && l.Longitude <= lonMax)
+            .AsQueryable();
+
+        if (filter != null)
+        {
+            query = ApplyFilter(query, filter);
+        }
+
+        return await query.GetCountAsync();
+    }
+
+    public async Task<IEnumerable<Listing>> SearchAsync(string? text, int page, int pageSize, ListingFilter? filter = null)
     {
         var query = _context.Listings
             .AsNoTracking()
             .Include(l => l.Photos)
-            .Where(l => l.Status == ListingStatus.Published) // Only show published listings
+            .Where(l => l.Status == ListingStatus.Published && !l.IsDeleted)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(text))
@@ -121,9 +155,34 @@ public class ListingRepository : IListingRepository
 
         var entities = await query
             .OrderByDescending(l => l.CreatedAt)
+            .ApplyPagination(page, pageSize)
             .ToListAsync();
 
         return entities.Select(MapToDomain);
+    }
+
+    public async Task<int> SearchCountAsync(string? text, ListingFilter? filter = null)
+    {
+        var query = _context.Listings
+            .AsNoTracking()
+            .Where(l => l.Status == ListingStatus.Published && !l.IsDeleted)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(text))
+        {
+            query = query.Where(l => l.Title.Contains(text) || 
+                                   l.Description.Contains(text) ||
+                                   l.City.Contains(text) ||
+                                   l.District.Contains(text) ||
+                                   l.AddressLine.Contains(text));
+        }
+
+        if (filter != null)
+        {
+            query = ApplyFilter(query, filter);
+        }
+
+        return await query.GetCountAsync();
     }
 
     public async Task UpdateStatusAsync(Guid id, ListingStatus newStatus)

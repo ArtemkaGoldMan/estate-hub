@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useToast } from '../../shared/context/ToastContext';
 import { useAdminUsers, useAdminUserStats, useAdminUserActions } from '../../shared/api/admin';
 import { getUserRoles, hasPermission, PERMISSIONS } from '../../shared/lib/permissions';
+import { UserFriendlyError } from '../../shared/lib/errorParser';
 import { Button, LoadingSpinner, Pagination, Input } from '../../shared/ui';
 import './AdminUsersPage.css';
 
@@ -61,7 +62,11 @@ export const AdminUsersPage = () => {
       refetchUsers();
       showSuccess(`Role "${roleToAssign}" assigned successfully`);
     } catch (error) {
-      showError(error instanceof Error ? error.message : 'Failed to assign role');
+      if (error instanceof UserFriendlyError) {
+        showError(error.userMessage);
+      } else {
+        showError(error instanceof Error ? error.message : 'Failed to assign role');
+      }
     }
   }, [selectedUser, roleToAssign, assignRole, refetchUsers]);
 
@@ -75,7 +80,11 @@ export const AdminUsersPage = () => {
       refetchUsers();
       showSuccess(`Role "${role}" removed successfully`);
     } catch (error) {
-      showError(error instanceof Error ? error.message : 'Failed to remove role');
+      if (error instanceof UserFriendlyError) {
+        showError(error.userMessage);
+      } else {
+        showError(error instanceof Error ? error.message : 'Failed to remove role');
+      }
     }
   }, [removeRole, refetchUsers]);
 
@@ -91,7 +100,11 @@ export const AdminUsersPage = () => {
       refetchStats();
       showSuccess('User suspended successfully');
     } catch (error) {
-      showError(error instanceof Error ? error.message : 'Failed to suspend user');
+      if (error instanceof UserFriendlyError) {
+        showError(error.userMessage);
+      } else {
+        showError(error instanceof Error ? error.message : 'Failed to suspend user');
+      }
     }
   }, [selectedUser, suspendReason, suspendUser, refetchUsers, refetchStats]);
 
@@ -106,7 +119,11 @@ export const AdminUsersPage = () => {
       refetchStats();
       showSuccess('User activated successfully');
     } catch (error) {
-      showError(error instanceof Error ? error.message : 'Failed to activate user');
+      if (error instanceof UserFriendlyError) {
+        showError(error.userMessage);
+      } else {
+        showError(error instanceof Error ? error.message : 'Failed to activate user');
+      }
     }
   }, [activateUser, refetchUsers, refetchStats]);
 
@@ -121,7 +138,11 @@ export const AdminUsersPage = () => {
       refetchStats();
       showSuccess('User deleted successfully');
     } catch (error) {
-      showError(error instanceof Error ? error.message : 'Failed to delete user');
+      if (error instanceof UserFriendlyError) {
+        showError(error.userMessage);
+      } else {
+        showError(error instanceof Error ? error.message : 'Failed to delete user');
+      }
     }
   }, [selectedUser, deleteUser, refetchUsers, refetchStats]);
 

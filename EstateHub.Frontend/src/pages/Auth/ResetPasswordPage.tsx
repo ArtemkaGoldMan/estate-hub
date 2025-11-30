@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { authApi } from '../../shared/api/auth/authApi';
 import { Button, Input } from '../../shared/ui';
+import { UserFriendlyError } from '../../shared/lib/errorParser';
 import './AuthPages.css';
 
 export const ResetPasswordPage = () => {
@@ -50,7 +51,11 @@ export const ResetPasswordPage = () => {
         navigate('/login');
       }, 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to reset password. The link may have expired.');
+      if (err instanceof UserFriendlyError) {
+        setError(err.userMessage);
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to reset password. The link may have expired.');
+      }
     } finally {
       setIsLoading(false);
     }

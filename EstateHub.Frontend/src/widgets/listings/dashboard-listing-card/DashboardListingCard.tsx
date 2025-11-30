@@ -52,6 +52,7 @@ export const DashboardListingCard = memo(
       e.stopPropagation();
       try {
         await publishListing(listing.id);
+        // Manually trigger refetch via callback
         onStatusChange?.();
         showSuccess('Listing published successfully');
       } catch (error) {
@@ -63,6 +64,7 @@ export const DashboardListingCard = memo(
       e.stopPropagation();
       try {
         await unpublishListing(listing.id);
+        // Manually trigger refetch via callback
         onStatusChange?.();
         showSuccess('Listing unpublished successfully');
       } catch (error) {

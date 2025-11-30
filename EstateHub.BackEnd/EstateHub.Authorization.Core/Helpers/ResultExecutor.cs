@@ -1,5 +1,6 @@
 ﻿using CSharpFunctionalExtensions;
 using EstateHub.Authorization.Domain.Interfaces.DataAccessInterfaces;
+using EstateHub.SharedKernel;
 using Microsoft.Extensions.Logging;
 
 namespace EstateHub.Authorization.Core.Helpers;
@@ -43,6 +44,13 @@ public class ResultExecutor<TLogger>
             }
 
             _logger.LogError("{error}", e.Message);
+            
+            // Extract Error from exception Data if present (preserves UserMessage)
+            if (e.Data.Contains("Error") && e.Data["Error"] is Error error)
+            {
+                return error.ToResult<TResult>();
+            }
+            
             return Result.Failure<TResult>(e.Message);
         }
         catch (Exception e)
@@ -86,6 +94,13 @@ public class ResultExecutor<TLogger>
             }
 
             _logger.LogError("{error}", e.Message);
+            
+            // Extract Error from exception Data if present (preserves UserMessage)
+            if (e.Data.Contains("Error") && e.Data["Error"] is Error error)
+            {
+                return error.ToResult();
+            }
+            
             return Result.Failure(e.Message);
         }
         catch (Exception e)
@@ -111,6 +126,13 @@ public class ResultExecutor<TLogger>
         catch (Exception e) when (e is ArgumentNullException or ArgumentException or AggregateException)
         {
             _logger.LogError("{error}", e.Message);
+            
+            // Extract Error from exception Data if present (preserves UserMessage)
+            if (e.Data.Contains("Error") && e.Data["Error"] is Error error)
+            {
+                return error.ToResult<TResult>();
+            }
+            
             return Result.Failure<TResult>(e.Message);
         }
         catch (Exception e)
@@ -130,6 +152,13 @@ public class ResultExecutor<TLogger>
         catch (Exception e) when (e is ArgumentNullException or ArgumentException or AggregateException)
         {
             _logger.LogError("{error}", e.Message);
+            
+            // Extract Error from exception Data if present (preserves UserMessage)
+            if (e.Data.Contains("Error") && e.Data["Error"] is Error error)
+            {
+                return error.ToResult();
+            }
+            
             return Result.Failure(e.Message);
         }
         catch (Exception e)

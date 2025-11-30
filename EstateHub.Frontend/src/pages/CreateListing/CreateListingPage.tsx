@@ -7,7 +7,8 @@ import {
   type PropertyType,
   type ListingCondition,
 } from '../../entities/listing';
-import { Button, Input } from '../../shared';
+import { Button, Input, RichTextEditor } from '../../shared';
+import { PhotoManager } from '../../features/listings/photos/ui/PhotoManager';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Icon } from 'leaflet';
@@ -44,6 +45,7 @@ function LocationPicker({
 export const CreateListingPage = () => {
   const navigate = useNavigate();
   const { createListing, loading, error } = useCreateListing();
+  const [createdListingId, setCreatedListingId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<Partial<CreateListingInput>>({
     category: 'SALE',
@@ -128,8 +130,8 @@ export const CreateListingPage = () => {
         };
 
         const listingId = await createListing(input);
-        // Redirect to edit page where user can add photos
-        navigate(`/listings/${listingId}/edit`);
+        // Set created listing ID to show photo manager
+        setCreatedListingId(listingId);
       } catch (err) {
         // Error is handled by the mutation hook
         // Set a user-friendly error message
@@ -252,15 +254,14 @@ export const CreateListingPage = () => {
 
           <div className="create-listing-page__field">
             <label htmlFor="description">Description *</label>
-            <textarea
+            <RichTextEditor
               id="description"
               value={formData.description || ''}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-              placeholder="Describe your property..."
+              onChange={(value) => handleInputChange('description', value)}
+              placeholder="Describe your property... You can use formatting like bold, italic, paragraphs, and lists."
               rows={6}
-              className={errors.description ? 'error' : ''}
+              error={errors.description}
             />
-            {errors.description && <span className="error-message">{errors.description}</span>}
           </div>
 
           <div className="create-listing-page__field">
@@ -486,23 +487,58 @@ export const CreateListingPage = () => {
           </div>
         </div>
 
+        {createdListingId && (
+          <div className="create-listing-page__section">
+            <h2>Photos</h2>
+            <PhotoManager listingId={createdListingId} />
+          </div>
+        )}
+
         <div className="create-listing-page__actions">
-          <Button
-            type="submit"
-            variant="primary"
-            disabled={loading}
-            isLoading={loading}
-          >
-            {loading ? 'Creating...' : 'Create Listing'}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => navigate('/dashboard')}
-            disabled={loading}
-          >
-            Cancel
-          </Button>
+          {!createdListingId ? (
+            <>
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={loading}
+                isLoading={loading}
+              >
+                {loading ? 'Creating...' : 'Create Listing'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate('/dashboard')}
+                disabled={loading}
+              >
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                type="button"
+                variant="primary"
+                onClick={() => navigate(`/listings/${createdListingId}/edit`)}
+              >
+                Continue Editing
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate(`/listings/${createdListingId}`)}
+              >
+                View Listing
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate('/dashboard')}
+              >
+                Back to Dashboard
+              </Button>
+            </>
+          )}
         </div>
       </form>
     </div>

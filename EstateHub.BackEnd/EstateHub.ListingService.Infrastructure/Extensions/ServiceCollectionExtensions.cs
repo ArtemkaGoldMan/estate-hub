@@ -23,6 +23,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ILikedListingRepository, LikedListingRepository>();
         services.AddScoped<IPhotoRepository, PhotoRepository>();
         services.AddScoped<IReportRepository, ReportRepository>();
+        
+        // Add UnitOfWork
+        services.AddScoped<EstateHub.SharedKernel.Execution.IUnitOfWork, ListingUnitOfWork>();
 
         // Add Infrastructure Services
         services.AddScoped<ICurrentUserService, CurrentUserService>();

@@ -1,5 +1,4 @@
 import { gql, useMutation } from '@apollo/client';
-import { GET_LISTING } from './get-listing';
 import { GET_MY_LISTINGS } from './get-my-listings';
 import { GET_LISTINGS } from './get-listings';
 
@@ -16,7 +15,7 @@ type ChangeStatusData = {
 type ChangeStatusVariables = {
   id: string;
   input: {
-    newStatus: 'Draft' | 'Published' | 'Archived';
+    newStatus: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
   };
 };
 
@@ -25,11 +24,11 @@ export const useChangeListingStatus = () => {
     ChangeStatusData,
     ChangeStatusVariables
   >(CHANGE_STATUS, {
-    refetchQueries: [GET_LISTING, GET_MY_LISTINGS, GET_LISTINGS],
+    refetchQueries: [GET_MY_LISTINGS, GET_LISTINGS],
     awaitRefetchQueries: false,
   });
 
-  const changeStatus = async (id: string, newStatus: 'Draft' | 'Published' | 'Archived'): Promise<void> => {
+  const changeStatus = async (id: string, newStatus: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'): Promise<void> => {
     const result = await mutate({
       variables: { 
         id, 
@@ -43,15 +42,15 @@ export const useChangeListingStatus = () => {
   };
 
   const publishListing = async (id: string): Promise<void> => {
-    await changeStatus(id, 'Published');
+    await changeStatus(id, 'PUBLISHED');
   };
 
   const unpublishListing = async (id: string): Promise<void> => {
-    await changeStatus(id, 'Draft');
+    await changeStatus(id, 'DRAFT');
   };
 
   const archiveListing = async (id: string): Promise<void> => {
-    await changeStatus(id, 'Archived');
+    await changeStatus(id, 'ARCHIVED');
   };
 
   return {

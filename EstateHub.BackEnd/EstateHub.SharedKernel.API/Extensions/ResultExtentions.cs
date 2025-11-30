@@ -22,20 +22,23 @@ public static class ResultExtensions
             ? status
             : StatusCodes.Status400BadRequest;
 
+        var extensions = new Dictionary<string, object?>
+        {
+            {
+                "error", new
+                {
+                    error.Code,
+                    error.Description,
+                }
+            },
+            { "userMessage", error.GetUserMessage() }
+        };
+
         return Results.Problem(
             statusCode: statusCode,
             title: GetTitleForStatusCode(statusCode),
             type: error.Type,
-            extensions: new Dictionary<string, object?>
-            {
-                {
-                    "error", new
-                    {
-                        error.Code,
-                        error.Description,
-                    }
-                },
-            });
+            extensions: extensions);
     }
 
     private static bool IsValidHttpStatusCode(int statusCode)

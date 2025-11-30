@@ -2,6 +2,8 @@
 using EstateHub.Authorization.Domain.Errors;
 using EstateHub.Authorization.Domain.Interfaces.ApplicationInterfaces;
 using EstateHub.Authorization.Domain.Interfaces.DataAccessInterfaces;
+using EstateHub.Authorization.Core.Helpers;
+using EstateHub.SharedKernel.Helpers;
 using Microsoft.Extensions.Logging;
 
 namespace EstateHub.Authorization.Core.Services;
@@ -9,30 +11,38 @@ namespace EstateHub.Authorization.Core.Services;
 public class SessionsService : ISessionsService
 {
     private readonly ISessionsRepository _sessionsRepository;
-    private readonly ILogger<UsersService> _logger;
+    private readonly ILogger<SessionsService> _logger;
+    private readonly ResultExecutor<SessionsService> _resultExecutor;
 
-    public SessionsService(ISessionsRepository sessionsRepository, ILogger<UsersService> logger)
+    public SessionsService(
+        ISessionsRepository sessionsRepository,
+        IUnitOfWork unitOfWork,
+        ILogger<SessionsService> logger)
     {
         _sessionsRepository = sessionsRepository;
         _logger = logger;
+        _resultExecutor = new ResultExecutor<SessionsService>(_logger, unitOfWork);
     }
 
-    public async Task<Result<TProjectTo>> GetByIdAsync<TProjectTo>(Guid id)
+    public Task<Result<TProjectTo>> GetByIdAsync<TProjectTo>(Guid id)
         where TProjectTo : class
     {
-        if (id == Guid.Empty)
+        return _resultExecutor.ExecuteAsync(async () =>
         {
-            _logger.LogWarning(SessionErrors.NotFound(id).ToString());
-            return Result.Failure<TProjectTo>(SessionErrors.NotFound(id).ToString());
-        }
+            if (id == Guid.Empty)
+            {
+                _logger.LogWarning(SessionErrors.NotFound(id).ToString());
+                ErrorHelper.ThrowError(SessionErrors.NotFound(id));
+            }
 
-        var session = await _sessionsRepository.GetByIdAsync<TProjectTo>(id);
-        if (session == null)
-        {
-            _logger.LogWarning(SessionErrors.NotFound(id).ToString());
-            return Result.Failure<TProjectTo>(SessionErrors.NotFound(id).ToString());
-        }
+            var session = await _sessionsRepository.GetByIdAsync<TProjectTo>(id);
+            if (session == null)
+            {
+                _logger.LogWarning(SessionErrors.NotFound(id).ToString());
+                ErrorHelper.ThrowErrorNull(SessionErrors.NotFound(id));
+            }
 
-        return Result.Success(session);
+            return session;
+        });
     }
 }

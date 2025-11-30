@@ -4,7 +4,10 @@ using EstateHub.ListingService.Domain.Enums;
 using EstateHub.ListingService.Domain.Models;
 using EstateHub.ListingService.Domain.Errors;
 using EstateHub.ListingService.Core.Mappers;
+using EstateHub.SharedKernel;
 using EstateHub.SharedKernel.API.Authorization;
+using EstateHub.SharedKernel.Execution;
+using EstateHub.SharedKernel.Helpers;
 using FluentValidation;
 using Microsoft.Extensions.Logging;
 
@@ -20,6 +23,7 @@ public class ListingService : IListingService
     private readonly IValidator<ChangeStatusInput> _statusValidator;
     private readonly ListingDtoMapper _dtoMapper;
     private readonly ILogger<ListingService> _logger;
+    private readonly ResultExecutor<ListingService> _resultExecutor;
 
     public ListingService(
         IListingRepository listingRepository,
@@ -29,7 +33,8 @@ public class ListingService : IListingService
         IValidator<UpdateListingInput> updateValidator,
         IValidator<ChangeStatusInput> statusValidator,
         ListingDtoMapper dtoMapper,
-        ILogger<ListingService> logger)
+        ILogger<ListingService> logger,
+        IUnitOfWork unitOfWork)
     {
         _listingRepository = listingRepository;
         _likedListingRepository = likedListingRepository;
@@ -39,6 +44,7 @@ public class ListingService : IListingService
         _statusValidator = statusValidator;
         _dtoMapper = dtoMapper;
         _logger = logger;
+        _resultExecutor = new ResultExecutor<ListingService>(logger, unitOfWork);
     }
 
     public async Task<PagedResult<ListingDto>> GetAllAsync(ListingFilter? filter, int page, int pageSize)
@@ -174,16 +180,11 @@ public class ListingService : IListingService
             pageSize = Math.Min(pageSize, 50);
             page = Math.Max(page, 1);
 
-            var listings = await _listingRepository.GetWithinBoundsAsync(bounds.LatMin, bounds.LatMax, bounds.LonMin, bounds.LonMax, filter);
-            var total = listings.Count();
-
-            var pagedListings = listings
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
+            var listings = await _listingRepository.GetWithinBoundsAsync(bounds.LatMin, bounds.LatMax, bounds.LonMin, bounds.LonMax, page, pageSize, filter);
+            var total = await _listingRepository.GetWithinBoundsCountAsync(bounds.LatMin, bounds.LatMax, bounds.LonMin, bounds.LonMax, filter);
 
             var currentUserId = GetCurrentUserIdIfAuthenticated();
-            var dtos = await _dtoMapper.MapToDtosAsync(pagedListings, currentUserId);
+            var dtos = await _dtoMapper.MapToDtosAsync(listings, currentUserId);
             
             _logger.LogDebug("Retrieved {Count} listings within bounds (Total: {Total})", dtos.Count(), total);
             return new PagedResult<ListingDto>(dtos, total, page, pageSize);
@@ -205,16 +206,11 @@ public class ListingService : IListingService
             pageSize = Math.Min(pageSize, 50);
             page = Math.Max(page, 1);
 
-            var listings = await _listingRepository.SearchAsync(text, filter);
-            var total = listings.Count();
-
-            var pagedListings = listings
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
+            var listings = await _listingRepository.SearchAsync(text, page, pageSize, filter);
+            var total = await _listingRepository.SearchCountAsync(text, filter);
 
             var currentUserId = GetCurrentUserIdIfAuthenticated();
-            var dtos = await _dtoMapper.MapToDtosAsync(pagedListings, currentUserId);
+            var dtos = await _dtoMapper.MapToDtosAsync(listings, currentUserId);
             
             _logger.LogDebug("Found {Count} listings matching search (Total: {Total})", dtos.Count(), total);
             return new PagedResult<ListingDto>(dtos, total, page, pageSize);
@@ -231,31 +227,37 @@ public class ListingService : IListingService
         var currentUserId = _currentUserService.GetUserId();
         _logger.LogInformation("Creating listing - User: {UserId}, Title: {Title}", currentUserId, input.Title);
 
-        try
+        var result = await _resultExecutor.ExecuteWithTransactionAsync(async () =>
         {
             // Validate input
             var validationResult = await _createValidator.ValidateAsync(input);
             if (!validationResult.IsValid)
             {
-                var errorMessage = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
+                var errorMessage = string.Join(" ", validationResult.Errors.Select(e => e.ErrorMessage));
                 _logger.LogWarning("Validation failed for listing creation - User: {UserId}, Errors: {Errors}", 
                     currentUserId, errorMessage);
-                throw new ArgumentException(errorMessage)
-                {
-                    Data = { ["ErrorCode"] = ListingServiceErrors.ValidationFailed(errorMessage).Code }
-                };
+                var error = ListingServiceErrors.ValidationFailed(errorMessage).WithUserMessage(errorMessage);
+                ErrorHelper.ThrowError(error);
             }
+
+            // Sanitize HTML content to prevent XSS attacks
+            var sanitizedTitle = EstateHub.SharedKernel.Helpers.HtmlSanitizerHelper.Sanitize(input.Title);
+            var sanitizedDescription = EstateHub.SharedKernel.Helpers.HtmlSanitizerHelper.SanitizeRichText(input.Description);
+            var sanitizedAddressLine = EstateHub.SharedKernel.Helpers.HtmlSanitizerHelper.Sanitize(input.AddressLine);
+            var sanitizedDistrict = EstateHub.SharedKernel.Helpers.HtmlSanitizerHelper.Sanitize(input.District);
+            var sanitizedCity = EstateHub.SharedKernel.Helpers.HtmlSanitizerHelper.Sanitize(input.City);
+            var sanitizedPostalCode = EstateHub.SharedKernel.Helpers.HtmlSanitizerHelper.Sanitize(input.PostalCode);
 
             var listing = new Listing(
                 currentUserId,
                 input.Category,
                 input.PropertyType,
-                input.Title,
-                input.Description,
-                input.AddressLine,
-                input.District,
-                input.City,
-                input.PostalCode,
+                sanitizedTitle,
+                sanitizedDescription,
+                sanitizedAddressLine,
+                sanitizedDistrict,
+                sanitizedCity,
+                sanitizedPostalCode,
                 input.Latitude,
                 input.Longitude,
                 input.SquareMeters,
@@ -277,12 +279,15 @@ public class ListingService : IListingService
             _logger.LogInformation("Listing created successfully - ID: {ListingId}, User: {UserId}", 
                 listing.Id, currentUserId);
             return listing.Id;
-        }
-        catch (Exception ex) when (!(ex is ArgumentException))
+        });
+
+        if (result.IsFailure)
         {
-            _logger.LogError(ex, "Error creating listing - User: {UserId}", currentUserId);
-            throw;
+            var error = result.GetErrorObject();
+            ErrorHelper.ThrowError(error);
         }
+
+        return result.Value;
     }
 
     public async Task UpdateAsync(Guid id, UpdateListingInput input)
@@ -290,19 +295,17 @@ public class ListingService : IListingService
         var currentUserId = _currentUserService.GetUserId();
         _logger.LogInformation("Updating listing - ID: {ListingId}, User: {UserId}", id, currentUserId);
 
-        try
+        var result = await _resultExecutor.ExecuteWithTransactionAsync(async () =>
         {
             // Validate input
             var validationResult = await _updateValidator.ValidateAsync(input);
             if (!validationResult.IsValid)
             {
-                var errorMessage = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
+                var errorMessage = string.Join(" ", validationResult.Errors.Select(e => e.ErrorMessage));
                 _logger.LogWarning("Validation failed for listing update - ID: {ListingId}, User: {UserId}, Errors: {Errors}", 
                     id, currentUserId, errorMessage);
-                throw new ArgumentException(errorMessage)
-                {
-                    Data = { ["ErrorCode"] = ListingServiceErrors.ValidationFailed(errorMessage).Code }
-                };
+                var error = ListingServiceErrors.ValidationFailed(errorMessage).WithUserMessage(errorMessage);
+                ErrorHelper.ThrowError(error);
             }
 
             var listing = await _listingRepository.GetByIdAsync(id);
@@ -310,33 +313,47 @@ public class ListingService : IListingService
             if (listing == null)
             {
                 _logger.LogWarning("Listing not found for update - ID: {ListingId}, User: {UserId}", id, currentUserId);
-                throw new KeyNotFoundException($"Listing with ID {id} not found")
-                {
-                    Data = { ["ErrorCode"] = ListingServiceErrors.ListingNotFound(id).Code }
-                };
+                ErrorHelper.ThrowError(ListingServiceErrors.ListingNotFound(id));
             }
 
             if (listing.OwnerId != currentUserId)
             {
                 _logger.LogWarning("Unauthorized update attempt - Listing: {ListingId}, Owner: {OwnerId}, User: {UserId}", 
                     id, listing.OwnerId, currentUserId);
-                throw new InvalidOperationException("Forbidden: You can only update your own listings")
-                {
-                    Data = { ["ErrorCode"] = ListingServiceErrors.NotOwner().Code }
-                };
+                ErrorHelper.ThrowErrorOperation(ListingServiceErrors.NotOwner());
             }
+
+            // Sanitize HTML content if provided
+            var sanitizedTitle = input.Title != null 
+                ? EstateHub.SharedKernel.Helpers.HtmlSanitizerHelper.Sanitize(input.Title) 
+                : listing.Title;
+            var sanitizedDescription = input.Description != null 
+                ? EstateHub.SharedKernel.Helpers.HtmlSanitizerHelper.SanitizeRichText(input.Description) 
+                : listing.Description;
+            var sanitizedAddressLine = input.AddressLine != null 
+                ? EstateHub.SharedKernel.Helpers.HtmlSanitizerHelper.Sanitize(input.AddressLine) 
+                : listing.AddressLine;
+            var sanitizedDistrict = input.District != null 
+                ? EstateHub.SharedKernel.Helpers.HtmlSanitizerHelper.Sanitize(input.District) 
+                : listing.District;
+            var sanitizedCity = input.City != null 
+                ? EstateHub.SharedKernel.Helpers.HtmlSanitizerHelper.Sanitize(input.City) 
+                : listing.City;
+            var sanitizedPostalCode = input.PostalCode != null 
+                ? EstateHub.SharedKernel.Helpers.HtmlSanitizerHelper.Sanitize(input.PostalCode) 
+                : listing.PostalCode;
 
             // Create updated listing using 'with' expression
             var updatedListing = listing
                 .UpdateBasicInfo(
-                    input.Title ?? listing.Title,
-                    input.Description ?? listing.Description
+                    sanitizedTitle,
+                    sanitizedDescription
                 )
                 .UpdateLocation(
-                    input.AddressLine ?? listing.AddressLine,
-                    input.District ?? listing.District,
-                    input.City ?? listing.City,
-                    input.PostalCode ?? listing.PostalCode,
+                    sanitizedAddressLine,
+                    sanitizedDistrict,
+                    sanitizedCity,
+                    sanitizedPostalCode,
                     input.Latitude ?? listing.Latitude,
                     input.Longitude ?? listing.Longitude
                 )
@@ -362,11 +379,12 @@ public class ListingService : IListingService
 
             await _listingRepository.UpdateAsync(updatedListing);
             _logger.LogInformation("Listing updated successfully - ID: {ListingId}, User: {UserId}", id, currentUserId);
-        }
-        catch (Exception ex) when (!(ex is ArgumentException || ex is KeyNotFoundException || ex is InvalidOperationException))
+        });
+
+        if (result.IsFailure)
         {
-            _logger.LogError(ex, "Error updating listing - ID: {ListingId}, User: {UserId}", id, currentUserId);
-            throw;
+            var error = result.GetErrorObject();
+            ErrorHelper.ThrowError(error);
         }
     }
 
@@ -375,36 +393,31 @@ public class ListingService : IListingService
         var currentUserId = _currentUserService.GetUserId();
         _logger.LogInformation("Deleting listing - ID: {ListingId}, User: {UserId}", id, currentUserId);
 
-        try
+        var result = await _resultExecutor.ExecuteWithTransactionAsync(async () =>
         {
             var listing = await _listingRepository.GetByIdAsync(id);
 
             if (listing == null)
             {
                 _logger.LogWarning("Listing not found for deletion - ID: {ListingId}, User: {UserId}", id, currentUserId);
-                throw new KeyNotFoundException($"Listing with ID {id} not found")
-                {
-                    Data = { ["ErrorCode"] = ListingServiceErrors.ListingNotFound(id).Code }
-                };
+                ErrorHelper.ThrowError(ListingServiceErrors.ListingNotFound(id));
             }
 
             if (listing.OwnerId != currentUserId)
             {
                 _logger.LogWarning("Unauthorized deletion attempt - Listing: {ListingId}, Owner: {OwnerId}, User: {UserId}", 
                     id, listing.OwnerId, currentUserId);
-                throw new InvalidOperationException("Forbidden: You can only delete your own listings")
-                {
-                    Data = { ["ErrorCode"] = ListingServiceErrors.NotOwner().Code }
-                };
+                ErrorHelper.ThrowErrorOperation(ListingServiceErrors.NotOwner());
             }
 
             await _listingRepository.DeleteAsync(id);
             _logger.LogInformation("Listing deleted successfully - ID: {ListingId}, User: {UserId}", id, currentUserId);
-        }
-        catch (Exception ex) when (!(ex is KeyNotFoundException || ex is InvalidOperationException))
+        });
+
+        if (result.IsFailure)
         {
-            _logger.LogError(ex, "Error deleting listing - ID: {ListingId}, User: {UserId}", id, currentUserId);
-            throw;
+            var error = result.GetErrorObject();
+            ErrorHelper.ThrowError(error);
         }
     }
 
@@ -414,27 +427,21 @@ public class ListingService : IListingService
         _logger.LogInformation("Changing listing status - ID: {ListingId}, NewStatus: {NewStatus}, User: {UserId}", 
             id, newStatus, currentUserId);
 
-        try
+        var result = await _resultExecutor.ExecuteWithTransactionAsync(async () =>
         {
             var listing = await _listingRepository.GetByIdAsync(id);
 
             if (listing == null)
             {
                 _logger.LogWarning("Listing not found for status change - ID: {ListingId}, User: {UserId}", id, currentUserId);
-                throw new KeyNotFoundException($"Listing with ID {id} not found")
-                {
-                    Data = { ["ErrorCode"] = ListingServiceErrors.ListingNotFound(id).Code }
-                };
+                ErrorHelper.ThrowError(ListingServiceErrors.ListingNotFound(id));
             }
 
             if (listing.OwnerId != currentUserId)
             {
                 _logger.LogWarning("Unauthorized status change attempt - Listing: {ListingId}, Owner: {OwnerId}, User: {UserId}", 
                     id, listing.OwnerId, currentUserId);
-                throw new InvalidOperationException("Forbidden: You can only change status of your own listings")
-                {
-                    Data = { ["ErrorCode"] = ListingServiceErrors.NotOwner().Code }
-                };
+                ErrorHelper.ThrowErrorOperation(ListingServiceErrors.NotOwner());
             }
 
             // Validate status transition
@@ -442,24 +449,22 @@ public class ListingService : IListingService
             var validationResult = await _statusValidator.ValidateAsync(input);
             if (!validationResult.IsValid)
             {
-                var errorMessage = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
+                var errorMessage = string.Join(" ", validationResult.Errors.Select(e => e.ErrorMessage));
                 _logger.LogWarning("Invalid status transition - Listing: {ListingId}, Status: {CurrentStatus} -> {NewStatus}, User: {UserId}, Error: {Error}", 
                     id, listing.Status, newStatus, currentUserId, errorMessage);
-                throw new ArgumentException(errorMessage)
-                {
-                    Data = { ["ErrorCode"] = ListingServiceErrors.InvalidStatusTransition().Code }
-                };
+                var error = ListingServiceErrors.InvalidStatusTransition().WithUserMessage(errorMessage);
+                ErrorHelper.ThrowError(error);
             }
 
             await _listingRepository.UpdateStatusAsync(id, newStatus);
             _logger.LogInformation("Listing status changed successfully - ID: {ListingId}, Status: {NewStatus}, User: {UserId}", 
                 id, newStatus, currentUserId);
-        }
-        catch (Exception ex) when (!(ex is ArgumentException || ex is KeyNotFoundException || ex is InvalidOperationException))
+        });
+
+        if (result.IsFailure)
         {
-            _logger.LogError(ex, "Error changing listing status - ID: {ListingId}, Status: {NewStatus}, User: {UserId}", 
-                id, newStatus, currentUserId);
-            throw;
+            var error = result.GetErrorObject();
+            ErrorHelper.ThrowError(error);
         }
     }
 
@@ -511,7 +516,6 @@ public class ListingService : IListingService
 
     private async Task<int> GetTotalCountAsync(ListingFilter? filter)
     {
-        var allListings = await _listingRepository.GetAllAsync(1, int.MaxValue, filter);
-        return allListings.Count();
+        return await _listingRepository.GetTotalCountAsync(filter);
     }
 }

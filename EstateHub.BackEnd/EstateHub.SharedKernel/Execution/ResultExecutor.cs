@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CSharpFunctionalExtensions;
+using EstateHub.SharedKernel;
 using Microsoft.Extensions.Logging;
 
 namespace EstateHub.SharedKernel.Execution
@@ -47,6 +48,13 @@ namespace EstateHub.SharedKernel.Execution
                 }
 
                 _logger.LogError("{error}", e.Message);
+                
+                // Extract Error from exception Data if present (preserves UserMessage)
+                if (e.Data.Contains("Error") && e.Data["Error"] is Error error)
+                {
+                    return error.ToResult<TResult>();
+                }
+                
                 return Result.Failure<TResult>(e.Message);
             }
             catch (Exception e)
@@ -90,6 +98,13 @@ namespace EstateHub.SharedKernel.Execution
                 }
 
                 _logger.LogError("{error}", e.Message);
+                
+                // Extract Error from exception Data if present (preserves UserMessage)
+                if (e.Data.Contains("Error") && e.Data["Error"] is Error error)
+                {
+                    return error.ToResult();
+                }
+                
                 return Result.Failure(e.Message);
             }
             catch (Exception e)
@@ -112,11 +127,18 @@ namespace EstateHub.SharedKernel.Execution
                 var result = await operation();
                 return Result.Success(result);
             }
-            catch (Exception e) when (e is ArgumentNullException or ArgumentException or AggregateException)
+        catch (Exception e) when (e is ArgumentNullException or ArgumentException or AggregateException)
+        {
+            _logger.LogError("{error}", e.Message);
+            
+            // Extract Error from exception Data if present (preserves UserMessage)
+            if (e.Data.Contains("Error") && e.Data["Error"] is Error error)
             {
-                _logger.LogError("{error}", e.Message);
-                return Result.Failure<TResult>(e.Message);
+                return error.ToResult<TResult>();
             }
+            
+            return Result.Failure<TResult>(e.Message);
+        }
             catch (Exception e)
             {
                 _logger.LogError("{error}", e.Message);
@@ -131,11 +153,18 @@ namespace EstateHub.SharedKernel.Execution
                 await operation();
                 return Result.Success();
             }
-            catch (Exception e) when (e is ArgumentNullException or ArgumentException or AggregateException)
+        catch (Exception e) when (e is ArgumentNullException or ArgumentException or AggregateException)
+        {
+            _logger.LogError("{error}", e.Message);
+            
+            // Extract Error from exception Data if present (preserves UserMessage)
+            if (e.Data.Contains("Error") && e.Data["Error"] is Error error)
             {
-                _logger.LogError("{error}", e.Message);
-                return Result.Failure(e.Message);
+                return error.ToResult();
             }
+            
+            return Result.Failure(e.Message);
+        }
             catch (Exception e)
             {
                 _logger.LogError("{error}", e.Message);

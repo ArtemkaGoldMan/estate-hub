@@ -11,6 +11,8 @@ using EstateHub.Authorization.Domain.Interfaces.InfrastructureInterfaces;
 using EstateHub.Authorization.Domain.Models;
 using EstateHub.Authorization.Domain.Options;
 using EstateHub.Authorization.Core.Helpers;
+using EstateHub.SharedKernel;
+using EstateHub.SharedKernel.Helpers;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -57,13 +59,13 @@ public class AuthenticationService : IAuthenticationService
                 if (userResult is null)
                 {
                     _logger.LogError("{error}", UserErrors.NotFoundByEmail(request.Email).ToString());
-                    throw new ArgumentNullException(AuthorizationErrors.IncorrectPasswordOrUsername().ToString());
+                    ErrorHelper.ThrowErrorNull(AuthorizationErrors.IncorrectPasswordOrUsername());
                 }
 
                 if (userResult.IsDeleted)
                 {
                     _logger.LogWarning("{error}", UserErrors.UserIsDeleted(userResult.Email).ToString());
-                    throw new ArgumentException(UserErrors.UserIsDeleted(userResult.Email).ToString());
+                    ErrorHelper.ThrowError(UserErrors.UserIsDeleted(userResult.Email));
                 }
 
                 await _identityService.CheckPasswordAsync(userResult.Id, request.Password);
@@ -82,11 +84,11 @@ public class AuthenticationService : IAuthenticationService
                 if (user.IsDeleted)
                 {
                     _logger.LogError("{error}", UserErrors.UserIsDeleted(request.Email).ToString());
-                    throw new ArgumentException(UserErrors.UserIsDeleted(request.Email).ToString());
+                    ErrorHelper.ThrowError(UserErrors.UserIsDeleted(request.Email));
                 }
 
                 _logger.LogError("{error}", UserErrors.EmailNotUnique().ToString());
-                throw new ArgumentException(UserErrors.EmailNotUnique().ToString());
+                ErrorHelper.ThrowError(UserErrors.EmailNotUnique());
             }
 
             var userValidationResult = User.Create(request.Email, string.Empty, string.Empty, request.Password);
@@ -94,7 +96,15 @@ public class AuthenticationService : IAuthenticationService
             if (userValidationResult.IsFailure)
             {
                 _logger.LogError("{error}", userValidationResult.Error);
-                throw new ArgumentException(userValidationResult.Error);
+                // Parse error from Result string format
+                var errorParts = userValidationResult.Error.Split(TextDelimiters.Separator);
+                if (errorParts.Length >= 4)
+                {
+                    var error = new Error(errorParts[0], errorParts[1], errorParts[2], errorParts[3],
+                        errorParts.Length > 4 ? errorParts[4] : null);
+                    ErrorHelper.ThrowError(error);
+                }
+                ErrorHelper.ThrowError(UserErrors.InvalidPassword());
             }
 
             var result = await _identityService.RegisterAsync(userValidationResult.Value);
@@ -106,7 +116,10 @@ public class AuthenticationService : IAuthenticationService
                     beginTransaction: false);
 
                 if (loginResult.IsFailure)
-                    throw new ArgumentException(loginResult.Error);
+                {
+                    var error = loginResult.GetErrorObject();
+                    ErrorHelper.ThrowError(error);
+                }
 
                 return loginResult.Value;
             }
@@ -114,7 +127,7 @@ public class AuthenticationService : IAuthenticationService
             if (string.IsNullOrWhiteSpace(request.CallbackUrl))
             {
                 _logger.LogError("{error}", AuthorizationErrors.CallbackIsNull().ToString());
-                throw new ArgumentNullException(AuthorizationErrors.CallbackIsNull().ToString());
+                ErrorHelper.ThrowErrorNull(AuthorizationErrors.CallbackIsNull());
             }
 
             var sendResult = await _emailSmtpService
@@ -123,7 +136,8 @@ public class AuthenticationService : IAuthenticationService
 
             if (sendResult.IsFailure)
             {
-                throw new Exception(sendResult.Error);
+                var error = sendResult.GetErrorObject();
+                ErrorHelper.ThrowErrorOperation(error);
             }
 
             return null;
@@ -139,9 +153,8 @@ public class AuthenticationService : IAuthenticationService
 
             if (userResult is null)
             {
-                var error = UserErrors.NotFoundById(request.UserId).ToString();
-                _logger.LogError("{error}", error);
-                throw new ArgumentException(error);
+                _logger.LogError("{error}", UserErrors.NotFoundById(request.UserId).ToString());
+                ErrorHelper.ThrowError(UserErrors.NotFoundById(request.UserId));
             }
 
             await _identityService.ConfirmEmailAsync(request.UserId, request.Token);
@@ -157,9 +170,11 @@ public class AuthenticationService : IAuthenticationService
 
             if (userResult is null || !userResult.IsDeleted)
             {
-                var error = UserErrors.NotFoundByEmail(userResult.Email).ToString();
-                _logger.LogError("{error}", error);
-                throw new ArgumentNullException(error);
+                var error = userResult != null 
+                    ? UserErrors.NotFoundByEmail(userResult.Email) 
+                    : UserErrors.NotFoundByEmail(request.Email);
+                _logger.LogError("{error}", error.ToString());
+                ErrorHelper.ThrowErrorNull(error);
             }
 
             var token = await _identityService.GenerateAccountActionToken(userResult.Id, request.ActionType);
@@ -170,7 +185,8 @@ public class AuthenticationService : IAuthenticationService
 
             if (emailResult.IsFailure)
             {
-                throw new ArgumentException(emailResult.Error);
+                var error = emailResult.GetErrorObject();
+                ErrorHelper.ThrowError(error);
             }
         });
     }
@@ -184,9 +200,8 @@ public class AuthenticationService : IAuthenticationService
 
             if (userResult is null || !userResult.IsDeleted)
             {
-                var error = UserErrors.NotFoundById(request.UserId).ToString();
-                _logger.LogError("{error}", error);
-                throw new ArgumentNullException(error);
+                _logger.LogError("{error}", UserErrors.NotFoundById(request.UserId).ToString());
+                ErrorHelper.ThrowErrorNull(UserErrors.NotFoundById(request.UserId));
             }
 
             await _identityService.ConfirmAccountAction(request.UserId, request.Token, request.ActionType);
@@ -202,7 +217,7 @@ public class AuthenticationService : IAuthenticationService
             if (userResult is null)
             {
                 _logger.LogError("{error}", UserErrors.NotFoundByEmail(request.Email).ToString());
-                throw new ArgumentNullException(AuthorizationErrors.IncorrectPasswordOrUsername().ToString());
+                ErrorHelper.ThrowErrorNull(AuthorizationErrors.IncorrectPasswordOrUsername());
             }
 
             var token = await _identityService.GeneratePasswordResetTokenAsync(userResult.Id);
@@ -213,7 +228,8 @@ public class AuthenticationService : IAuthenticationService
 
             if (emailResult.IsFailure)
             {
-                throw new ArgumentException(emailResult.Error);
+                var error = emailResult.GetErrorObject();
+                ErrorHelper.ThrowError(error);
             }
         });
     }
@@ -228,7 +244,7 @@ public class AuthenticationService : IAuthenticationService
             if (userResult is null)
             {
                 _logger.LogError("{error}", UserErrors.NotFoundById(request.UserId).ToString());
-                throw new ArgumentNullException(UserErrors.NotFoundById(request.UserId).ToString());
+                ErrorHelper.ThrowErrorNull(UserErrors.NotFoundById(request.UserId));
             }
 
             await _identityService.ResetPasswordAsync(request.UserId, request.Token, request.Password);
@@ -246,7 +262,8 @@ public class AuthenticationService : IAuthenticationService
             if (userInformation.IsFailure)
             {
                 _logger.LogError("{error}", userInformation.Error);
-                throw new ArgumentException(userInformation.Error);
+                var error = userInformation.GetErrorObject();
+                ErrorHelper.ThrowError(error);
             }
 
             var user = await _usersRepository.GetByIdAsync<UserDto>(userInformation.Value.UserId);
@@ -254,7 +271,7 @@ public class AuthenticationService : IAuthenticationService
             if (user is null)
             {
                 _logger.LogError("{error}", UserErrors.NotFoundById(userInformation.Value.UserId).ToString());
-                throw new ArgumentNullException(UserErrors.NotFoundById(userInformation.Value.UserId).ToString());
+                ErrorHelper.ThrowErrorNull(UserErrors.NotFoundById(userInformation.Value.UserId));
             }
 
             var resultGet = await _sessionsRepository.GetByRefreshTokenAsync<SessionDto>(refreshToken);
@@ -263,7 +280,7 @@ public class AuthenticationService : IAuthenticationService
                 _logger.LogError(
                     "{error}",
                     SessionErrors.NotFoundByRefreshToken(refreshToken).ToString());
-                throw new ArgumentException(SessionErrors.NotFoundByRefreshToken(refreshToken).ToString());
+                ErrorHelper.ThrowError(SessionErrors.NotFoundByRefreshToken(refreshToken));
             }
 
             if (resultGet.UserId != userInformation.Value.UserId)
@@ -271,7 +288,7 @@ public class AuthenticationService : IAuthenticationService
                 _logger.LogError(
                     "{error}",
                     AuthorizationErrors.UserIdsNotEquals(resultGet.UserId, userInformation.Value.UserId).ToString());
-                throw new ArgumentException(AuthorizationErrors.NotFoundRefreshToken().ToString());
+                ErrorHelper.ThrowError(AuthorizationErrors.NotFoundRefreshToken());
             }
 
             if (resultGet.Id != userInformation.Value.SessionId)
@@ -279,14 +296,14 @@ public class AuthenticationService : IAuthenticationService
                 _logger.LogError(
                     "{error}",
                     AuthorizationErrors.SessionIdsNotEquals(resultGet.Id, userInformation.Value.SessionId).ToString());
-                throw new ArgumentException(AuthorizationErrors.NotFoundRefreshToken().ToString());
+                ErrorHelper.ThrowError(AuthorizationErrors.NotFoundRefreshToken());
             }
 
             if (resultGet.ExpirationDate < DateTime.UtcNow)
             {
                 var error = AuthorizationErrors.RefreshTokenExpired();
                 _logger.LogError("{error}", error.ToString());
-                throw new ArgumentException(error.ToString());
+                ErrorHelper.ThrowError(error);
             }
 
             var accessToken = JwtHelper.CreateAccessToken(userInformation.Value, _options);
@@ -300,7 +317,8 @@ public class AuthenticationService : IAuthenticationService
             if (session.IsFailure)
             {
                 _logger.LogError("{error}", session.Error);
-                throw new ArgumentException(session.Error);
+                var error = session.GetErrorObject();
+                ErrorHelper.ThrowError(error);
             }
 
             await _sessionsRepository.UpdateAsync(session.Value with { Id = resultGet.Id });
@@ -326,7 +344,7 @@ public class AuthenticationService : IAuthenticationService
             {
                 var error = SessionErrors.NotFoundByRefreshToken(refreshToken);
                 _logger.LogError("{error}", error.ToString());
-                throw new ArgumentNullException(error.ToString());
+                ErrorHelper.ThrowErrorNull(error);
             }
 
             var result = await _sessionsRepository.DeleteAsync(refreshToken);
@@ -334,7 +352,7 @@ public class AuthenticationService : IAuthenticationService
             {
                 var error = AuthorizationErrors.LogoutError();
                 _logger.LogError("{error}", error.ToString());
-                throw new ArgumentException(error.ToString());
+                ErrorHelper.ThrowError(error);
             }
         });
     }
@@ -362,7 +380,8 @@ public class AuthenticationService : IAuthenticationService
         if (tokenResult.IsFailure)
         {
             _logger.LogError("{error}", tokenResult.Error);
-            throw new ArgumentException(tokenResult.Error);
+            var error = tokenResult.GetErrorObject();
+            ErrorHelper.ThrowError(error);
         }
 
         await _sessionsRepository.CreateAsync<SessionDto>(tokenResult.Value with { Id = sessionId });

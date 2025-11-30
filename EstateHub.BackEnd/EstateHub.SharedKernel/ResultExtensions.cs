@@ -22,11 +22,15 @@ public static class ResultExtensions
         if (parts.Length < 4)
             return Error.None;
 
+        // Parse UserMessage if present (5th part)
+        string? userMessage = parts.Length > 4 ? parts[4] : null;
+
         return new Error(
             parts[0],
             parts[1],
             parts[2],
-            parts[3]);
+            parts[3],
+            userMessage);
     }
 
     public static Result<T> Failure<T>(Error error) => Result.Failure<T>(error.ToString());

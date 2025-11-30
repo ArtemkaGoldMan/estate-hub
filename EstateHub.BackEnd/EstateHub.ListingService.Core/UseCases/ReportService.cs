@@ -4,7 +4,10 @@ using EstateHub.ListingService.Domain.Models;
 using EstateHub.ListingService.Domain.Enums;
 using EstateHub.ListingService.Domain.Errors;
 using EstateHub.ListingService.Core.Mappers;
+using EstateHub.SharedKernel;
 using EstateHub.SharedKernel.API.Authorization;
+using EstateHub.SharedKernel.Execution;
+using EstateHub.SharedKernel.Helpers;
 using FluentValidation;
 using Microsoft.Extensions.Logging;
 
@@ -18,6 +21,7 @@ public class ReportService : IReportService
     private readonly IValidator<CreateReportInput> _createValidator;
     private readonly ReportDtoMapper _dtoMapper;
     private readonly ILogger<ReportService> _logger;
+    private readonly ResultExecutor<ReportService> _resultExecutor;
 
     public ReportService(
         IReportRepository reportRepository,
@@ -25,7 +29,8 @@ public class ReportService : IReportService
         ICurrentUserService currentUserService,
         IValidator<CreateReportInput> createValidator,
         ReportDtoMapper dtoMapper,
-        ILogger<ReportService> logger)
+        ILogger<ReportService> logger,
+        IUnitOfWork unitOfWork)
     {
         _reportRepository = reportRepository;
         _listingRepository = listingRepository;
@@ -33,6 +38,7 @@ public class ReportService : IReportService
         _createValidator = createValidator;
         _dtoMapper = dtoMapper;
         _logger = logger;
+        _resultExecutor = new ResultExecutor<ReportService>(logger, unitOfWork);
     }
 
     public async Task<PagedResult<ReportDto>> GetAllAsync(ReportFilter? filter, int page, int pageSize)
@@ -94,19 +100,17 @@ public class ReportService : IReportService
         _logger.LogInformation("Creating report - User: {UserId}, Listing: {ListingId}, Reason: {Reason}", 
             currentUserId, input.ListingId, input.Reason);
 
-        try
+        var result = await _resultExecutor.ExecuteWithTransactionAsync(async () =>
         {
             // Validate input
             var validationResult = await _createValidator.ValidateAsync(input);
             if (!validationResult.IsValid)
             {
-                var errorMessage = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
+                var errorMessage = string.Join(" ", validationResult.Errors.Select(e => e.ErrorMessage));
                 _logger.LogWarning("Validation failed for report creation - User: {UserId}, Listing: {ListingId}, Errors: {Errors}", 
                     currentUserId, input.ListingId, errorMessage);
-                throw new ArgumentException(errorMessage)
-                {
-                    Data = { ["ErrorCode"] = ListingServiceErrors.ValidationFailed(errorMessage).Code }
-                };
+                var error = ListingServiceErrors.ValidationFailed(errorMessage).WithUserMessage(errorMessage);
+                ErrorHelper.ThrowError(error);
             }
 
             // Check if listing exists
@@ -115,11 +119,11 @@ public class ReportService : IReportService
             {
                 _logger.LogWarning("Listing not found for report - Listing: {ListingId}, User: {UserId}", 
                     input.ListingId, currentUserId);
-                throw new ArgumentException("Listing not found")
-                {
-                    Data = { ["ErrorCode"] = ListingServiceErrors.ListingNotFound(input.ListingId).Code }
-                };
+                ErrorHelper.ThrowError(ListingServiceErrors.ListingNotFound(input.ListingId));
             }
+
+            // Sanitize HTML content to prevent XSS attacks
+            var sanitizedDescription = EstateHub.SharedKernel.Helpers.HtmlSanitizerHelper.Sanitize(input.Description);
 
             // Check if user already reported this listing
             var existingReports = await _reportRepository.GetByListingIdAsync(input.ListingId);
@@ -127,58 +131,68 @@ public class ReportService : IReportService
             {
                 _logger.LogWarning("User already reported this listing - Listing: {ListingId}, User: {UserId}", 
                     input.ListingId, currentUserId);
-                throw new InvalidOperationException("You have already reported this listing")
-                {
-                    Data = { ["ErrorCode"] = ListingServiceErrors.AlreadyReported().Code }
-                };
+                ErrorHelper.ThrowErrorOperation(ListingServiceErrors.AlreadyReported());
             }
 
             var report = new Report(
                 currentUserId,
                 input.ListingId,
                 input.Reason,
-                input.Description
+                sanitizedDescription
             );
 
             await _reportRepository.AddAsync(report);
             _logger.LogInformation("Report created successfully - ID: {ReportId}, User: {UserId}, Listing: {ListingId}", 
                 report.Id, currentUserId, input.ListingId);
             return report.Id;
-        }
-        catch (Exception ex) when (!(ex is ArgumentException || ex is InvalidOperationException))
+        });
+
+        if (result.IsFailure)
         {
-            _logger.LogError(ex, "Error creating report - User: {UserId}, Listing: {ListingId}", 
-                currentUserId, input.ListingId);
-            throw;
+            var error = result.GetErrorObject();
+            ErrorHelper.ThrowError(error);
         }
+
+        return result.Value;
     }
 
     public async Task ResolveAsync(ResolveReportInput input)
     {
-        var report = await _reportRepository.GetByIdAsync(input.ReportId);
-        if (report == null)
+        var result = await _resultExecutor.ExecuteWithTransactionAsync(async () =>
         {
-            throw new ArgumentException("Report not found");
+            var report = await _reportRepository.GetByIdAsync(input.ReportId);
+            if (report == null)
+            {
+                ErrorHelper.ThrowError(ListingServiceErrors.ReportNotFound(input.ReportId));
+            }
+
+            var currentUserId = _currentUserService.GetUserId();
+            
+            // Assign to current user if not already assigned, then resolve
+            var reportToUpdate = report.ModeratorId == null
+                ? report.AssignToModerator(currentUserId)
+                : report;
+
+            var resolvedReport = reportToUpdate.Resolve(input.Resolution, input.ModeratorNotes);
+            await _reportRepository.UpdateAsync(resolvedReport);
+        });
+
+        if (result.IsFailure)
+        {
+            var error = result.GetErrorObject();
+            ErrorHelper.ThrowError(error);
         }
-
-        var currentUserId = _currentUserService.GetUserId();
-        
-        // Assign to current user if not already assigned, then resolve
-        var reportToUpdate = report.ModeratorId == null
-            ? report.AssignToModerator(currentUserId)
-            : report;
-
-        var resolvedReport = reportToUpdate.Resolve(input.Resolution, input.ModeratorNotes);
-        await _reportRepository.UpdateAsync(resolvedReport);
     }
 
     public async Task DismissAsync(DismissReportInput input)
     {
-        var report = await _reportRepository.GetByIdAsync(input.ReportId);
-        if (report == null)
+        var result = await _resultExecutor.ExecuteWithTransactionAsync(async () =>
         {
-            throw new ArgumentException("Report not found");
-        }
+            var report = await _reportRepository.GetByIdAsync(input.ReportId);
+            if (report == null)
+            {
+                ErrorHelper.ThrowError(ListingServiceErrors.ReportNotFound(input.ReportId));
+            }
 
         var currentUserId = _currentUserService.GetUserId();
         
@@ -187,32 +201,57 @@ public class ReportService : IReportService
             ? report.AssignToModerator(currentUserId)
             : report;
 
-        var dismissedReport = reportToUpdate.Dismiss(input.ModeratorNotes);
-        await _reportRepository.UpdateAsync(dismissedReport);
+            var dismissedReport = reportToUpdate.Dismiss(input.ModeratorNotes);
+            await _reportRepository.UpdateAsync(dismissedReport);
+        });
+
+        if (result.IsFailure)
+        {
+            var error = result.GetErrorObject();
+            ErrorHelper.ThrowError(error);
+        }
     }
 
     public async Task AssignToModeratorAsync(Guid reportId, Guid moderatorId)
     {
-        var report = await _reportRepository.GetByIdAsync(reportId);
-        if (report == null)
+        var result = await _resultExecutor.ExecuteWithTransactionAsync(async () =>
         {
-            throw new ArgumentException("Report not found");
-        }
+            var report = await _reportRepository.GetByIdAsync(reportId);
+            if (report == null)
+            {
+                ErrorHelper.ThrowError(ListingServiceErrors.ReportNotFound(reportId));
+            }
 
-        var assignedReport = report.AssignToModerator(moderatorId);
-        await _reportRepository.UpdateAsync(assignedReport);
+            var assignedReport = report.AssignToModerator(moderatorId);
+            await _reportRepository.UpdateAsync(assignedReport);
+        });
+
+        if (result.IsFailure)
+        {
+            var error = result.GetErrorObject();
+            ErrorHelper.ThrowError(error);
+        }
     }
 
     public async Task CloseAsync(Guid reportId)
     {
-        var report = await _reportRepository.GetByIdAsync(reportId);
-        if (report == null)
+        var result = await _resultExecutor.ExecuteWithTransactionAsync(async () =>
         {
-            throw new ArgumentException("Report not found");
-        }
+            var report = await _reportRepository.GetByIdAsync(reportId);
+            if (report == null)
+            {
+                ErrorHelper.ThrowError(ListingServiceErrors.ReportNotFound(reportId));
+            }
 
-        var closedReport = report.Close();
-        await _reportRepository.UpdateAsync(closedReport);
+            var closedReport = report.Close();
+            await _reportRepository.UpdateAsync(closedReport);
+        });
+
+        if (result.IsFailure)
+        {
+            var error = result.GetErrorObject();
+            ErrorHelper.ThrowError(error);
+        }
     }
 
     public async Task DeleteAsync(Guid id)
@@ -220,16 +259,13 @@ public class ReportService : IReportService
         var currentUserId = _currentUserService.GetUserId();
         _logger.LogInformation("Deleting report - ID: {ReportId}, User: {UserId}", id, currentUserId);
 
-        try
+        var result = await _resultExecutor.ExecuteWithTransactionAsync(async () =>
         {
             var report = await _reportRepository.GetByIdAsync(id);
             if (report == null)
             {
                 _logger.LogWarning("Report not found for deletion - ID: {ReportId}, User: {UserId}", id, currentUserId);
-                throw new ArgumentException("Report not found")
-                {
-                    Data = { ["ErrorCode"] = ListingServiceErrors.ReportNotFound(id).Code }
-                };
+                ErrorHelper.ThrowError(ListingServiceErrors.ReportNotFound(id));
             }
 
             // Only allow deletion of own reports or by admins
@@ -240,20 +276,18 @@ public class ReportService : IReportService
                 {
                     _logger.LogWarning("Unauthorized deletion attempt - Report: {ReportId}, Reporter: {ReporterId}, User: {UserId}", 
                         id, report.ReporterId, currentUserId);
-                    throw new UnauthorizedAccessException("You can only delete your own reports or need admin permissions")
-                    {
-                        Data = { ["ErrorCode"] = ListingServiceErrors.UnauthorizedAccess().Code }
-                    };
+                    ErrorHelper.ThrowErrorOperation(ListingServiceErrors.UnauthorizedAccess());
                 }
             }
 
             await _reportRepository.DeleteAsync(id);
             _logger.LogInformation("Report deleted successfully - ID: {ReportId}, User: {UserId}", id, currentUserId);
-        }
-        catch (Exception ex) when (!(ex is ArgumentException || ex is UnauthorizedAccessException))
+        });
+
+        if (result.IsFailure)
         {
-            _logger.LogError(ex, "Error deleting report - ID: {ReportId}, User: {UserId}", id, currentUserId);
-            throw;
+            var error = result.GetErrorObject();
+            ErrorHelper.ThrowError(error);
         }
     }
 }

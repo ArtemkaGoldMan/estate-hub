@@ -2,6 +2,7 @@ import { ApolloLink, Observable } from '@apollo/client';
 import type { Operation, FetchResult } from '@apollo/client';
 import { print } from 'graphql';
 import { authApi } from '../auth';
+import { UserFriendlyError } from '../../lib/errorParser';
 
 /**
  * Custom Apollo Link for handling file uploads with HotChocolate GraphQL
@@ -96,7 +97,11 @@ export class UploadLink extends ApolloLink {
       
       // Get auth token
       const token = localStorage.getItem('estatehub_access_token');
-      const headers: HeadersInit = {};
+      // HotChocolate requires GraphQL-preflight header for multipart requests (security requirement)
+      // Don't set Content-Type header - browser will set it automatically with boundary
+      const headers: HeadersInit = {
+        'GraphQL-preflight': '1',
+      };
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
@@ -163,10 +168,37 @@ export class UploadLink extends ApolloLink {
           }
         }
 
-        const errorMessages = result.errors.map((err: { message?: string; extensions?: { message?: string } }) => 
-          err.message || err.extensions?.message || JSON.stringify(err)
-        ).join(', ');
-        const error = new Error(errorMessages);
+        // Extract user-friendly messages from GraphQL errors
+        const errorMessages = result.errors.map((err: { 
+          message?: string; 
+          extensions?: { 
+            message?: string;
+            userMessage?: string;
+            fieldErrors?: Record<string, string[]>;
+          } 
+        }) => {
+          // Prefer userMessage from extensions, fall back to message
+          return err.extensions?.userMessage || err.extensions?.message || err.message || JSON.stringify(err);
+        }).join(', ');
+        
+        // Check if we have field errors in any of the errors
+        const fieldErrors = result.errors.reduce((acc: Record<string, string[]>, err: { 
+          extensions?: { fieldErrors?: Record<string, string[]> } 
+        }) => {
+          if (err.extensions?.fieldErrors) {
+            Object.assign(acc, err.extensions.fieldErrors);
+          }
+          return acc;
+        }, {});
+        
+        // Create UserFriendlyError if we have field errors, otherwise use regular Error
+        const error = Object.keys(fieldErrors).length > 0
+          ? new UserFriendlyError({
+              userMessage: errorMessages,
+              fieldErrors,
+            })
+          : new Error(errorMessages);
+        
         observer.error(error);
       } else {
         observer.next(result);
@@ -285,10 +317,37 @@ export class UploadLink extends ApolloLink {
           }
         }
 
-        const errorMessages = result.errors.map((err: { message?: string; extensions?: { message?: string } }) => 
-          err.message || err.extensions?.message || JSON.stringify(err)
-        ).join(', ');
-        const error = new Error(errorMessages);
+        // Extract user-friendly messages from GraphQL errors
+        const errorMessages = result.errors.map((err: { 
+          message?: string; 
+          extensions?: { 
+            message?: string;
+            userMessage?: string;
+            fieldErrors?: Record<string, string[]>;
+          } 
+        }) => {
+          // Prefer userMessage from extensions, fall back to message
+          return err.extensions?.userMessage || err.extensions?.message || err.message || JSON.stringify(err);
+        }).join(', ');
+        
+        // Check if we have field errors in any of the errors
+        const fieldErrors = result.errors.reduce((acc: Record<string, string[]>, err: { 
+          extensions?: { fieldErrors?: Record<string, string[]> } 
+        }) => {
+          if (err.extensions?.fieldErrors) {
+            Object.assign(acc, err.extensions.fieldErrors);
+          }
+          return acc;
+        }, {});
+        
+        // Create UserFriendlyError if we have field errors, otherwise use regular Error
+        const error = Object.keys(fieldErrors).length > 0
+          ? new UserFriendlyError({
+              userMessage: errorMessages,
+              fieldErrors,
+            })
+          : new Error(errorMessages);
+        
         observer.error(error);
       } else {
         observer.next(result);

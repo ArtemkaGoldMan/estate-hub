@@ -164,7 +164,7 @@ export const PhotoManager = ({ listingId, readonly = false }: PhotoManagerProps)
   }
 
   return (
-    <div className="photo-manager">
+    <div className="photo-manager" onClick={(e) => e.stopPropagation()}>
       <div className="photo-manager__header">
         <h3>Photos ({photos.length})</h3>
         {!readonly && (
@@ -175,12 +175,18 @@ export const PhotoManager = ({ listingId, readonly = false }: PhotoManagerProps)
               accept="image/jpeg,image/jpg,image/png,image/webp"
               multiple
               onChange={handleFileSelect}
+              onClick={(e) => e.stopPropagation()}
               style={{ display: 'none' }}
             />
             <Button
+              type="button"
               variant="primary"
               size="sm"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                fileInputRef.current?.click();
+              }}
               disabled={uploading}
               isLoading={uploading}
             >

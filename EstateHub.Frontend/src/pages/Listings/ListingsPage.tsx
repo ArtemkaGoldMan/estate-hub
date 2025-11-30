@@ -20,7 +20,7 @@ import './ListingsPage.css';
 
 const PAGE_SIZE = 12;
 
-type ViewMode = 'split' | 'list' | 'map';
+type ViewMode = 'split' | 'list';
 
 const sanitizeFilter = (filters: ListingsFiltersState): ListingFilter => {
   const entries = Object.entries(filters).filter(([key, value]) => {
@@ -159,13 +159,6 @@ export const ListingsPage = () => {
             >
               Split
             </Button>
-            <Button
-              type="button"
-              variant={viewMode === 'map' ? 'primary' : 'ghost'}
-              onClick={() => handleViewModeChange('map')}
-            >
-              Map
-            </Button>
           </div>
         </div>
       </section>
@@ -186,28 +179,26 @@ export const ListingsPage = () => {
       <div
         className={`listings-page__content listings-page__content--${viewMode}`}
       >
-        {viewMode !== 'map' && (
-          <div className="listings-page__list">
-            <ListingsGrid
-              listings={listings.items}
-              total={listings.total}
-              loading={loading}
-              onSelect={handleListingSelect}
+        <div className="listings-page__list">
+          <ListingsGrid
+            listings={listings.items}
+            total={listings.total}
+            loading={loading}
+            onSelect={handleListingSelect}
+          />
+
+          <div className="listings-page__pagination">
+            <Pagination
+              currentPage={page}
+              totalItems={listings.total}
+              pageSize={PAGE_SIZE}
+              onPageChange={setPage}
+              disabled={loading}
             />
-
-            <div className="listings-page__pagination">
-              <Pagination
-                currentPage={page}
-                totalItems={listings.total}
-                pageSize={PAGE_SIZE}
-                onPageChange={setPage}
-                disabled={loading}
-              />
-            </div>
           </div>
-        )}
+        </div>
 
-        {viewMode !== 'list' && (
+        {viewMode === 'split' && (
           <div className="listings-page__map">
             <ListingsMap
               listings={mapQuery.data?.items ?? listings.items}

@@ -1,4 +1,5 @@
 import { API_CONFIG } from '../../config/api';
+import { throwUserFriendlyError } from '../../lib/errorParser';
 
 const AUTH_BASE_URL = API_CONFIG.authorizationApiUrl;
 
@@ -65,8 +66,7 @@ export const userApi = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to fetch user' }));
-      throw new Error(error.message || 'Failed to fetch user');
+      await throwUserFriendlyError(response);
     }
 
     return response.json();
@@ -91,8 +91,7 @@ export const userApi = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to update user' }));
-      throw new Error(error.message || 'Failed to update user');
+      await throwUserFriendlyError(response);
     }
   },
 
@@ -104,8 +103,7 @@ export const userApi = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to delete user' }));
-      throw new Error(error.message || 'Failed to delete user');
+      await throwUserFriendlyError(response);
     }
   },
 
@@ -117,8 +115,7 @@ export const userApi = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to fetch session' }));
-      throw new Error(error.message || 'Failed to fetch session');
+      await throwUserFriendlyError(response);
     }
 
     return response.json();

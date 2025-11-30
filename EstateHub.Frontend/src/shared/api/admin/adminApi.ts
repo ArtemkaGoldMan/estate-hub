@@ -1,4 +1,5 @@
 import { API_CONFIG } from '../../config/api';
+import { throwUserFriendlyError } from '../../lib/errorParser';
 
 const AUTH_BASE_URL = API_CONFIG.authorizationApiUrl;
 
@@ -82,8 +83,7 @@ export const adminApi = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to fetch users' }));
-      throw new Error(error.message || 'Failed to fetch users');
+      await throwUserFriendlyError(response);
     }
 
     const data = await response.json();
@@ -104,8 +104,7 @@ export const adminApi = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to fetch user stats' }));
-      throw new Error(error.message || 'Failed to fetch user stats');
+      await throwUserFriendlyError(response);
     }
 
     return response.json();
@@ -119,8 +118,7 @@ export const adminApi = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to fetch user' }));
-      throw new Error(error.message || 'Failed to fetch user');
+      await throwUserFriendlyError(response);
     }
 
     return response.json();
@@ -135,8 +133,7 @@ export const adminApi = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to assign role' }));
-      throw new Error(error.message || 'Failed to assign role');
+      await throwUserFriendlyError(response);
     }
   },
 
@@ -148,8 +145,7 @@ export const adminApi = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to remove role' }));
-      throw new Error(error.message || 'Failed to remove role');
+      await throwUserFriendlyError(response);
     }
   },
 
@@ -162,8 +158,7 @@ export const adminApi = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to suspend user' }));
-      throw new Error(error.message || 'Failed to suspend user');
+      await throwUserFriendlyError(response);
     }
   },
 
@@ -175,8 +170,7 @@ export const adminApi = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to activate user' }));
-      throw new Error(error.message || 'Failed to activate user');
+      await throwUserFriendlyError(response);
     }
   },
 
@@ -188,8 +182,7 @@ export const adminApi = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to delete user' }));
-      throw new Error(error.message || 'Failed to delete user');
+      await throwUserFriendlyError(response);
     }
   },
 };

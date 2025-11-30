@@ -9,6 +9,8 @@ import { PhotoGallery } from '../../entities/listing/ui';
 import { CreateReportModal } from '../../features/reports/ui/CreateReportModal';
 import { Button, LoadingSpinner } from '../../shared/ui';
 import { formatCurrency } from '../../shared/lib/formatCurrency';
+import { sanitizeHtml } from '../../shared/lib/sanitizeHtml';
+import { userApi, type GetUserResponse } from '../../shared/api/auth/userApi';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Icon } from 'leaflet';
@@ -36,16 +38,40 @@ export const ListingDetailPage = () => {
   const { publishListing, unpublishListing, loading: statusLoading } = useChangeListingStatus();
   const { deleteListing, loading: deleteLoading } = useDeleteListing();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [ownerInfo, setOwnerInfo] = useState<GetUserResponse | null>(null);
+  const [loadingOwner, setLoadingOwner] = useState(false);
   
   const isOwner = listing && user && listing.ownerId === user.id;
   const isDraft = listing?.status === 'Draft';
   const isPublished = listing?.status === 'Published';
+  const isAuthenticated = !!user;
   
   useEffect(() => {
     if (!id) {
       navigate('/listings', { replace: true });
     }
   }, [id, navigate]);
+
+  // Fetch owner information when listing is loaded (only if authenticated)
+  useEffect(() => {
+    if (!listing?.ownerId || !isAuthenticated) return;
+
+    const fetchOwnerInfo = async () => {
+      setLoadingOwner(true);
+      try {
+        const owner = await userApi.getUser(listing.ownerId);
+        setOwnerInfo(owner);
+      } catch (error) {
+        // Silently fail - owner info is optional
+        // For non-authenticated users, we just won't show contact info
+        console.error('Failed to fetch owner information:', error);
+      } finally {
+        setLoadingOwner(false);
+      }
+    };
+
+    fetchOwnerInfo();
+  }, [listing?.ownerId, isAuthenticated]);
 
   const handleLike = async () => {
     if (!listing) return;
@@ -268,7 +294,12 @@ export const ListingDetailPage = () => {
 
             <div className="listing-detail-page__description">
               <h2>Description</h2>
-              <p>{listing.description || 'No description provided.'}</p>
+              <div
+                className="listing-detail-page__description-content"
+                dangerouslySetInnerHTML={{
+                  __html: sanitizeHtml(listing.description || '<p>No description provided.</p>'),
+                }}
+              />
             </div>
 
             <div className="listing-detail-page__specs">
@@ -371,6 +402,63 @@ export const ListingDetailPage = () => {
                 {listing.district && `, ${listing.district}`}
               </p>
             </div>
+          </div>
+
+          {/* Contact Information Section */}
+          <div className="listing-detail-page__contact-section">
+            <h2>Contact Information</h2>
+            {!isAuthenticated ? (
+              <div className="listing-detail-page__contact-login-prompt">
+                <p>Please <a href="/login">log in</a> to view contact information</p>
+              </div>
+            ) : loadingOwner ? (
+              <div className="listing-detail-page__contact-loading">
+                <LoadingSpinner text="Loading contact info..." />
+              </div>
+            ) : ownerInfo ? (
+              <div className="listing-detail-page__contact-info">
+                <div className="listing-detail-page__contact-item">
+                  <span className="listing-detail-page__contact-label">Name:</span>
+                  <span className="listing-detail-page__contact-value">
+                    {ownerInfo.displayName || ownerInfo.userName}
+                  </span>
+                </div>
+                {ownerInfo.phoneNumber ? (
+                  <div className="listing-detail-page__contact-item">
+                    <span className="listing-detail-page__contact-label">Phone:</span>
+                    <span className="listing-detail-page__contact-value">
+                      <a href={`tel:${ownerInfo.phoneNumber}`}>{ownerInfo.phoneNumber}</a>
+                    </span>
+                  </div>
+                ) : (
+                  <div className="listing-detail-page__contact-item">
+                    <span className="listing-detail-page__contact-label">Phone:</span>
+                    <span className="listing-detail-page__contact-value" style={{ color: '#999', fontStyle: 'italic' }}>
+                      Not provided
+                    </span>
+                  </div>
+                )}
+                {ownerInfo.email ? (
+                  <div className="listing-detail-page__contact-item">
+                    <span className="listing-detail-page__contact-label">Email:</span>
+                    <span className="listing-detail-page__contact-value">
+                      <a href={`mailto:${ownerInfo.email}`}>{ownerInfo.email}</a>
+                    </span>
+                  </div>
+                ) : (
+                  <div className="listing-detail-page__contact-item">
+                    <span className="listing-detail-page__contact-label">Email:</span>
+                    <span className="listing-detail-page__contact-value" style={{ color: '#999', fontStyle: 'italic' }}>
+                      Not provided
+                    </span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="listing-detail-page__contact-error">
+                <p>Contact information not available</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
