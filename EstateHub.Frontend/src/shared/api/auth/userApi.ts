@@ -31,13 +31,6 @@ export interface GetUserResponse {
 export interface UserUpdateRequest {
   displayName?: string;
   avatar?: File;
-  phoneNumber?: string;
-  country?: string;
-  city?: string;
-  address?: string;
-  postalCode?: string;
-  companyName?: string;
-  website?: string;
 }
 
 export interface SessionResponse {
@@ -88,28 +81,6 @@ export const userApi = {
     
     if (request.avatar) {
       formData.append('avatar', request.avatar);
-    }
-
-    if (request.phoneNumber !== undefined) {
-      formData.append('phoneNumber', request.phoneNumber || '');
-    }
-    if (request.country !== undefined) {
-      formData.append('country', request.country || '');
-    }
-    if (request.city !== undefined) {
-      formData.append('city', request.city || '');
-    }
-    if (request.address !== undefined) {
-      formData.append('address', request.address || '');
-    }
-    if (request.postalCode !== undefined) {
-      formData.append('postalCode', request.postalCode || '');
-    }
-    if (request.companyName !== undefined) {
-      formData.append('companyName', request.companyName || '');
-    }
-    if (request.website !== undefined) {
-      formData.append('website', request.website || '');
     }
 
     const response = await fetch(buildAuthUrl(`user/${id}`), {

@@ -73,9 +73,6 @@ public class Program
             options.Limits.MaxRequestBodySize = 5 * 1024 * 1024; // 5MB for avatar uploads
             options.Limits.MaxRequestHeadersTotalSize = 32 * 1024; // 32KB
             options.Limits.MaxRequestHeaderCount = 100;
-            options.Limits.MaxConcurrentConnections = null; // Unlimited
-            options.Limits.MaxConcurrentUpgradedConnections = null; // Unlimited
-            options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(2);
         });
 
         // Add gRPC services

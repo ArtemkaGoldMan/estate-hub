@@ -124,14 +124,7 @@ public class UsersService : IUsersService
                 {
                     DisplayName = validationResult.Value.DisplayName,
                     AvatarData = validationResult.Value.AvatarData,
-                    AvatarContentType = validationResult.Value.AvatarContentType,
-                    PhoneNumber = request.PhoneNumber,
-                    Country = request.Country,
-                    City = request.City,
-                    Address = request.Address,
-                    PostalCode = request.PostalCode,
-                    CompanyName = request.CompanyName,
-                    Website = request.Website
+                    AvatarContentType = validationResult.Value.AvatarContentType
                 };
 
                 var updateResult = await _usersRepository.UpdateByIdAsync(id, updateData);

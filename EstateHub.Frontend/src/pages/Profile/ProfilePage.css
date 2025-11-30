@@ -1,0 +1,220 @@
+.profile-page {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 32px clamp(16px, 4vw, 48px) 48px;
+  background: linear-gradient(180deg, #f8fafc 0%, #eff6ff 100%);
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.profile-page__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.profile-page__header h1 {
+  margin: 0;
+  font-size: clamp(28px, 4vw, 40px);
+  color: #0f172a;
+}
+
+.profile-page__loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+.profile-page__error {
+  padding: 24px 28px;
+  border-radius: 16px;
+  background: rgba(239, 68, 68, 0.08);
+  color: #b91c1c;
+  text-align: center;
+}
+
+.profile-page__error h2 {
+  margin: 0 0 12px;
+}
+
+.profile-page__error-banner {
+  padding: 16px 20px;
+  border-radius: 12px;
+  background: rgba(239, 68, 68, 0.08);
+  color: #b91c1c;
+}
+
+.profile-page__error-banner p {
+  margin: 0;
+}
+
+.profile-page__content {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.profile-page__section {
+  padding: 24px 28px;
+  border-radius: 16px;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.profile-page__section h2 {
+  margin: 0 0 24px;
+  font-size: 20px;
+  color: #0f172a;
+}
+
+.profile-page__avatar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.profile-page__avatar-preview {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f1f5f9;
+}
+
+.profile-page__avatar-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-page__avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  font-weight: 600;
+  color: #64748b;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.profile-page__avatar-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.profile-page__avatar-label {
+  cursor: pointer;
+}
+
+.profile-page__avatar-button {
+  display: inline-block;
+  cursor: pointer;
+}
+
+.profile-page__avatar-hint {
+  margin: 0;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.profile-page__field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.profile-page__field:last-child {
+  margin-bottom: 0;
+}
+
+.profile-page__field label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.profile-page__field-hint {
+  margin: 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.profile-page__actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.profile-page__section--danger {
+  border: 2px solid rgba(239, 68, 68, 0.2);
+}
+
+.profile-page__danger-text {
+  margin: 0 0 16px;
+  color: #64748b;
+}
+
+.profile-page__delete-button {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.profile-page__delete-button:hover {
+  background: #ef4444;
+  color: white;
+}
+
+.profile-page__delete-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.profile-page__delete-modal p {
+  margin: 0;
+  color: #475569;
+}
+
+.profile-page__delete-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+@media (max-width: 640px) {
+  .profile-page {
+    padding: 24px 16px 40px;
+  }
+
+  .profile-page__header {
+    flex-direction: column;
+  }
+
+  .profile-page__section {
+    padding: 20px;
+  }
+
+  .profile-page__actions {
+    flex-direction: column;
+  }
+
+  .profile-page__actions .btn {
+    width: 100%;
+  }
+}
+
