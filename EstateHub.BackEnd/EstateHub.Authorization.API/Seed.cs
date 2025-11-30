@@ -55,8 +55,31 @@ public class Seed
             // Seed admin user if it doesn't exist
             await SeedAdminUserAsync();
             
-            // Seed test user for listing service seed data
-            await SeedTestUserAsync();
+            // Seed test users for listing service seed data (3 users total)
+            await SeedTestUserAsync(
+                Guid.Parse("00000000-0000-0000-0000-000000000001"), 
+                "anna.kowalska@email.com", 
+                "Anna Kowalska",
+                "+48 123 456 789",
+                "Poland",
+                "Warsaw"
+            );
+            await SeedTestUserAsync(
+                Guid.Parse("00000000-0000-0000-0000-000000000002"), 
+                "piotr.nowak@email.com", 
+                "Piotr Nowak",
+                "+48 234 567 890",
+                "Poland",
+                "Warsaw"
+            );
+            await SeedTestUserAsync(
+                Guid.Parse("00000000-0000-0000-0000-000000000003"), 
+                "maria.wisniewska@email.com", 
+                "Maria Wiśniewska",
+                "+48 345 678 901",
+                "Poland",
+                "Warsaw"
+            );
             
             // seed initial data
         }
@@ -145,40 +168,49 @@ public class Seed
         }
     }
     
-    private async Task SeedTestUserAsync()
+    private async Task SeedTestUserAsync(Guid userId, string email, string displayName, string? phoneNumber = null, string? country = null, string? city = null)
     {
-        // Test user ID used by Listing Service seed data
-        var testUserId = Guid.Parse("00000000-0000-0000-0000-000000000001");
-        const string testUserEmail = "test@example.com";
         const string testUserPassword = "Test12345!@#"; // Must be at least 12 characters
         
         // Check if test user already exists
-        var testUser = await _userManager.FindByIdAsync(testUserId.ToString());
+        var testUser = await _userManager.FindByIdAsync(userId.ToString());
         if (testUser != null)
         {
-            _logger.LogInformation("Test user already exists");
+            _logger.LogInformation("Test user already exists: {Email}", email);
+            // Update phone number if provided and not set
+            if (!string.IsNullOrEmpty(phoneNumber) && string.IsNullOrEmpty(testUser.PhoneNumber))
+            {
+                testUser.PhoneNumber = phoneNumber;
+                testUser.Country = country;
+                testUser.City = city;
+                await _userManager.UpdateAsync(testUser);
+                _logger.LogInformation("Updated test user contact info: {Email}", email);
+            }
             return;
         }
         
         // Create test user with specific ID
-        _logger.LogInformation("Creating test user for seed data");
+        _logger.LogInformation("Creating test user for seed data: {Email}", email);
         testUser = new UserEntity
         {
-            Id = testUserId,
-            UserName = testUserEmail,
-            Email = testUserEmail,
+            Id = userId,
+            UserName = email,
+            Email = email,
             EmailConfirmed = true,
-            NormalizedEmail = testUserEmail.ToUpperInvariant(),
-            NormalizedUserName = testUserEmail.ToUpperInvariant(),
-            DisplayName = "Test User",
+            NormalizedEmail = email.ToUpperInvariant(),
+            NormalizedUserName = email.ToUpperInvariant(),
+            DisplayName = displayName,
+            PhoneNumber = phoneNumber,
+            Country = country,
+            City = city,
             CreatedAt = DateTime.UtcNow
         };
         
         var result = await _userManager.CreateAsync(testUser, testUserPassword);
         if (!result.Succeeded)
         {
-            _logger.LogError("Failed to create test user: {Errors}", 
-                string.Join(", ", result.Errors.Select(e => e.Description)));
+            _logger.LogError("Failed to create test user {Email}: {Errors}", 
+                email, string.Join(", ", result.Errors.Select(e => e.Description)));
             return;
         }
         
@@ -187,7 +219,7 @@ public class Seed
         if (userRole != null)
         {
             await _userManager.AddToRoleAsync(testUser, "User");
-            _logger.LogInformation("Test user created successfully with email: {Email}", testUserEmail);
+            _logger.LogInformation("Test user created successfully with email: {Email}, phone: {Phone}", email, phoneNumber ?? "N/A");
         }
         else
         {
