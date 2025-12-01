@@ -16,8 +16,8 @@ export const Home = () => {
             <h2>Get Started</h2>
             <p>Explore the EstateHub platform and start browsing properties.</p>
             <div className="home-actions">
-              <Link to="/components">
-                <Button variant="primary">View UI Components</Button>
+              <Link to="/listings">
+                <Button variant="primary">Browse Listings</Button>
               </Link>
             </div>
           </CardBody>

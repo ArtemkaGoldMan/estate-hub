@@ -8,7 +8,6 @@ import '../../index.css';
 // Lazy load pages for code splitting
 const ListingsPage = lazy(() => import('../../../pages/Listings/ListingsPage').then(m => ({ default: m.ListingsPage })));
 const HomePage = lazy(() => import('../../../pages/Home/HomePage').then(m => ({ default: m.HomePage })));
-const ComponentShowcase = lazy(() => import('../../../pages/ComponentShowcase').then(m => ({ default: m.ComponentShowcase })));
 const ListingDetailPage = lazy(() => import('../../../pages/ListingDetail/ListingDetailPage').then(m => ({ default: m.ListingDetailPage })));
 const LoginPage = lazy(() => import('../../../pages/Auth/LoginPage').then(m => ({ default: m.LoginPage })));
 const RegisterPage = lazy(() => import('../../../pages/Auth/RegisterPage').then(m => ({ default: m.RegisterPage })));
@@ -84,14 +83,6 @@ const routerConfig = [
               <EditListingPage />
             </Suspense>
           </ProtectedRoute>
-        ),
-      },
-      {
-        path: 'components',
-        element: (
-          <Suspense fallback={<SuspenseFallback />}>
-            <ComponentShowcase />
-          </Suspense>
         ),
       },
       {
@@ -238,7 +229,13 @@ const routerConfig = [
 
 // Create router at module level - this ensures it persists across renders
 // and properly manages navigation state
-const router = createBrowserRouter(routerConfig);
+const router = createBrowserRouter(routerConfig, {
+  // Preserve scroll position on navigation
+  future: {
+    v7_startTransition: true,
+    v7_relativeSplatPath: true,
+  },
+});
 
 export const AppRouter = () => {
   return <RouterProvider router={router} />;

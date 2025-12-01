@@ -270,11 +270,7 @@
   display: flex;
   flex-direction: column;
   gap: 2rem;
-  position: sticky;
-  top: 2rem;
-  align-self: start;
-  max-height: calc(100vh - 4rem);
-  overflow-y: auto;
+  position: static;
 }
 
 .listing-detail-page__map-section {
