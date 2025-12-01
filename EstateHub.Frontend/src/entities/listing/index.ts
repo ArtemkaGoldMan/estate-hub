@@ -4,6 +4,7 @@ export * from './api/get-listings';
 export * from './api/get-listings-on-map';
 export * from './api/get-listing';
 export * from './api/get-my-listings';
+export * from './api/check-listing-moderation';
 export * from './api/get-liked-listings';
 export * from './api/get-photos';
 export * from './api/like-listing';

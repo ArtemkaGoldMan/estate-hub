@@ -251,7 +251,10 @@ public class ListingRepository : IListingRepository
             ArchivedAt = entity.ArchivedAt,
             IsDeleted = entity.IsDeleted,
             RowVersion = entity.RowVersion,
-            Photos = photos
+            Photos = photos,
+            IsModerationApproved = entity.IsModerationApproved,
+            ModerationCheckedAt = entity.ModerationCheckedAt,
+            ModerationRejectionReason = entity.ModerationRejectionReason
         };
     }
 
@@ -291,6 +294,9 @@ public class ListingRepository : IListingRepository
             ArchivedAt = listing.ArchivedAt,
             IsDeleted = listing.IsDeleted,
             RowVersion = listing.RowVersion,
+            IsModerationApproved = listing.IsModerationApproved,
+            ModerationCheckedAt = listing.ModerationCheckedAt,
+            ModerationRejectionReason = listing.ModerationRejectionReason,
             Photos = listing.Photos?.Select(p => new ListingPhotoEntity
             {
                 Id = p.Id,

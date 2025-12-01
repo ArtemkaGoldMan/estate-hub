@@ -26,7 +26,7 @@
 
 .listing-detail-page__header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   margin-bottom: 2rem;
   gap: 1rem;
@@ -72,6 +72,12 @@
 @media (max-width: 1024px) {
   .listing-detail-page__content {
     grid-template-columns: 1fr;
+  }
+
+  .listing-detail-page__sidebar {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
   }
 }
 
@@ -264,11 +270,20 @@
   display: flex;
   flex-direction: column;
   gap: 2rem;
+  position: sticky;
+  top: 2rem;
+  align-self: start;
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
 }
 
 .listing-detail-page__map-section {
-  position: sticky;
-  top: 2rem;
+  position: static;
+}
+
+/* Map section in left column should not be sticky */
+.listing-detail-page__main-content .listing-detail-page__map-section {
+  position: static;
 }
 
 .listing-detail-page__map-section h2 {
@@ -299,7 +314,12 @@
   padding: 1.5rem;
   background-color: #f8f9fa;
   border-radius: 8px;
-  margin-top: 2rem;
+  margin-top: 0;
+}
+
+/* Contact section in left column should not have margin-top */
+.listing-detail-page__main-content .listing-detail-page__contact-section {
+  margin-top: 0;
 }
 
 .listing-detail-page__contact-section h2 {
@@ -348,6 +368,15 @@
 .listing-detail-page__contact-value a:hover {
   color: #0056b3;
   text-decoration: underline;
+}
+
+.listing-detail-page__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
 }
 
 .listing-detail-page__contact-login-prompt {
@@ -413,6 +442,252 @@
   .listing-detail-page__map-section {
     position: static;
   }
+
+  .listing-detail-page__sidebar {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+  }
 }
 
+/* ========================================
+   Redesigned Layout Styles
+   ======================================== */
+
+/* Two-column layout for redesigned page */
+.listing-detail-page__content--redesigned {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 2rem;
+}
+
+@media (max-width: 1024px) {
+  .listing-detail-page__content--redesigned {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Main content (left column) */
+.listing-detail-page__main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Management Panel (right column) */
+.listing-detail-page__management-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  position: sticky;
+  top: 2rem;
+  align-self: start;
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
+}
+
+@media (max-width: 1024px) {
+  .listing-detail-page__management-panel {
+    position: static;
+    max-height: none;
+  }
+}
+
+/* Management Section */
+.listing-detail-page__management-section {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.listing-detail-page__management-section h2 {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #0f172a;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 0.5rem;
+}
+
+/* Map in management panel */
+.listing-detail-page__management-section .listing-detail-page__map {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid #e2e8f0;
+  margin-bottom: 0.75rem;
+}
+
+/* Management Actions */
+.listing-detail-page__management-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Moderation Review Section */
+.listing-detail-page__moderation-review {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.listing-detail-page__moderation-review--approved {
+  padding: 1rem;
+  background: rgba(34, 197, 94, 0.1);
+  border: 2px solid rgba(34, 197, 94, 0.3);
+  border-radius: 8px;
+}
+
+.listing-detail-page__moderation-review--rejected {
+  padding: 1rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 2px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+}
+
+.listing-detail-page__moderation-review--pending {
+  padding: 1rem;
+  background: rgba(59, 130, 246, 0.1);
+  border: 2px solid rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+}
+
+.listing-detail-page__moderation-review--not-checked {
+  padding: 1rem;
+  background: rgba(148, 163, 184, 0.1);
+  border: 2px solid rgba(148, 163, 184, 0.3);
+  border-radius: 8px;
+}
+
+.listing-detail-page__moderation-status-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.listing-detail-page__moderation-status-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.listing-detail-page__moderation-status-text strong {
+  font-size: 1.1rem;
+  color: #0f172a;
+}
+
+.listing-detail-page__moderation-status-text p {
+  margin: 0;
+  color: #475569;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.listing-detail-page__moderation-review--approved .listing-detail-page__moderation-status-text {
+  color: #166534;
+}
+
+.listing-detail-page__moderation-review--rejected .listing-detail-page__moderation-status-text {
+  color: #991b1b;
+}
+
+.listing-detail-page__moderation-review--pending .listing-detail-page__moderation-status-text {
+  color: #1e40af;
+}
+
+.listing-detail-page__moderation-review--not-checked .listing-detail-page__moderation-status-text {
+  color: #475569;
+}
+
+.listing-detail-page__moderation-reason {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.listing-detail-page__moderation-reason p {
+  margin: 0.25rem 0;
+}
+
+.listing-detail-page__moderation-message {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 6px;
+  border-left: 3px solid rgba(239, 68, 68, 0.5);
+}
+
+.listing-detail-page__moderation-message p {
+  margin: 0;
+  font-weight: 500;
+  color: #991b1b;
+}
+
+/* Contact info in management panel */
+.listing-detail-page__management-section .listing-detail-page__contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.listing-detail-page__management-section .listing-detail-page__contact-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.listing-detail-page__management-section .listing-detail-page__contact-item:last-child {
+  border-bottom: none;
+}
+
+.listing-detail-page__management-section .listing-detail-page__contact-label {
+  font-weight: 600;
+  color: #475569;
+  font-size: 0.9rem;
+}
+
+.listing-detail-page__management-section .listing-detail-page__contact-value {
+  text-align: right;
+  color: #0f172a;
+  font-size: 0.9rem;
+}
+
+.listing-detail-page__management-section .listing-detail-page__contact-value a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.listing-detail-page__management-section .listing-detail-page__contact-value a:hover {
+  text-decoration: underline;
+}
+
+/* Responsive adjustments for redesigned layout */
+@media (max-width: 1024px) {
+  .listing-detail-page__content--redesigned {
+    gap: 1.5rem;
+  }
+  
+  .listing-detail-page__management-panel {
+    order: -1; /* Show management panel first on mobile */
+  }
+}
+
+/* Badge styles for moderation status in dashboard */
+.dashboard-listing-card__badge--moderation-approved {
+  background: rgba(34, 197, 94, 0.95);
+  color: #ffffff;
+}
+
+.dashboard-listing-card__badge--moderation-rejected {
+  background: rgba(239, 68, 68, 0.95);
+  color: #ffffff;
+}
+
+.dashboard-listing-card__badge--moderation-pending {
+  background: rgba(59, 130, 246, 0.95);
+  color: #ffffff;
+}
 

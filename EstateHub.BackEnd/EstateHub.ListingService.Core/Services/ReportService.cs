@@ -11,7 +11,7 @@ using EstateHub.SharedKernel.Helpers;
 using FluentValidation;
 using Microsoft.Extensions.Logging;
 
-namespace EstateHub.ListingService.Core.UseCases;
+namespace EstateHub.ListingService.Core.Services;
 
 public class ReportService : IReportService
 {
