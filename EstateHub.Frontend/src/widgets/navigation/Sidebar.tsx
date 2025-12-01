@@ -35,7 +35,6 @@ export const Sidebar = ({ isMobileOpen = false, onMobileClose }: SidebarProps) =
     { path: '/profile', label: 'Profile', icon: '👤', requiresAuth: true },
     { path: '/reports', label: 'Reports', icon: '📋', requiresAuth: true },
     { path: '/admin/users', label: 'User Management', icon: '👥', requiresAuth: true, requiresAdmin: true } as NavItem,
-    { path: '/components', label: 'Components', icon: '🧩' },
   ];
 
   // Filter items based on authentication and permissions
