@@ -109,106 +109,138 @@ export const ListingFilters = ({
         />
       </div>
 
-      <div className="listing-filters__grid">
-        <Input
-          label="City"
-          placeholder="Warsaw"
-          value={filters.city ?? ''}
-          onChange={(event) => updateFilter({ city: event.target.value })}
-          fullWidth
-        />
+      <div className="listing-filters__row">
+        <div className="listing-filters__field">
+          <Input
+            label="City"
+            placeholder="Warsaw"
+            value={filters.city ?? ''}
+            onChange={(event) => updateFilter({ city: event.target.value })}
+            fullWidth
+          />
+        </div>
 
-        <Input
-          label="District"
-          placeholder="Mokotów"
-          value={filters.district ?? ''}
-          onChange={(event) => updateFilter({ district: event.target.value })}
-          fullWidth
-        />
+        <div className="listing-filters__field">
+          <Input
+            label="District"
+            placeholder="Mokotów"
+            value={filters.district ?? ''}
+            onChange={(event) => updateFilter({ district: event.target.value })}
+            fullWidth
+          />
+        </div>
+      </div>
 
-        <Dropdown
-          label="Category"
-          placeholder="Any"
-          value={filters.category}
-          options={dropdownOptions.categories}
-          onChange={(value) => handleDropdownChange('category', value)}
-        />
+      <div className="listing-filters__row">
+        <div className="listing-filters__field">
+          <Dropdown
+            label="Category"
+            placeholder="Any"
+            value={filters.category}
+            options={dropdownOptions.categories}
+            onChange={(value) => handleDropdownChange('category', value)}
+          />
+        </div>
 
-        <Dropdown
-          label="Property type"
-          placeholder="Any"
-          value={filters.propertyType}
-          options={dropdownOptions.propertyTypes}
-          onChange={(value) => handleDropdownChange('propertyType', value)}
-        />
+        <div className="listing-filters__field">
+          <Dropdown
+            label="Property type"
+            placeholder="Any"
+            value={filters.propertyType}
+            options={dropdownOptions.propertyTypes}
+            onChange={(value) => handleDropdownChange('propertyType', value)}
+          />
+        </div>
+      </div>
 
-        <Dropdown
-          label="Condition"
-          placeholder="Any"
-          value={filters.condition}
-          options={dropdownOptions.conditions}
-          onChange={(value) => handleDropdownChange('condition', value)}
-        />
+      <div className="listing-filters__row">
+        <div className="listing-filters__field">
+          <Dropdown
+            label="Condition"
+            placeholder="Any"
+            value={filters.condition}
+            options={dropdownOptions.conditions}
+            onChange={(value) => handleDropdownChange('condition', value)}
+          />
+        </div>
+      </div>
 
-        <Input
-          label="Price from"
-          placeholder="200 000"
-          type="number"
-          min={0}
-          value={filters.minPrice ?? ''}
-          onChange={(event) => handleNumericChange('minPrice', event.target.value)}
-          fullWidth
-        />
+      <div className="listing-filters__row">
+        <div className="listing-filters__field">
+          <Input
+            label="Price from"
+            placeholder="200 000"
+            type="number"
+            min={0}
+            value={filters.minPrice ?? ''}
+            onChange={(event) => handleNumericChange('minPrice', event.target.value)}
+            fullWidth
+          />
+        </div>
 
-        <Input
-          label="Price to"
-          placeholder="1 000 000"
-          type="number"
-          min={0}
-          value={filters.maxPrice ?? ''}
-          onChange={(event) => handleNumericChange('maxPrice', event.target.value)}
-          fullWidth
-        />
+        <div className="listing-filters__field">
+          <Input
+            label="Price to"
+            placeholder="1 000 000"
+            type="number"
+            min={0}
+            value={filters.maxPrice ?? ''}
+            onChange={(event) => handleNumericChange('maxPrice', event.target.value)}
+            fullWidth
+          />
+        </div>
+      </div>
 
-        <Input
-          label="Min area (m²)"
-          placeholder="40"
-          type="number"
-          min={0}
-          value={filters.minMeters ?? ''}
-          onChange={(event) => handleNumericChange('minMeters', event.target.value)}
-          fullWidth
-        />
+      <div className="listing-filters__row">
+        <div className="listing-filters__field">
+          <Input
+            label="Min area (m²)"
+            placeholder="40"
+            type="number"
+            min={0}
+            value={filters.minMeters ?? ''}
+            onChange={(event) => handleNumericChange('minMeters', event.target.value)}
+            fullWidth
+          />
+        </div>
 
-        <Input
-          label="Max area (m²)"
-          placeholder="120"
-          type="number"
-          min={0}
-          value={filters.maxMeters ?? ''}
-          onChange={(event) => handleNumericChange('maxMeters', event.target.value)}
-          fullWidth
-        />
+        <div className="listing-filters__field">
+          <Input
+            label="Max area (m²)"
+            placeholder="120"
+            type="number"
+            min={0}
+            value={filters.maxMeters ?? ''}
+            onChange={(event) => handleNumericChange('maxMeters', event.target.value)}
+            fullWidth
+          />
+        </div>
+      </div>
 
-        <Input
-          label="Min rooms"
-          placeholder="2"
-          type="number"
-          min={0}
-          value={filters.minRooms ?? ''}
-          onChange={(event) => handleNumericChange('minRooms', event.target.value)}
-          fullWidth
-        />
+      <div className="listing-filters__row">
+        <div className="listing-filters__field">
+          <Input
+            label="Min rooms"
+            placeholder="2"
+            type="number"
+            min={0}
+            value={filters.minRooms ?? ''}
+            onChange={(event) => handleNumericChange('minRooms', event.target.value)}
+            fullWidth
+          />
+        </div>
 
-        <Input
-          label="Max rooms"
-          placeholder="5"
-          type="number"
-          min={0}
-          value={filters.maxRooms ?? ''}
-          onChange={(event) => handleNumericChange('maxRooms', event.target.value)}
-          fullWidth
-        />
+        <div className="listing-filters__field">
+          <Input
+            label="Max rooms"
+            placeholder="5"
+            type="number"
+            min={0}
+            value={filters.maxRooms ?? ''}
+            onChange={(event) => handleNumericChange('maxRooms', event.target.value)}
+            fullWidth
+          />
+        </div>
       </div>
 
       <div className="listing-filters__toggles">
