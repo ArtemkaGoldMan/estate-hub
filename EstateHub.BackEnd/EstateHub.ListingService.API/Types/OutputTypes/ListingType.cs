@@ -36,6 +36,15 @@ public class ListingType
     public DateTime? ArchivedAt { get; set; }
     public string? FirstPhotoUrl { get; set; }
     public bool IsLikedByCurrentUser { get; set; }
+    
+    [GraphQLDescription("Whether the listing has been approved by moderation. null = not checked, true = approved, false = rejected")]
+    public bool? IsModerationApproved { get; set; }
+    
+    [GraphQLDescription("When moderation was last checked")]
+    public DateTime? ModerationCheckedAt { get; set; }
+    
+    [GraphQLDescription("Rejection reason if moderation failed")]
+    public string? ModerationRejectionReason { get; set; }
 
     public static ListingType FromDto(ListingDto dto) => new()
     {
@@ -68,6 +77,9 @@ public class ListingType
         PublishedAt = dto.PublishedAt,
         ArchivedAt = dto.ArchivedAt,
         FirstPhotoUrl = dto.FirstPhotoUrl,
-        IsLikedByCurrentUser = dto.IsLikedByCurrentUser
+        IsLikedByCurrentUser = dto.IsLikedByCurrentUser,
+        IsModerationApproved = dto.IsModerationApproved,
+        ModerationCheckedAt = dto.ModerationCheckedAt,
+        ModerationRejectionReason = dto.ModerationRejectionReason
     };
 }

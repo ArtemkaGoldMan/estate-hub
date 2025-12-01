@@ -164,7 +164,7 @@ export const EditListingPage = () => {
         };
 
         await updateListing(id, input);
-        navigate(`/listings/${id}`);
+        navigate(`/dashboard/listings/${id}`);
       } catch (err) {
         // Error is handled by the mutation hook and displayed in the form
       }
@@ -249,8 +249,8 @@ export const EditListingPage = () => {
     <div className="edit-listing-page">
       <div className="edit-listing-page__header">
         <h1>Edit Listing</h1>
-        <Button variant="ghost" onClick={() => navigate(`/listings/${id}`)}>
-          ← Back to Listing
+        <Button variant="ghost" onClick={() => navigate(`/dashboard/listings/${id}`)}>
+          ← Back to Dashboard Listing
         </Button>
       </div>
 
@@ -518,7 +518,7 @@ export const EditListingPage = () => {
           <Button
             type="button"
             variant="outline"
-            onClick={() => navigate(`/listings/${id}`)}
+            onClick={() => navigate(`/dashboard/listings/${id}`)}
             disabled={updating}
           >
             Cancel

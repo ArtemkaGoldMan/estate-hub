@@ -36,6 +36,11 @@ public record Listing
     public DateTime? ArchivedAt { get; init; }
     public bool IsDeleted { get; init; }
     public byte[] RowVersion { get; init; }
+    
+    // Moderation fields
+    public bool? IsModerationApproved { get; init; }
+    public DateTime? ModerationCheckedAt { get; init; }
+    public string? ModerationRejectionReason { get; init; }
 
     // Navigation properties
     public List<ListingPhoto> Photos { get; init; } = new();
@@ -145,6 +150,9 @@ public record Listing
         UpdatedAt = DateTime.UtcNow;
         IsDeleted = false;
         RowVersion = new byte[8]; // Will be set by EF Core
+        IsModerationApproved = null; // Not checked yet
+        ModerationCheckedAt = null;
+        ModerationRejectionReason = null;
     }
 
     // Business methods - return new instances for immutability
@@ -160,7 +168,11 @@ public record Listing
         { 
             Title = title, 
             Description = description, 
-            UpdatedAt = DateTime.UtcNow 
+            UpdatedAt = DateTime.UtcNow,
+            // Reset moderation status when title/description changes
+            IsModerationApproved = null,
+            ModerationCheckedAt = null,
+            ModerationRejectionReason = null
         };
     }
 
@@ -259,10 +271,29 @@ public record Listing
         if (Status == ListingStatus.Archived)
             throw new InvalidOperationException("Cannot publish archived listing");
 
+        if (IsModerationApproved != true)
+        {
+            if (IsModerationApproved == null)
+                throw new InvalidOperationException("Listing must be moderated before publishing. Please check moderation first.");
+            
+            throw new InvalidOperationException($"Listing cannot be published. Moderation rejected: {ModerationRejectionReason ?? "Content does not meet guidelines"}");
+        }
+
         return this with
         {
             Status = ListingStatus.Published,
             PublishedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+    }
+    
+    public Listing SetModerationResult(bool approved, string? rejectionReason)
+    {
+        return this with
+        {
+            IsModerationApproved = approved,
+            ModerationCheckedAt = DateTime.UtcNow,
+            ModerationRejectionReason = rejectionReason,
             UpdatedAt = DateTime.UtcNow
         };
     }

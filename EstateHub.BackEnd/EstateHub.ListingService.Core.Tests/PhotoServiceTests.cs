@@ -11,17 +11,17 @@ namespace EstateHub.ListingService.Core.Tests;
 
 public class PhotoServiceTests
 {
-    private readonly Mock<ILogger<EstateHub.ListingService.Core.UseCases.PhotoService>> _loggerMock;
+    private readonly Mock<ILogger<EstateHub.ListingService.Core.Services.PhotoService>> _loggerMock;
     private readonly Mock<IPhotoRepository> _photoRepositoryMock;
     private readonly Mock<IListingRepository> _listingRepositoryMock;
     private readonly Mock<ICurrentUserService> _currentUserServiceMock;
     private readonly Mock<IPhotoStorageService> _photoStorageServiceMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
-    private readonly EstateHub.ListingService.Core.UseCases.PhotoService _photoService;
+    private readonly EstateHub.ListingService.Core.Services.PhotoService _photoService;
 
     public PhotoServiceTests()
     {
-        _loggerMock = new Mock<ILogger<EstateHub.ListingService.Core.UseCases.PhotoService>>();
+        _loggerMock = new Mock<ILogger<EstateHub.ListingService.Core.Services.PhotoService>>();
         _photoRepositoryMock = new Mock<IPhotoRepository>();
         _listingRepositoryMock = new Mock<IListingRepository>();
         _currentUserServiceMock = new Mock<ICurrentUserService>();
@@ -34,7 +34,7 @@ public class PhotoServiceTests
         _unitOfWorkMock.Setup(u => u.CommitAsync())
             .ReturnsAsync(CSharpFunctionalExtensions.Result.Success(true));
 
-        _photoService = new EstateHub.ListingService.Core.UseCases.PhotoService(
+        _photoService = new EstateHub.ListingService.Core.Services.PhotoService(
             _photoRepositoryMock.Object,
             _listingRepositoryMock.Object,
             _currentUserServiceMock.Object,

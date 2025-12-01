@@ -55,18 +55,20 @@ public class Seed
                 _logger.LogInformation("No pending migrations found");
             }
 
-            // Check if we already have listings
-            var existingListings = await _context.Listings.CountAsync();
-            if (existingListings > 0)
+            // Check if we already have seed data (listings from test users)
+            var seedListings = await _context.Listings
+                .Where(l => TestUserIds.Contains(l.OwnerId))
+                .Include(l => l.Photos)
+                .ToListAsync();
+            
+            var hasSeedData = seedListings.Any();
+            
+            if (hasSeedData)
             {
-                _logger.LogInformation($"Database already contains {existingListings} listings. Cleaning up old seed data...");
+                _logger.LogInformation($"Found {seedListings.Count} existing seed listings. Cleaning up old seed data only...");
                 
-                // Delete all existing listings and their photos to start fresh
-                var allListings = await _context.Listings
-                    .Include(l => l.Photos)
-                    .ToListAsync();
-                
-                foreach (var listing in allListings)
+                // Delete only seed listings and their photos (preserve user-created listings)
+                foreach (var listing in seedListings)
                 {
                     // Delete photos first
                     foreach (var photo in listing.Photos.ToList())
@@ -78,9 +80,10 @@ public class Seed
                 }
                 
                 await _context.SaveChangesAsync();
-                _logger.LogInformation($"Cleaned up {allListings.Count} old listings. Proceeding with fresh seed data...");
+                _logger.LogInformation($"Cleaned up {seedListings.Count} seed listings. User-created listings preserved.");
             }
 
+            // Always seed (either first time or after cleanup)
             _logger.LogInformation("Seeding listings and photos...");
             await SeedListingsAsync();
             _logger.LogInformation("Data initialization completed");

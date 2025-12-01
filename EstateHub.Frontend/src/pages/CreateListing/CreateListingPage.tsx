@@ -45,7 +45,6 @@ function LocationPicker({
 export const CreateListingPage = () => {
   const navigate = useNavigate();
   const { createListing, loading, error } = useCreateListing();
-  const [createdListingId, setCreatedListingId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<Partial<CreateListingInput>>({
     category: 'SALE',
@@ -60,6 +59,7 @@ export const CreateListingPage = () => {
 
   const [mapPosition, setMapPosition] = useState<[number, number]>(DEFAULT_CENTER);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [createdListingId, setCreatedListingId] = useState<string | null>(null);
 
   // All hooks must be called before any early returns
   const handleSubmit = useCallback(
@@ -130,8 +130,9 @@ export const CreateListingPage = () => {
         };
 
         const listingId = await createListing(input);
-        // Set created listing ID to show photo manager
+        // Store the listing ID to show photo upload section
         setCreatedListingId(listingId);
+        // Don't redirect yet - allow user to upload photos first
       } catch (err) {
         // Error is handled by the mutation hook
         // Set a user-friendly error message
@@ -488,8 +489,9 @@ export const CreateListingPage = () => {
         </div>
 
         {createdListingId && (
-          <div className="create-listing-page__section">
+          <div className="create-listing-page__section" onClick={(e) => e.stopPropagation()}>
             <h2>Photos</h2>
+            <p className="create-listing-page__hint">Listing created! You can now upload photos.</p>
             <PhotoManager listingId={createdListingId} />
           </div>
         )}
@@ -503,7 +505,7 @@ export const CreateListingPage = () => {
                 disabled={loading}
                 isLoading={loading}
               >
-                {loading ? 'Creating...' : 'Create Listing'}
+                {loading ? 'Saving...' : 'Save Listing'}
               </Button>
               <Button
                 type="button"
@@ -519,16 +521,9 @@ export const CreateListingPage = () => {
               <Button
                 type="button"
                 variant="primary"
-                onClick={() => navigate(`/listings/${createdListingId}/edit`)}
+                onClick={() => navigate(`/dashboard/listings/${createdListingId}`)}
               >
-                Continue Editing
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate(`/listings/${createdListingId}`)}
-              >
-                View Listing
+                Go to Listing
               </Button>
               <Button
                 type="button"

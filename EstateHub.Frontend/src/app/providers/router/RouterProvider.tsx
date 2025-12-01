@@ -18,6 +18,7 @@ const ForgotPasswordPage = lazy(() => import('../../../pages/Auth/ForgotPassword
 const ResetPasswordPage = lazy(() => import('../../../pages/Auth/ResetPasswordPage').then(m => ({ default: m.ResetPasswordPage })));
 const AccountActionPage = lazy(() => import('../../../pages/Auth/AccountActionPage').then(m => ({ default: m.AccountActionPage })));
 const DashboardPage = lazy(() => import('../../../pages/Dashboard/DashboardPage').then(m => ({ default: m.DashboardPage })));
+const DashboardListingDetailPage = lazy(() => import('../../../pages/Dashboard/DashboardListingDetailPage').then(m => ({ default: m.DashboardListingDetailPage })));
 const ProfilePage = lazy(() => import('../../../pages/Profile/ProfilePage').then(m => ({ default: m.ProfilePage })));
 const CreateListingPage = lazy(() => import('../../../pages/CreateListing/CreateListingPage').then(m => ({ default: m.CreateListingPage })));
 const EditListingPage = lazy(() => import('../../../pages/EditListing/EditListingPage').then(m => ({ default: m.EditListingPage })));
@@ -155,6 +156,16 @@ const routerConfig = [
           <ProtectedRoute>
             <Suspense fallback={<SuspenseFallback />}>
               <DashboardPage />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'dashboard/listings/:id',
+        element: (
+          <ProtectedRoute>
+            <Suspense fallback={<SuspenseFallback />}>
+              <DashboardListingDetailPage />
             </Suspense>
           </ProtectedRoute>
         ),

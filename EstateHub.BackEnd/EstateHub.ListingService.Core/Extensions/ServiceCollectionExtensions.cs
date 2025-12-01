@@ -1,5 +1,5 @@
 using EstateHub.ListingService.Domain.Interfaces;
-using EstateHub.ListingService.Core.UseCases;
+using EstateHub.ListingService.Core.Services;
 using EstateHub.ListingService.Core.Validators;
 using EstateHub.ListingService.Core.Mappers;
 using FluentValidation;
@@ -12,9 +12,10 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddListingCore(this IServiceCollection services)
     {
         // Register services
-        services.AddScoped<IListingService, UseCases.ListingService>();
-        services.AddScoped<IReportService, UseCases.ReportService>();
-        services.AddScoped<IPhotoService, UseCases.PhotoService>();
+        services.AddScoped<IListingService, Services.ListingService>();
+        services.AddScoped<IReportService, Services.ReportService>();
+        services.AddScoped<IPhotoService, Services.PhotoService>();
+        services.AddScoped<IModerationService, Services.ModerationService>();
         
         // Register mappers
         services.AddScoped<ReportDtoMapper>();

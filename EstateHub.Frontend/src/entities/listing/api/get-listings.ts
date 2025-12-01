@@ -36,6 +36,9 @@ const LISTING_CORE_FIELDS = gql`
     archivedAt
     firstPhotoUrl
     isLikedByCurrentUser
+    isModerationApproved
+    moderationCheckedAt
+    moderationRejectionReason
   }
 `;
 

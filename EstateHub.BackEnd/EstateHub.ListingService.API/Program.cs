@@ -136,6 +136,7 @@ public class Program
             .AddQueryType<Queries>()
             .AddType<ReportQueries>()
             .AddType<PhotoQueries>()
+            .AddType<ModerationQueries>()
             .AddMutationType<Mutations>()
             .AddType<ReportMutations>()
             .AddType<PhotoMutations>()
@@ -154,6 +155,7 @@ public class Program
             .AddType<DismissReportInputType>()
             .AddType<ReportFilterType>()
             .AddType<PhotoType>()
+            .AddType<ModerationResultType>()
             .AddType<UploadType>() // Required for IFile file uploads
             .AddAuthorization()
             .ModifyRequestOptions(opt => opt.IncludeExceptionDetails = builder.Environment.IsDevelopment());

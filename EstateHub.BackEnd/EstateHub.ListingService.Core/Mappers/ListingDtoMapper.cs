@@ -88,7 +88,10 @@ public class ListingDtoMapper
             listing.PublishedAt,
             listing.ArchivedAt,
             firstPhotoUrl,
-            isLikedByCurrentUser
+            isLikedByCurrentUser,
+            listing.IsModerationApproved,
+            listing.ModerationCheckedAt,
+            listing.ModerationRejectionReason
         );
     }
 

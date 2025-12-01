@@ -35,6 +35,13 @@ public static class ServiceCollectionExtensions
         
         // Register photo storage service (implements IPhotoStorageService)
         services.AddScoped<Domain.Interfaces.IPhotoStorageService, Services.PhotoStorageService>();
+        
+        // Register HttpClient for moderation service with timeout
+        services.AddHttpClient<Domain.Interfaces.IContentModerationService, Services.ContentModerationService>()
+            .ConfigureHttpClient(client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(30);
+            });
 
         return services;
     }

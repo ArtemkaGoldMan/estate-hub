@@ -38,9 +38,14 @@ export const DashboardListingCard = memo(
     const isPublished = listing.status === 'Published';
     const isDraft = listing.status === 'Draft';
     const isArchived = listing.status === 'Archived';
+    
+    // Check if listing can be published (must be approved by moderation)
+    const canPublish = isDraft && listing.isModerationApproved === true;
+    const moderationPending = isDraft && listing.isModerationApproved === null;
+    const moderationRejected = isDraft && listing.isModerationApproved === false;
 
     const handleView = () => {
-      navigate(`/listings/${listing.id}`, { state: { from: '/dashboard' } });
+      navigate(`/dashboard/listings/${listing.id}`);
     };
 
     const handleEdit = (e: React.MouseEvent) => {
@@ -116,9 +121,26 @@ export const DashboardListingCard = memo(
             {listing.category === 'RENT' ? 'For Rent' : 'For Sale'}
           </span>
           {isDraft && (
-            <span className="dashboard-listing-card__badge dashboard-listing-card__badge--draft">
-              Draft
-            </span>
+            <>
+              <span className="dashboard-listing-card__badge dashboard-listing-card__badge--draft">
+                Draft
+              </span>
+              {listing.isModerationApproved === null && (
+                <span className="dashboard-listing-card__badge dashboard-listing-card__badge--moderation-pending">
+                  ⏳ Pending
+                </span>
+              )}
+              {listing.isModerationApproved === false && (
+                <span className="dashboard-listing-card__badge dashboard-listing-card__badge--moderation-rejected">
+                  ❌ Rejected
+                </span>
+              )}
+              {listing.isModerationApproved === true && (
+                <span className="dashboard-listing-card__badge dashboard-listing-card__badge--moderation-approved">
+                  ✅ Approved
+                </span>
+              )}
+            </>
           )}
           {isArchived && (
             <span className="dashboard-listing-card__badge dashboard-listing-card__badge--archived">
@@ -156,6 +178,16 @@ export const DashboardListingCard = memo(
           <div className="dashboard-listing-card__status">
             <strong>Status:</strong> {listing.status}
           </div>
+          {moderationRejected && (
+            <div className="dashboard-listing-card__moderation-warning">
+              ⚠️ Content rejected: {listing.moderationRejectionReason || 'Please edit and re-check moderation'}
+            </div>
+          )}
+          {moderationPending && (
+            <div className="dashboard-listing-card__moderation-info">
+              ℹ️ Moderation not checked yet
+            </div>
+          )}
           <div className="dashboard-listing-card__actions" onClick={(e) => e.stopPropagation()}>
             <Button
               variant="outline"
@@ -170,8 +202,17 @@ export const DashboardListingCard = memo(
                 variant="primary"
                 size="sm"
                 onClick={handlePublish}
-                disabled={statusLoading || deleteLoading}
+                disabled={statusLoading || deleteLoading || !canPublish}
                 isLoading={statusLoading}
+                title={
+                  !canPublish
+                    ? moderationRejected
+                      ? 'Content must pass moderation before publishing'
+                      : moderationPending
+                      ? 'Please check moderation first'
+                      : 'Content must pass moderation before publishing'
+                    : 'Publish listing'
+                }
               >
                 📢 Publish
               </Button>

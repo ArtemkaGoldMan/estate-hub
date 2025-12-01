@@ -37,6 +37,11 @@ public class ListingEntity
     public DateTime? ArchivedAt { get; set; }
     public bool IsDeleted { get; set; }
     
+    // Moderation fields
+    public bool? IsModerationApproved { get; set; }
+    public DateTime? ModerationCheckedAt { get; set; }
+    public string? ModerationRejectionReason { get; set; }
+    
     public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 
     // Navigation properties

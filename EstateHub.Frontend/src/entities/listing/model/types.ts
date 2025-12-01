@@ -42,6 +42,9 @@ export interface Listing {
   archivedAt?: string | null;
   firstPhotoUrl?: string | null;
   isLikedByCurrentUser?: boolean;
+  isModerationApproved?: boolean | null;
+  moderationCheckedAt?: string | null;
+  moderationRejectionReason?: string | null;
 }
 
 export interface ListingFilter {

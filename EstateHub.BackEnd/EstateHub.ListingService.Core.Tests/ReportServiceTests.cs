@@ -15,7 +15,7 @@ namespace EstateHub.ListingService.Core.Tests;
 
 public class ReportServiceTests
 {
-    private readonly Mock<ILogger<EstateHub.ListingService.Core.UseCases.ReportService>> _loggerMock;
+    private readonly Mock<ILogger<EstateHub.ListingService.Core.Services.ReportService>> _loggerMock;
     private readonly Mock<IReportRepository> _reportRepositoryMock;
     private readonly Mock<IListingRepository> _listingRepositoryMock;
     private readonly Mock<ICurrentUserService> _currentUserServiceMock;
@@ -24,11 +24,11 @@ public class ReportServiceTests
     private readonly Mock<IUserServiceClient> _userServiceClientMock;
     private readonly Mock<ILogger<ReportDtoMapper>> _mapperLoggerMock;
     private readonly ReportDtoMapper _dtoMapper;
-    private readonly EstateHub.ListingService.Core.UseCases.ReportService _reportService;
+    private readonly EstateHub.ListingService.Core.Services.ReportService _reportService;
 
     public ReportServiceTests()
     {
-        _loggerMock = new Mock<ILogger<EstateHub.ListingService.Core.UseCases.ReportService>>();
+        _loggerMock = new Mock<ILogger<EstateHub.ListingService.Core.Services.ReportService>>();
         _reportRepositoryMock = new Mock<IReportRepository>();
         _listingRepositoryMock = new Mock<IListingRepository>();
         _currentUserServiceMock = new Mock<ICurrentUserService>();
@@ -55,7 +55,7 @@ public class ReportServiceTests
             .Setup(v => v.ValidateAsync(It.IsAny<CreateReportInput>(), It.IsAny<System.Threading.CancellationToken>()))
             .ReturnsAsync(new ValidationResult());
 
-        _reportService = new EstateHub.ListingService.Core.UseCases.ReportService(
+        _reportService = new EstateHub.ListingService.Core.Services.ReportService(
             _reportRepositoryMock.Object,
             _listingRepositoryMock.Object,
             _currentUserServiceMock.Object,

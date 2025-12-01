@@ -14,7 +14,7 @@ namespace EstateHub.ListingService.Core.Tests;
 
 public class ListingServiceTests
 {
-    private readonly Mock<ILogger<EstateHub.ListingService.Core.UseCases.ListingService>> _loggerMock;
+    private readonly Mock<ILogger<EstateHub.ListingService.Core.Services.ListingService>> _loggerMock;
     private readonly Mock<IListingRepository> _listingRepositoryMock;
     private readonly Mock<ILikedListingRepository> _likedListingRepositoryMock;
     private readonly Mock<ICurrentUserService> _currentUserServiceMock;
@@ -23,11 +23,11 @@ public class ListingServiceTests
     private readonly Mock<IValidator<ChangeStatusInput>> _statusValidatorMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly ListingDtoMapper _dtoMapper;
-    private readonly EstateHub.ListingService.Core.UseCases.ListingService _listingService;
+    private readonly EstateHub.ListingService.Core.Services.ListingService _listingService;
 
     public ListingServiceTests()
     {
-        _loggerMock = new Mock<ILogger<EstateHub.ListingService.Core.UseCases.ListingService>>();
+        _loggerMock = new Mock<ILogger<EstateHub.ListingService.Core.Services.ListingService>>();
         _listingRepositoryMock = new Mock<IListingRepository>();
         _likedListingRepositoryMock = new Mock<ILikedListingRepository>();
         _currentUserServiceMock = new Mock<ICurrentUserService>();
@@ -58,7 +58,7 @@ public class ListingServiceTests
             .Setup(v => v.ValidateAsync(It.IsAny<ChangeStatusInput>(), It.IsAny<System.Threading.CancellationToken>()))
             .ReturnsAsync(new ValidationResult());
 
-        _listingService = new EstateHub.ListingService.Core.UseCases.ListingService(
+        _listingService = new EstateHub.ListingService.Core.Services.ListingService(
             _listingRepositoryMock.Object,
             _likedListingRepositoryMock.Object,
             _currentUserServiceMock.Object,

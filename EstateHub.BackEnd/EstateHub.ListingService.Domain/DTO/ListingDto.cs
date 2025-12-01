@@ -32,5 +32,8 @@ public record ListingDto(
     DateTime? PublishedAt,
     DateTime? ArchivedAt,
     string? FirstPhotoUrl,
-    bool IsLikedByCurrentUser = false
+    bool IsLikedByCurrentUser = false,
+    bool? IsModerationApproved = null,
+    DateTime? ModerationCheckedAt = null,
+    string? ModerationRejectionReason = null
 );
