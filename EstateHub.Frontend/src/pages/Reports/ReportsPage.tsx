@@ -35,6 +35,8 @@ export const ReportsPage = () => {
   const [showDismissModal, setShowDismissModal] = useState(false);
   const [resolution, setResolution] = useState('');
   const [moderatorNotes, setModeratorNotes] = useState('');
+  const [unpublishListing, setUnpublishListing] = useState(false);
+  const [unpublishReason, setUnpublishReason] = useState('');
 
   const userRoles = getUserRoles();
   const canViewAllReports = hasPermission(userRoles, PERMISSIONS.ViewReports);
@@ -65,16 +67,24 @@ export const ReportsPage = () => {
 
   const handleResolve = useCallback(async () => {
     if (!selectedReport || !resolution.trim()) return;
+    if (unpublishListing && !unpublishReason.trim()) {
+      showError('Unpublish reason is required when unpublishing a listing');
+      return;
+    }
 
     try {
       await resolveReport({
         reportId: selectedReport.id,
         resolution: resolution.trim(),
         moderatorNotes: moderatorNotes.trim() || null,
+        unpublishListing,
+        unpublishReason: unpublishListing ? unpublishReason.trim() : null,
       });
       setShowResolveModal(false);
       setResolution('');
       setModeratorNotes('');
+      setUnpublishListing(false);
+      setUnpublishReason('');
       setSelectedReport(null);
       refetchModeration();
       refetchAllReports();
@@ -82,7 +92,7 @@ export const ReportsPage = () => {
     } catch (error) {
       showError(error instanceof Error ? error.message : 'Failed to resolve report');
     }
-  }, [selectedReport, resolution, moderatorNotes, resolveReport, refetchModeration, refetchAllReports, showSuccess, showError]);
+  }, [selectedReport, resolution, moderatorNotes, unpublishListing, unpublishReason, resolveReport, refetchModeration, refetchAllReports, showSuccess, showError]);
 
   const handleDismiss = useCallback(async () => {
     if (!selectedReport) return;
@@ -413,12 +423,45 @@ export const ReportsPage = () => {
                   rows={3}
                 />
               </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <input
+                  type="checkbox"
+                  checked={unpublishListing}
+                  onChange={(e) => {
+                    setUnpublishListing(e.target.checked);
+                    if (!e.target.checked) {
+                      setUnpublishReason('');
+                    }
+                  }}
+                />
+                <span>Unpublish listing</span>
+              </label>
+              {unpublishListing && (
+                <label>
+                  Unpublish Reason *
+                  <textarea
+                    value={unpublishReason}
+                    onChange={(e) => setUnpublishReason(e.target.value)}
+                    placeholder="Explain why the listing is being unpublished (this will be visible to the listing owner)..."
+                    rows={4}
+                    required
+                  />
+                </label>
+              )}
             </div>
             <div className="reports-page__modal-actions">
-              <Button variant="outline" onClick={() => setShowResolveModal(false)}>
+              <Button variant="outline" onClick={() => {
+                setShowResolveModal(false);
+                setUnpublishListing(false);
+                setUnpublishReason('');
+              }}>
                 Cancel
               </Button>
-              <Button variant="primary" onClick={handleResolve} disabled={!resolution.trim() || resolving}>
+              <Button 
+                variant="primary" 
+                onClick={handleResolve} 
+                disabled={!resolution.trim() || (unpublishListing && !unpublishReason.trim()) || resolving}
+              >
                 {resolving ? 'Resolving...' : 'Resolve'}
               </Button>
             </div>

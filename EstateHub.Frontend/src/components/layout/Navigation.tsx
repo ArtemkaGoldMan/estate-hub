@@ -6,7 +6,6 @@ export const Navigation = () => {
 
   const navItems = [
     { path: '/', label: 'Home' },
-    { path: '/components', label: 'Components' },
   ];
 
   return (

@@ -5,7 +5,9 @@ namespace EstateHub.ListingService.Domain.DTO;
 public record ResolveReportInput(
     Guid ReportId,
     string Resolution,
-    string? ModeratorNotes = null
+    string? ModeratorNotes = null,
+    bool UnpublishListing = false,
+    string? UnpublishReason = null
 );
 
 public record DismissReportInput(

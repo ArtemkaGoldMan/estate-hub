@@ -18,8 +18,10 @@ public class ResolveReportInputType
     public Guid ReportId { get; set; }
     public string Resolution { get; set; } = string.Empty;
     public string? ModeratorNotes { get; set; }
+    public bool UnpublishListing { get; set; } = false;
+    public string? UnpublishReason { get; set; }
 
-    public ResolveReportInput ToDto() => new(ReportId, Resolution, ModeratorNotes);
+    public ResolveReportInput ToDto() => new(ReportId, Resolution, ModeratorNotes, UnpublishListing, UnpublishReason);
 }
 
 public class DismissReportInputType

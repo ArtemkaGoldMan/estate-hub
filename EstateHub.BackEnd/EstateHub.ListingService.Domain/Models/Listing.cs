@@ -41,6 +41,9 @@ public record Listing
     public bool? IsModerationApproved { get; init; }
     public DateTime? ModerationCheckedAt { get; init; }
     public string? ModerationRejectionReason { get; init; }
+    
+    // Admin unpublish fields
+    public string? AdminUnpublishReason { get; init; }
 
     // Navigation properties
     public List<ListingPhoto> Photos { get; init; } = new();
@@ -153,6 +156,7 @@ public record Listing
         IsModerationApproved = null; // Not checked yet
         ModerationCheckedAt = null;
         ModerationRejectionReason = null;
+        AdminUnpublishReason = null;
     }
 
     // Business methods - return new instances for immutability
@@ -341,6 +345,30 @@ public record Listing
         return this with
         {
             IsDeleted = false,
+            UpdatedAt = DateTime.UtcNow
+        };
+    }
+
+    public Listing UnpublishWithReason(string reason)
+    {
+        if (Status != ListingStatus.Published)
+            throw new InvalidOperationException("Only published listings can be unpublished");
+
+        if (string.IsNullOrWhiteSpace(reason))
+            throw new ArgumentException("Reason cannot be null or empty", nameof(reason));
+
+        if (reason.Length > 1000)
+            throw new ArgumentException("Reason cannot exceed 1000 characters", nameof(reason));
+
+        return this with
+        {
+            Status = ListingStatus.Draft,
+            PublishedAt = null,
+            AdminUnpublishReason = reason,
+            // Reset moderation status so listing must be re-moderated after changes
+            IsModerationApproved = null,
+            ModerationCheckedAt = null,
+            ModerationRejectionReason = null,
             UpdatedAt = DateTime.UtcNow
         };
     }

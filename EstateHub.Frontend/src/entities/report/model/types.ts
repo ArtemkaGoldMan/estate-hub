@@ -67,6 +67,8 @@ export interface ResolveReportInput {
   reportId: string;
   resolution: string;
   moderatorNotes?: string | null;
+  unpublishListing?: boolean;
+  unpublishReason?: string | null;
 }
 
 /**

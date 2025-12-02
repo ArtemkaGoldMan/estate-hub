@@ -1,4 +1,4 @@
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LoadingSpinner } from '../ui';
 
@@ -14,13 +14,12 @@ export const ProtectedRoute = ({
   requireAdmin = false,
 }: ProtectedRouteProps) => {
   const { isAuthenticated, user } = useAuth();
-  const location = useLocation();
 
   // Check admin permissions if required
   if (requireAdmin) {
     const token = localStorage.getItem('estatehub_access_token');
     if (!token) {
-      return <Navigate to="/login" state={{ from: location }} replace />;
+      return <Navigate to="/" replace />;
     }
 
     // Parse roles from token
@@ -42,16 +41,16 @@ export const ProtectedRoute = ({
       const roles = Array.isArray(roleClaim) ? roleClaim : [roleClaim].filter(Boolean);
 
       if (!roles.includes('Admin')) {
-        return <Navigate to="/dashboard" state={{ from: location }} replace />;
+        return <Navigate to="/" replace />;
       }
     } catch {
-      return <Navigate to="/login" state={{ from: location }} replace />;
+      return <Navigate to="/" replace />;
     }
   }
 
   // Check authentication if required
   if (requireAuth && !isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/" replace />;
   }
 
   // Show loading while checking auth

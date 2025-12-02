@@ -128,7 +128,8 @@ export const DashboardListingDetailPage = () => {
     navigate(`/listings/${listing?.id}/edit`);
   };
 
-  const canPublish = isDraft && listing?.isModerationApproved === true;
+  // Cannot publish if admin unpublished (must make changes and re-moderate first)
+  const canPublish = isDraft && listing?.isModerationApproved === true && !listing?.adminUnpublishReason;
 
   if (loading) {
     return (
@@ -393,8 +394,28 @@ export const DashboardListingDetailPage = () => {
 
         {/* Right Column - Management Panel */}
         <div className="dashboard-listing-detail-page__management-panel">
-          {/* Moderation Review Section - Only for draft listings */}
-          {isDraft && (
+          {/* Admin Unpublish Section - Show FIRST when listing was unpublished by admin */}
+          {listing.adminUnpublishReason && (
+            <div className="dashboard-listing-detail-page__management-section">
+              <h2>⚠️ Admin Action Required</h2>
+              <div className="dashboard-listing-detail-page__moderation-review--rejected">
+                <div className="dashboard-listing-detail-page__moderation-status-icon">⚠️</div>
+                <div className="dashboard-listing-detail-page__moderation-status-text">
+                  <strong>Listing Unpublished by Administrator</strong>
+                  <div className="dashboard-listing-detail-page__moderation-reason">
+                    <p><strong>Reason:</strong></p>
+                    <p>{listing.adminUnpublishReason}</p>
+                  </div>
+                  <div className="dashboard-listing-detail-page__moderation-message">
+                    <p><strong>Your listing has been unpublished due to a report. Please review the reason above, make necessary changes, and the listing will need to be re-moderated before it can be republished.</strong></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Moderation Review Section - Only for draft listings, hide if admin unpublished */}
+          {isDraft && !listing?.adminUnpublishReason && (
             <div className="dashboard-listing-detail-page__management-section">
               <h2>Moderator Review</h2>
               <div className="dashboard-listing-detail-page__moderation-review">
@@ -470,7 +491,9 @@ export const DashboardListingDetailPage = () => {
                   isLoading={statusLoading}
                   style={{ width: '100%' }}
                   title={
-                    !canPublish
+                    listing?.adminUnpublishReason
+                      ? 'Listing was unpublished by admin. Make changes and re-moderate before publishing.'
+                      : !canPublish
                       ? 'Content must pass moderation before publishing'
                       : 'Publish listing'
                   }
