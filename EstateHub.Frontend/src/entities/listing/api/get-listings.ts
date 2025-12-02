@@ -39,6 +39,7 @@ const LISTING_CORE_FIELDS = gql`
     isModerationApproved
     moderationCheckedAt
     moderationRejectionReason
+    adminUnpublishReason
   }
 `;
 

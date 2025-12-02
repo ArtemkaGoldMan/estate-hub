@@ -91,7 +91,8 @@ public class ListingDtoMapper
             isLikedByCurrentUser,
             listing.IsModerationApproved,
             listing.ModerationCheckedAt,
-            listing.ModerationRejectionReason
+            listing.ModerationRejectionReason,
+            listing.AdminUnpublishReason
         );
     }
 

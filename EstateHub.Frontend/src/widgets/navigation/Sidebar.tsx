@@ -29,6 +29,7 @@ export const Sidebar = ({ isMobileOpen = false, onMobileClose }: SidebarProps) =
   const canManageUsers = hasPermission(userRoles, PERMISSIONS.UserManagement);
 
   const navItems: NavItem[] = [
+    { path: '/', label: 'Home', icon: '🏡' },
     { path: '/listings', label: 'Listings', icon: '🏠' },
     { path: '/map', label: 'Map Search', icon: '🗺️' },
     { path: '/dashboard', label: 'Dashboard', icon: '📊', requiresAuth: true },
@@ -47,9 +48,11 @@ export const Sidebar = ({ isMobileOpen = false, onMobileClose }: SidebarProps) =
   );
 
   const isActive = (path: string) => {
+    if (path === '/') {
+      return location.pathname === '/';
+    }
     if (path === '/listings') {
       return (
-        location.pathname === '/' ||
         location.pathname === '/listings' ||
         location.pathname.startsWith('/listings/')
       );
@@ -89,6 +92,7 @@ export const Sidebar = ({ isMobileOpen = false, onMobileClose }: SidebarProps) =
             alt="EstateHub" 
             className="sidebar__logo-image"
           />
+          {!isCollapsed && <span className="sidebar__logo-text">EstateHub</span>}
         </Link>
         <button
           className="sidebar__toggle"
