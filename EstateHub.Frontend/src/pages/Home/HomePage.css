@@ -15,6 +15,18 @@
   margin: 0 auto;
 }
 
+.home-page__logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 32px;
+}
+
+.home-page__logo-image {
+  height: 80px;
+  width: auto;
+  object-fit: contain;
+}
+
 .home-page__title {
   margin: 0 0 24px;
   font-size: 48px;

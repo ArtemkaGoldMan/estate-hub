@@ -35,5 +35,6 @@ public record ListingDto(
     bool IsLikedByCurrentUser = false,
     bool? IsModerationApproved = null,
     DateTime? ModerationCheckedAt = null,
-    string? ModerationRejectionReason = null
+    string? ModerationRejectionReason = null,
+    string? AdminUnpublishReason = null
 );

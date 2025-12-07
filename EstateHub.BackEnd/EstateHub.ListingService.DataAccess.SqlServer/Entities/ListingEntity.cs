@@ -42,6 +42,9 @@ public class ListingEntity
     public DateTime? ModerationCheckedAt { get; set; }
     public string? ModerationRejectionReason { get; set; }
     
+    // Admin unpublish fields
+    public string? AdminUnpublishReason { get; set; }
+    
     public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 
     // Navigation properties

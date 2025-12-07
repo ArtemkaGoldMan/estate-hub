@@ -40,6 +40,7 @@ public class ApplicationDbContext : DbContext
             entity.Property(l => l.MonthlyRentPln).HasColumnType("decimal(15,2)");
             entity.Property(l => l.RowVersion).IsRowVersion();
             entity.Property(l => l.ModerationRejectionReason).HasMaxLength(500);
+            entity.Property(l => l.AdminUnpublishReason).HasMaxLength(1000);
             
             // Soft delete filter
             entity.HasQueryFilter(l => !l.IsDeleted);

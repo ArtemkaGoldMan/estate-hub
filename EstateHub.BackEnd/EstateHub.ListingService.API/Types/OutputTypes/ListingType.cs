@@ -45,6 +45,9 @@ public class ListingType
     
     [GraphQLDescription("Rejection reason if moderation failed")]
     public string? ModerationRejectionReason { get; set; }
+    
+    [GraphQLDescription("Reason why the listing was unpublished by an admin")]
+    public string? AdminUnpublishReason { get; set; }
 
     public static ListingType FromDto(ListingDto dto) => new()
     {
@@ -80,6 +83,7 @@ public class ListingType
         IsLikedByCurrentUser = dto.IsLikedByCurrentUser,
         IsModerationApproved = dto.IsModerationApproved,
         ModerationCheckedAt = dto.ModerationCheckedAt,
-        ModerationRejectionReason = dto.ModerationRejectionReason
+        ModerationRejectionReason = dto.ModerationRejectionReason,
+        AdminUnpublishReason = dto.AdminUnpublishReason
     };
 }

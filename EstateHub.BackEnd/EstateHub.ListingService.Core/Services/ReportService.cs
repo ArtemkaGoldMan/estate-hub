@@ -175,6 +175,29 @@ public class ReportService : IReportService
 
             var resolvedReport = reportToUpdate.Resolve(input.Resolution, input.ModeratorNotes);
             await _reportRepository.UpdateAsync(resolvedReport);
+
+            // If unpublish is requested, unpublish the listing
+            if (input.UnpublishListing)
+            {
+                if (string.IsNullOrWhiteSpace(input.UnpublishReason))
+                {
+                    ErrorHelper.ThrowErrorOperation(ListingServiceErrors.InvalidInput("UnpublishReason is required when unpublishing a listing"));
+                }
+
+                var listing = await _listingRepository.GetByIdAsync(report.ListingId);
+                if (listing == null)
+                {
+                    ErrorHelper.ThrowError(ListingServiceErrors.ListingNotFound(report.ListingId));
+                }
+
+                if (listing.Status == ListingStatus.Published)
+                {
+                    var unpublishedListing = listing.UnpublishWithReason(input.UnpublishReason!);
+                    await _listingRepository.UpdateAsync(unpublishedListing);
+                    _logger.LogInformation("Listing unpublished due to report resolution - ListingId: {ListingId}, ReportId: {ReportId}", 
+                        listing.Id, report.Id);
+                }
+            }
         });
 
         if (result.IsFailure)

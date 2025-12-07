@@ -45,6 +45,7 @@ export interface Listing {
   isModerationApproved?: boolean | null;
   moderationCheckedAt?: string | null;
   moderationRejectionReason?: string | null;
+  adminUnpublishReason?: string | null;
 }
 
 export interface ListingFilter {
