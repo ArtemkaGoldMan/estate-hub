@@ -58,6 +58,19 @@ public class Queries
         return PagedListingsType.FromDto(result);
     }
 
+    [Authorize]
+    public async Task<PagedListingsType> GetArchivedListings(
+        int page,
+        int pageSize,
+        [Service] IListingService listingService)
+    {
+        // Enforce page size limit
+        pageSize = Math.Min(pageSize, 50);
+        
+        var result = await listingService.GetArchivedAsync(page, pageSize);
+        return PagedListingsType.FromDto(result);
+    }
+
     public async Task<PagedListingsType> GetListingsOnMap(
         BoundsInputType? bounds,
         int page,

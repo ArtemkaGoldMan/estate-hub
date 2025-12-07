@@ -5,22 +5,18 @@ import {
   type ListingFilter,
   type ListingsRequest,
   type ListingsResponse,
-  type MapBounds,
-  useListingsOnMapQuery,
   useListingsQuery,
 } from '../../entities/listing';
 import {
   ListingFilters,
   type ListingsFiltersState,
-  ListingsMap,
 } from '../../features';
+import { FaFilter, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { ListingsGrid } from '../../widgets';
 import { Button, Pagination } from '../../shared';
 import './ListingsPage.css';
 
 const PAGE_SIZE = 12;
-
-type ViewMode = 'split' | 'list';
 
 const sanitizeFilter = (filters: ListingsFiltersState): ListingFilter => {
   const entries = Object.entries(filters).filter(([key, value]) => {
@@ -60,10 +56,9 @@ const buildRequest = (
 
 export const ListingsPage = () => {
   const navigate = useNavigate();
-  const [viewMode, setViewMode] = useState<ViewMode>('split');
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<ListingsFiltersState>({});
-  const [mapBounds, setMapBounds] = useState<MapBounds | undefined>();
+  const [showFilters, setShowFilters] = useState(false);
 
   const deferredSearch = useDeferredValue(filters.search ?? '');
   
@@ -76,20 +71,6 @@ export const ListingsPage = () => {
   );
 
   const { data, loading, error } = useListingsQuery(listingsRequest);
-
-  // Only query map listings when not in list-only mode and bounds are available
-  const shouldQueryMap = useMemo(
-    () => viewMode !== 'list' && mapBounds !== undefined,
-    [viewMode, mapBounds]
-  );
-  
-  const mapQuery = useListingsOnMapQuery({
-    bounds: mapBounds,
-    filter: listingsRequest.filter,
-    page: 1,
-    pageSize: 200,
-    enabled: shouldQueryMap,
-  });
 
   // Reset page when filters or search actually change (not on every render)
   useEffect(() => {
@@ -109,26 +90,6 @@ export const ListingsPage = () => {
     navigate(`/listings/${listing.id}`);
   }, [navigate]);
 
-  const handleViewModeChange = useCallback((mode: ViewMode) => {
-    setViewMode(mode);
-  }, []);
-
-  // Memoize bounds change handler to prevent infinite loops
-  const handleBoundsChange = useCallback((bounds: MapBounds) => {
-    setMapBounds((prevBounds) => {
-      // Only update if bounds actually changed
-      if (
-        !prevBounds ||
-        prevBounds.latMin !== bounds.latMin ||
-        prevBounds.latMax !== bounds.latMax ||
-        prevBounds.lonMin !== bounds.lonMin ||
-        prevBounds.lonMax !== bounds.lonMax
-      ) {
-        return bounds;
-      }
-      return prevBounds;
-    });
-  }, []);
 
   const listings: ListingsResponse = data ?? { items: [], total: 0 };
 
@@ -142,32 +103,29 @@ export const ListingsPage = () => {
             or explore the interactive map to discover opportunities.
           </p>
         </div>
-        <div className="listings-page__view-toggle">
-          <span>View</span>
-          <div className="listings-page__view-buttons">
-            <Button
-              type="button"
-              variant={viewMode === 'list' ? 'primary' : 'ghost'}
-              onClick={() => handleViewModeChange('list')}
-            >
-              List
-            </Button>
-            <Button
-              type="button"
-              variant={viewMode === 'split' ? 'primary' : 'ghost'}
-              onClick={() => handleViewModeChange('split')}
-            >
-              Split
-            </Button>
-          </div>
-        </div>
       </section>
 
-      <ListingFilters
-        filters={filters}
-        onFiltersChange={handleFiltersChange}
-        onReset={handleResetFilters}
-      />
+      <div className="listings-page__filters-section">
+        <Button
+          variant="outline"
+          onClick={() => setShowFilters(!showFilters)}
+          className="listings-page__filters-toggle"
+        >
+          <FaFilter style={{ marginRight: '0.5rem' }} />
+          {showFilters ? 'Hide Filters' : 'Show Filters'}
+          {showFilters ? <FaChevronUp style={{ marginLeft: '0.5rem' }} /> : <FaChevronDown style={{ marginLeft: '0.5rem' }} />}
+        </Button>
+        
+        {showFilters && (
+          <div className="listings-page__filters-content">
+            <ListingFilters
+              filters={filters}
+              onFiltersChange={handleFiltersChange}
+              onReset={handleResetFilters}
+            />
+          </div>
+        )}
+      </div>
 
       {error && (
         <div className="listings-page__error">
@@ -176,9 +134,7 @@ export const ListingsPage = () => {
         </div>
       )}
 
-      <div
-        className={`listings-page__content listings-page__content--${viewMode}`}
-      >
+      <div className="listings-page__content">
         <div className="listings-page__list">
           <ListingsGrid
             listings={listings.items}
@@ -197,16 +153,6 @@ export const ListingsPage = () => {
             />
           </div>
         </div>
-
-        {viewMode === 'split' && (
-          <div className="listings-page__map">
-            <ListingsMap
-              listings={mapQuery.data?.items ?? listings.items}
-              onBoundsChange={handleBoundsChange}
-              onSelectListing={handleListingSelect}
-            />
-          </div>
-        )}
       </div>
     </div>
   );

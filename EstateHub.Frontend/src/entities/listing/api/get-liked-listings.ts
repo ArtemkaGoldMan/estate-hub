@@ -58,5 +58,5 @@ export const useLikedListingsQuery = (page: number, pageSize: number) => {
   };
 };
 
-
+export { GET_LIKED_LISTINGS };
 

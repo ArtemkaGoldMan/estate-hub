@@ -102,6 +102,8 @@ public class UsersRepository : IUsersRepository
         where TProjectTo : class =>
         _context.Users
             .AsNoTracking()
+            .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
             .Where(x => includeDeleted || !x.IsDeleted)
             .OrderBy(x => x.CreatedAt)
             .Skip((page - 1) * pageSize)

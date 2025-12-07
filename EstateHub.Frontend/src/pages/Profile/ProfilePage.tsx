@@ -13,6 +13,13 @@ export const ProfilePage = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [country, setCountry] = useState('');
+  const [city, setCity] = useState('');
+  const [address, setAddress] = useState('');
+  const [postalCode, setPostalCode] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [website, setWebsite] = useState('');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -32,6 +39,13 @@ export const ProfilePage = () => {
         const userProfile = await userApi.getUser(user.id);
         setProfile(userProfile);
         setDisplayName(userProfile.displayName);
+        setPhoneNumber(userProfile.phoneNumber || '');
+        setCountry(userProfile.country || '');
+        setCity(userProfile.city || '');
+        setAddress(userProfile.address || '');
+        setPostalCode(userProfile.postalCode || '');
+        setCompanyName(userProfile.companyName || '');
+        setWebsite(userProfile.website || '');
         if (userProfile.avatar) {
           setAvatarPreview(userProfile.avatar);
         }
@@ -82,11 +96,26 @@ export const ProfilePage = () => {
       await userApi.updateUser(user.id, {
         displayName: displayName !== profile.displayName ? displayName : undefined,
         avatar: avatarFile || undefined,
+        phoneNumber: phoneNumber !== (profile.phoneNumber || '') ? phoneNumber : undefined,
+        country: country !== (profile.country || '') ? country : undefined,
+        city: city !== (profile.city || '') ? city : undefined,
+        address: address !== (profile.address || '') ? address : undefined,
+        postalCode: postalCode !== (profile.postalCode || '') ? postalCode : undefined,
+        companyName: companyName !== (profile.companyName || '') ? companyName : undefined,
+        website: website !== (profile.website || '') ? website : undefined,
       });
 
       // Reload profile to get updated data
       const updatedProfile = await userApi.getUser(user.id);
       setProfile(updatedProfile);
+      setDisplayName(updatedProfile.displayName);
+      setPhoneNumber(updatedProfile.phoneNumber || '');
+      setCountry(updatedProfile.country || '');
+      setCity(updatedProfile.city || '');
+      setAddress(updatedProfile.address || '');
+      setPostalCode(updatedProfile.postalCode || '');
+      setCompanyName(updatedProfile.companyName || '');
+      setWebsite(updatedProfile.website || '');
       setAvatarFile(null);
 
       // Update auth context if display name changed
@@ -105,7 +134,7 @@ export const ProfilePage = () => {
     } finally {
       setSaving(false);
     }
-  }, [user, profile, displayName, avatarFile, setUser]);
+  }, [user, profile, displayName, phoneNumber, country, city, address, postalCode, companyName, website, avatarFile, setUser]);
 
   const handleDeleteAccount = useCallback(async () => {
     if (!user) return;
@@ -241,12 +270,10 @@ export const ProfilePage = () => {
             <Input
               id="phoneNumber"
               type="tel"
-              value={profile.phoneNumber || ''}
-              disabled
-              readOnly
-              placeholder="Not provided"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              placeholder="Enter your phone number"
             />
-            <p className="profile-page__field-hint">Phone number cannot be changed here</p>
           </div>
 
           <div className="profile-page__field">
@@ -254,10 +281,9 @@ export const ProfilePage = () => {
             <Input
               id="country"
               type="text"
-              value={profile.country || ''}
-              disabled
-              readOnly
-              placeholder="Not provided"
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              placeholder="Enter your country"
             />
           </div>
 
@@ -266,10 +292,9 @@ export const ProfilePage = () => {
             <Input
               id="city"
               type="text"
-              value={profile.city || ''}
-              disabled
-              readOnly
-              placeholder="Not provided"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="Enter your city"
             />
           </div>
 
@@ -278,10 +303,9 @@ export const ProfilePage = () => {
             <Input
               id="address"
               type="text"
-              value={profile.address || ''}
-              disabled
-              readOnly
-              placeholder="Not provided"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="Enter your address"
             />
           </div>
 
@@ -290,10 +314,9 @@ export const ProfilePage = () => {
             <Input
               id="postalCode"
               type="text"
-              value={profile.postalCode || ''}
-              disabled
-              readOnly
-              placeholder="Not provided"
+              value={postalCode}
+              onChange={(e) => setPostalCode(e.target.value)}
+              placeholder="Enter your postal code"
             />
           </div>
 
@@ -302,10 +325,9 @@ export const ProfilePage = () => {
             <Input
               id="companyName"
               type="text"
-              value={profile.companyName || ''}
-              disabled
-              readOnly
-              placeholder="Not provided"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              placeholder="Enter your company name"
             />
           </div>
 
@@ -314,10 +336,9 @@ export const ProfilePage = () => {
             <Input
               id="website"
               type="url"
-              value={profile.website || ''}
-              disabled
-              readOnly
-              placeholder="Not provided"
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+              placeholder="Enter your website URL"
             />
           </div>
 
@@ -339,7 +360,17 @@ export const ProfilePage = () => {
             <Button
               variant="primary"
               onClick={handleSave}
-              disabled={saving || (displayName === profile.displayName && !avatarFile)}
+              disabled={saving || (
+                displayName === profile.displayName &&
+                phoneNumber === (profile.phoneNumber || '') &&
+                country === (profile.country || '') &&
+                city === (profile.city || '') &&
+                address === (profile.address || '') &&
+                postalCode === (profile.postalCode || '') &&
+                companyName === (profile.companyName || '') &&
+                website === (profile.website || '') &&
+                !avatarFile
+              )}
               isLoading={saving}
             >
               {saving ? 'Saving...' : 'Save Changes'}
@@ -349,6 +380,13 @@ export const ProfilePage = () => {
               variant="outline"
               onClick={() => {
                 setDisplayName(profile.displayName);
+                setPhoneNumber(profile.phoneNumber || '');
+                setCountry(profile.country || '');
+                setCity(profile.city || '');
+                setAddress(profile.address || '');
+                setPostalCode(profile.postalCode || '');
+                setCompanyName(profile.companyName || '');
+                setWebsite(profile.website || '');
                 setAvatarFile(null);
                 setAvatarPreview(profile.avatar || null);
                 setError('');

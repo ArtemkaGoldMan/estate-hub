@@ -2,6 +2,7 @@ import { gql, useMutation } from '@apollo/client';
 import { GET_LISTING } from './get-listing';
 import { GET_LISTINGS, SEARCH_LISTINGS } from './get-listings';
 import { GET_LISTINGS_ON_MAP } from './get-listings-on-map';
+import { GET_LIKED_LISTINGS } from './get-liked-listings';
 
 const LIKE_LISTING = gql`
   mutation LikeListing($id: UUID!) {
@@ -21,7 +22,7 @@ export const useLikeListing = () => {
 
   const toggleLike = async (listingId: string, isCurrentlyLiked: boolean) => {
     try {
-      const refetchQueries = [GET_LISTING, GET_LISTINGS, SEARCH_LISTINGS, GET_LISTINGS_ON_MAP];
+      const refetchQueries = [GET_LISTING, GET_LISTINGS, SEARCH_LISTINGS, GET_LISTINGS_ON_MAP, GET_LIKED_LISTINGS];
       
       if (isCurrentlyLiked) {
         await unlikeListing({

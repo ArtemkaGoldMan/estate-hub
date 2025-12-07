@@ -2,14 +2,17 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../shared/context/AuthContext';
 import { useToast } from '../../shared/context/ToastContext';
-import { useListingQuery, usePhotosQuery, useLikeListing } from '../../entities/listing';
+import { useListingQuery, usePhotosQuery, useLikeListing, useChangeListingStatus } from '../../entities/listing';
 import { PhotoGallery } from '../../entities/listing/ui';
 import { CreateReportModal } from '../../features/reports/ui/CreateReportModal';
+import { AskAI } from '../../features/listings/ask-ai/ui/AskAI';
 import { Button, LoadingSpinner } from '../../shared/ui';
 import { formatCurrency } from '../../shared/lib/formatCurrency';
 import { sanitizeHtml } from '../../shared/lib/sanitizeHtml';
 import { userApi, type GetUserResponse } from '../../shared/api/auth/userApi';
+import { getUserRoles } from '../../shared/lib/permissions';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { FaHeart, FaRegHeart, FaBan, FaArchive, FaExclamationTriangle } from 'react-icons/fa';
 import 'leaflet/dist/leaflet.css';
 import { Icon } from 'leaflet';
 import './ListingDetailPage.css';
@@ -28,15 +31,18 @@ export const ListingDetailPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { showError } = useToast();
+  const { showError, showSuccess } = useToast();
   
-  const { listing, loading, error } = useListingQuery(id || '');
+  const { listing, loading, error, refetch: refetchListing } = useListingQuery(id || '');
   const { photos } = usePhotosQuery(id || '', true);
   const { toggleLike, loading: likeLoading } = useLikeListing();
+  const { unpublishListing, archiveListing, unarchiveListing, loading: statusLoading } = useChangeListingStatus();
   const [ownerInfo, setOwnerInfo] = useState<GetUserResponse | null>(null);
   const [loadingOwner, setLoadingOwner] = useState(false);
   
   const isAuthenticated = !!user;
+  const userRoles = getUserRoles();
+  const isAdmin = userRoles.includes('Admin');
   
   useEffect(() => {
     if (!id) {
@@ -78,6 +84,48 @@ export const ListingDetailPage = () => {
     setShowReportModal(true);
   };
 
+  const handleUnpublish = async () => {
+    if (!listing) return;
+    if (!confirm('Are you sure you want to unpublish this listing? It will be moved to draft status.')) {
+      return;
+    }
+    try {
+      await unpublishListing(listing.id);
+      await refetchListing();
+      showSuccess('Listing unpublished successfully');
+    } catch (error) {
+      showError(error instanceof Error ? error.message : 'Failed to unpublish listing');
+    }
+  };
+
+  const handleArchive = async () => {
+    if (!listing) return;
+    if (!confirm('Are you sure you want to archive this listing? It will be hidden from public view.')) {
+      return;
+    }
+    try {
+      await archiveListing(listing.id);
+      await refetchListing();
+      showSuccess('Listing archived successfully');
+    } catch (error) {
+      showError(error instanceof Error ? error.message : 'Failed to archive listing');
+    }
+  };
+
+  const handleUnarchive = async () => {
+    if (!listing) return;
+    if (!confirm('Are you sure you want to unarchive this listing? It will be moved to draft status.')) {
+      return;
+    }
+    try {
+      await unarchiveListing(listing.id);
+      await refetchListing();
+      showSuccess('Listing unarchived successfully. It is now in draft status.');
+    } catch (error) {
+      showError(error instanceof Error ? error.message : 'Failed to unarchive listing');
+    }
+  };
+
   const handleBack = () => {
     const state = location.state as { from?: string } | null;
     if (state?.from) {
@@ -115,11 +163,62 @@ export const ListingDetailPage = () => {
 
   return (
     <div className="listing-detail-page">
-      {/* Header - Only back button */}
+      {/* Header - Back button and action buttons */}
       <div className="listing-detail-page__header">
         <Button variant="ghost" onClick={handleBack}>
           ← Back
         </Button>
+        {isAuthenticated && (
+          <div className="listing-detail-page__header-actions">
+            <Button
+              variant={listing.isLikedByCurrentUser ? 'primary' : 'outline'}
+              onClick={handleLike}
+              disabled={likeLoading}
+              isLoading={likeLoading}
+            >
+              {listing.isLikedByCurrentUser ? (
+                <>
+                  <FaHeart style={{ marginRight: '0.5rem' }} /> Liked
+                </>
+              ) : (
+                <>
+                  <FaRegHeart style={{ marginRight: '0.5rem' }} /> Like
+                </>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleReport}
+            >
+              <FaExclamationTriangle style={{ marginRight: '0.5rem' }} /> Report
+            </Button>
+            {/* Archive/Unarchive button for listing owner */}
+            {listing.ownerId === user?.id && (
+              <>
+                {listing.status !== 'Archived' && (
+                  <Button
+                    variant="outline"
+                    onClick={handleArchive}
+                    disabled={statusLoading}
+                    isLoading={statusLoading}
+                  >
+                    <FaArchive style={{ marginRight: '0.5rem' }} /> Archive
+                  </Button>
+                )}
+                {listing.status === 'Archived' && (
+                  <Button
+                    variant="outline"
+                    onClick={handleUnarchive}
+                    disabled={statusLoading}
+                    isLoading={statusLoading}
+                  >
+                    <FaArchive style={{ marginRight: '0.5rem' }} /> Unarchive
+                  </Button>
+                )}
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Main Content - Two Column Layout */}
@@ -131,7 +230,6 @@ export const ListingDetailPage = () => {
             <PhotoGallery
               photos={photos}
               fallbackUrl={listing.firstPhotoUrl}
-              title={listing.title}
             />
           </div>
 
@@ -336,27 +434,42 @@ export const ListingDetailPage = () => {
             )}
           </div>
 
-          {/* Like/Report Buttons */}
-          {isAuthenticated && (
-            <div className="listing-detail-page__actions">
-              <Button
-                variant={listing.isLikedByCurrentUser ? 'primary' : 'outline'}
-                onClick={handleLike}
-                disabled={likeLoading}
-                isLoading={likeLoading}
-                style={{ width: '100%' }}
-              >
-                {listing.isLikedByCurrentUser ? '❤️ Liked' : '🤍 Like'}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleReport}
-                style={{ width: '100%' }}
-              >
-                Report
-              </Button>
+          {/* Ask AI Section - Only for non-admin users */}
+          {!isAdmin && (
+            <div className="listing-detail-page__ask-ai-section">
+              <AskAI listingId={listing.id} />
             </div>
           )}
+
+          {/* Admin Management Panel */}
+          {isAdmin && (
+            <div className="listing-detail-page__admin-panel">
+              <div className="listing-detail-page__admin-panel-header">
+                <h2>Admin Management</h2>
+              </div>
+              <div className="listing-detail-page__admin-panel-actions">
+                <Button
+                  variant="outline"
+                  onClick={handleReport}
+                  style={{ width: '100%' }}
+                >
+                  <FaExclamationTriangle style={{ marginRight: '0.5rem' }} /> Report
+                </Button>
+                {listing.status === 'Published' && (
+                  <Button
+                    variant="outline"
+                    onClick={handleUnpublish}
+                    disabled={statusLoading}
+                    isLoading={statusLoading}
+                    style={{ width: '100%' }}
+                  >
+                    <FaBan style={{ marginRight: '0.5rem' }} /> Unpublish
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
 

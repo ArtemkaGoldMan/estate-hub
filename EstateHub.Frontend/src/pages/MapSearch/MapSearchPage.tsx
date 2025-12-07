@@ -1,5 +1,6 @@
 import { useDeferredValue, useMemo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FaTimes, FaBars } from 'react-icons/fa';
 import {
   type Listing,
   type ListingFilter,
@@ -14,6 +15,7 @@ import {
 } from '../../features';
 import { Button, LoadingSpinner } from '../../shared';
 import { formatCurrency } from '../../shared/lib/formatCurrency';
+import { stripHtml } from '../../shared/lib/stripHtml';
 import './MapSearchPage.css';
 
 const sanitizeFilter = (filters: ListingsFiltersState): ListingFilter => {
@@ -131,7 +133,15 @@ export const MapSearchPage = () => {
           onClick={() => setShowFilters(!showFilters)}
           className="map-search-page__filters-toggle"
         >
-          {showFilters ? '✕ Hide Filters' : '☰ Show Filters'}
+          {showFilters ? (
+            <>
+              <FaTimes style={{ marginRight: '0.5rem' }} /> Hide Filters
+            </>
+          ) : (
+            <>
+              <FaBars style={{ marginRight: '0.5rem' }} /> Show Filters
+            </>
+          )}
         </Button>
         {selectedListing && (
           <Button
@@ -139,7 +149,7 @@ export const MapSearchPage = () => {
             onClick={() => setSelectedListing(null)}
             className="map-search-page__close-details"
           >
-            ✕ Close Details
+            <FaTimes style={{ marginRight: '0.5rem' }} /> Close Details
           </Button>
         )}
       </div>
@@ -154,7 +164,7 @@ export const MapSearchPage = () => {
               onClick={() => setShowFilters(false)}
               className="map-search-page__close-filters"
             >
-              ✕
+              <FaTimes />
             </Button>
           </div>
           <div className="map-search-page__filters-content">
@@ -207,7 +217,7 @@ export const MapSearchPage = () => {
               onClick={() => setSelectedListing(null)}
               className="map-search-page__close-details-btn"
             >
-              ✕
+              <FaTimes />
             </Button>
           </div>
           <div className="map-search-page__details-content">
@@ -252,9 +262,12 @@ export const MapSearchPage = () => {
               </div>
               {selectedListing.description && (
                 <p className="map-search-page__details-description">
-                  {selectedListing.description.length > 200
-                    ? `${selectedListing.description.substring(0, 200)}...`
-                    : selectedListing.description}
+                  {(() => {
+                    const plainText = stripHtml(selectedListing.description);
+                    return plainText.length > 200
+                      ? `${plainText.substring(0, 200)}...`
+                      : plainText;
+                  })()}
                 </p>
               )}
               <div className="map-search-page__details-actions">

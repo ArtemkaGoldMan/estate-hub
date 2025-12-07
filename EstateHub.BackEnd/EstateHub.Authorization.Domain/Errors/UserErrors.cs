@@ -78,4 +78,8 @@ public static class UserErrors
     public static object AvatarTooSmall(int minLengthOrWidthOfAvatar) => new Error(
         "400", "Users.AvatarTooSmall", "3023",
         $"The avatar dimensions must be at least {minLengthOrWidthOfAvatar} pixels in length or width. Provided dimensions are smaller than the minimum required size.");
+
+    public static Error CannotRemoveOwnAdminRole() => new(
+        "400", "Users.CannotRemoveOwnAdminRole", "3024", 
+        "You cannot remove your own Admin role");
 }

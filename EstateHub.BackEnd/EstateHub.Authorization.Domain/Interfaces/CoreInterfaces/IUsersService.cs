@@ -23,7 +23,7 @@ public interface IUsersService
 
     Task<Result> AssignUserRoleAsync(Guid userId, string role);
 
-    Task<Result> RemoveUserRoleAsync(Guid userId, string role);
+    Task<Result> RemoveUserRoleAsync(Guid userId, string role, Guid? currentUserId = null);
 
     Task<Result> SuspendUserAsync(Guid userId, string reason);
 

@@ -43,8 +43,10 @@ export const PhotoGallery = ({ photos, fallbackUrl, title }: PhotoGalleryProps) 
 
   if (displayPhotos.length === 0) {
     return (
-      <div className="photo-gallery photo-gallery--empty">
-        <div className="photo-gallery__placeholder">No photos available</div>
+      <div className="photo-gallery">
+        <div className="photo-gallery__viewer photo-gallery__viewer--empty">
+          <div className="photo-gallery__placeholder">No photos available</div>
+        </div>
       </div>
     );
   }

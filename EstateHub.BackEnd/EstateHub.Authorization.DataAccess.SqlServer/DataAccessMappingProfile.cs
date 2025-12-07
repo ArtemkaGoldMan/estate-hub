@@ -18,7 +18,9 @@ public class DataAccessMappingProfile : Profile
 
         CreateMap<UserEntity, GetUserResponse>()
             .ForMember(dst => dst.Avatar,
-                opt => opt.MapFrom(src => User.ConvertAvatarToDataUri(src.AvatarData, src.AvatarContentType)));
+                opt => opt.MapFrom(src => User.ConvertAvatarToDataUri(src.AvatarData, src.AvatarContentType)))
+            .ForMember(dst => dst.Roles,
+                opt => opt.MapFrom(src => src.UserRoles.Select(ur => ur.Role.Name)));
 
         CreateMap<UserEntity, GetUserWithRolesResponse>()
             .ForMember(dst => dst.Avatar,

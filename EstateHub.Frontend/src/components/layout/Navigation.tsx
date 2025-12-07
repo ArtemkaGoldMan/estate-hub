@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import logoImage from '../../assets/Logo_Icon.svg';
 import './Navigation.css';
 
 export const Navigation = () => {
@@ -12,7 +13,12 @@ export const Navigation = () => {
     <nav className="navigation">
       <div className="navigation__container">
         <Link to="/" className="navigation__logo">
-          EstateHub
+          <img 
+            src={logoImage} 
+            alt="EstateHub" 
+            className="navigation__logo-image"
+          />
+          <span className="navigation__logo-text">EstateHub</span>
         </Link>
         <ul className="navigation__menu">
           {navItems.map((item) => (

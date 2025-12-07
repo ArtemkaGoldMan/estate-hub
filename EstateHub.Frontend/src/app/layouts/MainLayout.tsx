@@ -17,6 +17,9 @@ export const MainLayout = () => {
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
+  // Hide footer on map search page
+  const showFooter = location.pathname !== '/map';
+
   return (
     <div className="main-layout">
       <Sidebar
@@ -37,7 +40,7 @@ export const MainLayout = () => {
         <div className="main-layout__page">
           <Outlet />
         </div>
-        <Footer />
+        {showFooter && <Footer />}
       </div>
       {/* Mobile overlay */}
       {isMobileMenuOpen && (

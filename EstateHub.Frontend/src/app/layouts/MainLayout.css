@@ -11,10 +11,20 @@
   width: calc(100% - 260px);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .main-layout__page {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Map page should take full height */
+.main-layout__page > .map-search-page {
+  height: 100vh;
+  margin: 0;
+  padding: 0;
 }
 
 /* When sidebar is collapsed */

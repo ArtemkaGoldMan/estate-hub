@@ -17,4 +17,5 @@ public class GetUserResponse
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }
     public string Avatar { get; set; } = string.Empty;
+    public List<string> Roles { get; set; } = new();
 }

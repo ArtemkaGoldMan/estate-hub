@@ -5,12 +5,23 @@
 }
 
 .admin-users-page__header {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 24px 32px;
   margin-bottom: 32px;
+  border-bottom: 3px solid #2563eb;
+}
+
+.admin-users-page__header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .admin-users-page__header h1 {
   margin: 0 0 8px;
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 700;
   color: #0f172a;
 }
@@ -18,7 +29,7 @@
 .admin-users-page__header p {
   margin: 0;
   color: #64748b;
-  font-size: 16px;
+  font-size: 14px;
 }
 
 .admin-users-page__stats {

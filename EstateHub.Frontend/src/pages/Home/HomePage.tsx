@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
+import { FaSearch, FaMap, FaCamera, FaLock } from 'react-icons/fa';
 import { Button } from '../../shared/ui';
 import { useAuth } from '../../shared/context/AuthContext';
-import logoImage from '../../assets/Logo-optimized.png';
+import logoImage from '../../assets/Logo_Icon.svg';
 import './HomePage.css';
 
 export const HomePage = () => {
@@ -45,22 +46,22 @@ export const HomePage = () => {
           <h2 className="home-page__section-title">Why Choose EstateHub?</h2>
           <div className="home-page__features-grid">
             <div className="home-page__feature">
-              <div className="home-page__feature-icon">🔍</div>
+              <div className="home-page__feature-icon"><FaSearch /></div>
               <h3>Advanced Search</h3>
               <p>Filter by price, location, size, and amenities to find exactly what you're looking for.</p>
             </div>
             <div className="home-page__feature">
-              <div className="home-page__feature-icon">🗺️</div>
+              <div className="home-page__feature-icon"><FaMap /></div>
               <h3>Interactive Maps</h3>
               <p>Explore properties on an interactive map to see locations and neighborhoods.</p>
             </div>
             <div className="home-page__feature">
-              <div className="home-page__feature-icon">📸</div>
+              <div className="home-page__feature-icon"><FaCamera /></div>
               <h3>Rich Media</h3>
               <p>View high-quality photos and detailed information for every property.</p>
             </div>
             <div className="home-page__feature">
-              <div className="home-page__feature-icon">🔒</div>
+              <div className="home-page__feature-icon"><FaLock /></div>
               <h3>Secure Platform</h3>
               <p>Your data and transactions are protected with industry-standard security.</p>
             </div>

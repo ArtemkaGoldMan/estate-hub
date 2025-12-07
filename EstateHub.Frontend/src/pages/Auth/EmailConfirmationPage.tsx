@@ -7,7 +7,7 @@ import './AuthPages.css';
 export const EmailConfirmationPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { confirmEmail, isAuthenticated } = useAuth();
+  const { confirmEmail, isAuthenticated, isLoading: authLoading } = useAuth();
   const [token, setToken] = useState('');
   const [userId, setUserId] = useState('');
   const [error, setError] = useState('');
@@ -27,11 +27,12 @@ export const EmailConfirmationPage = () => {
   }, [searchParams]);
 
   // Redirect if already authenticated and confirmed (use useEffect to avoid conditional hook calls)
+  // Only redirect after auth has finished loading
   useEffect(() => {
-    if (isAuthenticated && isConfirmed) {
+    if (!authLoading && isAuthenticated && isConfirmed) {
       navigate('/listings', { replace: true });
     }
-  }, [isAuthenticated, isConfirmed, navigate]);
+  }, [isAuthenticated, isConfirmed, authLoading, navigate]);
 
   if (isAuthenticated && isConfirmed) {
     return null;

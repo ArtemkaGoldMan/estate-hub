@@ -1,0 +1,153 @@
+.ask-ai {
+  padding: 1.5rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  margin-top: 0;
+}
+
+.ask-ai__header {
+  margin-bottom: 1rem;
+}
+
+.ask-ai__header h2 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.ask-ai__subtitle {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.ask-ai__remaining {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.ask-ai__remaining--available {
+  color: #2563eb;
+}
+
+.ask-ai__remaining--limit {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.ask-ai__questions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+  .ask-ai__questions {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ask-ai__question-button {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  text-align: left;
+  width: 100%;
+  justify-content: flex-start;
+  transition: all 0.2s;
+}
+
+.ask-ai__question-button:hover:not(:disabled) {
+  background-color: #e9ecef;
+  transform: translateX(4px);
+}
+
+.ask-ai__question-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ask-ai__question-text {
+  flex: 1;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.ask-ai__response {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: white;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.ask-ai__response-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.ask-ai__response-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.ask-ai__question-display {
+  padding: 0.75rem;
+  background-color: #f1f5f9;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.9375rem;
+  color: #334155;
+  font-weight: 500;
+}
+
+.ask-ai__loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100px;
+  padding: 1rem;
+}
+
+.ask-ai__answer {
+  margin-top: 1rem;
+}
+
+.ask-ai__answer h3 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.ask-ai__answer-content {
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  line-height: 1.6;
+  color: #334155;
+  white-space: pre-wrap;
+  font-size: 0.9375rem;
+}
+
+@media (max-width: 768px) {
+  .ask-ai {
+    padding: 1rem;
+  }
+
+  .ask-ai__question-button {
+    padding: 0.75rem;
+  }
+}
+

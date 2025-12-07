@@ -16,6 +16,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IReportService, Services.ReportService>();
         services.AddScoped<IPhotoService, Services.PhotoService>();
         services.AddScoped<IModerationService, Services.ModerationService>();
+        services.AddScoped<IAIQuestionUsageService, Services.AIQuestionUsageService>();
         
         // Register mappers
         services.AddScoped<ReportDtoMapper>();

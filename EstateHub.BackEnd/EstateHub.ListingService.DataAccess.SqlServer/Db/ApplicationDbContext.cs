@@ -14,6 +14,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<ListingPhotoEntity> ListingPhotos { get; set; }
     public DbSet<LikedListingEntity> LikedListings { get; set; }
     public DbSet<ReportEntity> Reports { get; set; }
+    public DbSet<AIQuestionUsageEntity> AIQuestionUsage { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -123,6 +124,23 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(r => r.ListingId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .IsRequired();
+        });
+
+        // Configure AIQuestionUsage
+        modelBuilder.Entity<AIQuestionUsageEntity>(entity =>
+        {
+            entity.ToTable("AIQuestionUsage");
+            
+            entity.HasKey(a => a.Id);
+            
+            entity.Property(a => a.Id).ValueGeneratedNever();
+            entity.Property(a => a.Date).IsRequired();
+            entity.Property(a => a.QuestionCount).IsRequired().HasDefaultValue(0);
+            
+            // Unique index on UserId and Date to ensure one record per user per day
+            entity.HasIndex(a => new { a.UserId, a.Date }).IsUnique();
+            entity.HasIndex(a => a.UserId);
+            entity.HasIndex(a => a.Date);
         });
     }
 }

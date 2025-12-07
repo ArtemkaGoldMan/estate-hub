@@ -1,6 +1,7 @@
 import { gql, useMutation } from '@apollo/client';
 import { GET_MY_LISTINGS } from './get-my-listings';
 import { GET_LISTINGS } from './get-listings';
+import { GET_ARCHIVED_LISTINGS } from './get-archived-listings';
 
 const CHANGE_STATUS = gql`
   mutation ChangeStatus($id: UUID!, $input: ChangeStatusInputTypeInput!) {
@@ -24,7 +25,7 @@ export const useChangeListingStatus = () => {
     ChangeStatusData,
     ChangeStatusVariables
   >(CHANGE_STATUS, {
-    refetchQueries: [GET_MY_LISTINGS, GET_LISTINGS],
+    refetchQueries: [GET_MY_LISTINGS, GET_LISTINGS, GET_ARCHIVED_LISTINGS],
     awaitRefetchQueries: false,
   });
 
@@ -53,11 +54,16 @@ export const useChangeListingStatus = () => {
     await changeStatus(id, 'ARCHIVED');
   };
 
+  const unarchiveListing = async (id: string): Promise<void> => {
+    await changeStatus(id, 'DRAFT');
+  };
+
   return {
     changeStatus,
     publishListing,
     unpublishListing,
     archiveListing,
+    unarchiveListing,
     loading,
     error,
   };

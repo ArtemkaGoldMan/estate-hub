@@ -231,19 +231,15 @@
 
 /* Management Section */
 .dashboard-listing-detail-page__management-section {
-  background: white;
-  border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background-color: #f8f9fa;
+  border-radius: 8px;
 }
 
 .dashboard-listing-detail-page__management-section h2 {
   margin: 0 0 1rem 0;
   font-size: 1.25rem;
   font-weight: 600;
-  color: #0f172a;
-  border-bottom: 2px solid #e2e8f0;
-  padding-bottom: 0.5rem;
 }
 
 /* Management Actions */

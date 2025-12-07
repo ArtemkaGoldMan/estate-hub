@@ -176,6 +176,38 @@ public class ListingService : IListingService
         }
     }
 
+    public async Task<PagedResult<ListingDto>> GetArchivedAsync(int page, int pageSize)
+    {
+        var currentUserId = _currentUserService.GetUserId();
+        _logger.LogInformation("Getting archived listings - User: {UserId}, Page: {Page}, PageSize: {PageSize}", 
+            currentUserId, page, pageSize);
+        
+        try
+        {
+            pageSize = Math.Min(pageSize, 50);
+            page = Math.Max(page, 1);
+
+            var listings = await _listingRepository.GetByOwnerIdAsync(currentUserId);
+            var archivedListings = listings.Where(l => l.Status == ListingStatus.Archived && !l.IsDeleted);
+            var total = archivedListings.Count();
+
+            var pagedListings = archivedListings
+                .OrderByDescending(l => l.ArchivedAt ?? l.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            var dtos = await _dtoMapper.MapToDtosAsync(pagedListings, currentUserId);
+            _logger.LogDebug("Retrieved {Count} archived listings (Total: {Total})", dtos.Count(), total);
+            return new PagedResult<ListingDto>(dtos, total, page, pageSize);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting archived listings - User: {UserId}", currentUserId);
+            throw;
+        }
+    }
+
     public async Task<PagedResult<ListingDto>> GetWithinBoundsAsync(BoundsInput bounds, int page, int pageSize, ListingFilter? filter = null)
     {
         _logger.LogInformation("Getting listings within bounds - Bounds: {@Bounds}, Page: {Page}, PageSize: {PageSize}, Filter: {@Filter}", 
@@ -591,13 +623,22 @@ public class ListingService : IListingService
             }
             else if (newStatus == ListingStatus.Draft)
             {
-                // Unpublish - create new listing with Draft status
-                updatedListing = listing with 
-                { 
-                    Status = ListingStatus.Draft,
-                    PublishedAt = null,
-                    UpdatedAt = DateTime.UtcNow
-                };
+                // Check if we're unarchiving or unpublishing
+                if (listing.Status == ListingStatus.Archived)
+                {
+                    // Unarchive - use domain method to properly clear ArchivedAt
+                    updatedListing = listing.Unarchive();
+                }
+                else
+                {
+                    // Unpublish - create new listing with Draft status
+                    updatedListing = listing with 
+                    { 
+                        Status = ListingStatus.Draft,
+                        PublishedAt = null,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+                }
             }
             else
             {

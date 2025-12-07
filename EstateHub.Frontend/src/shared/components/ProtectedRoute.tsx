@@ -13,7 +13,16 @@ export const ProtectedRoute = ({
   requireAuth = true,
   requireAdmin = false,
 }: ProtectedRouteProps) => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  // Show loading while auth context is initializing
+  if (isLoading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <LoadingSpinner />
+      </div>
+    );
+  }
 
   // Check admin permissions if required
   if (requireAdmin) {
@@ -48,18 +57,9 @@ export const ProtectedRoute = ({
     }
   }
 
-  // Check authentication if required
+  // Check authentication if required (only after loading is complete)
   if (requireAuth && !isAuthenticated) {
     return <Navigate to="/" replace />;
-  }
-
-  // Show loading while checking auth
-  if (requireAuth && !user) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-        <LoadingSpinner />
-      </div>
-    );
   }
 
   return <>{children}</>;
