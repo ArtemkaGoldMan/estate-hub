@@ -38,8 +38,13 @@ public static class AIQuestionPromptMapper
         }
     };
 
-    public static string GetPromptForQuestion(string questionId)
+    public static string? GetPromptForQuestion(string? questionId)
     {
+        if (questionId == null)
+        {
+            return null;
+        }
+
         if (QuestionPrompts.TryGetValue(questionId, out var prompt))
         {
             return prompt;
@@ -49,8 +54,13 @@ public static class AIQuestionPromptMapper
         return questionId;
     }
 
-    public static bool IsValidQuestionId(string questionId)
+    public static bool IsValidQuestionId(string? questionId)
     {
+        if (questionId == null)
+        {
+            return false;
+        }
+
         return QuestionPrompts.ContainsKey(questionId);
     }
 }

@@ -339,7 +339,7 @@ public class PhotoServiceTests
             .ReturnsAsync(listing);
 
         // Act & Assert
-        await Assert.ThrowsAsync<Exception>(() => 
+        await Assert.ThrowsAsync<ArgumentException>(() => 
             _photoService.AddPhotoAsync(listingId, string.Empty));
         
         _photoRepositoryMock.Verify(r => r.AddPhotoAsync(It.IsAny<Guid>(), It.IsAny<string>()), Times.Never);
@@ -387,7 +387,7 @@ public class PhotoServiceTests
             .ReturnsAsync(listing);
 
         // Act & Assert
-        await Assert.ThrowsAsync<Exception>(() => 
+        await Assert.ThrowsAsync<ArgumentException>(() => 
             _photoService.AddPhotoAsync(listingId, "not-a-valid-url"));
         
         _photoRepositoryMock.Verify(r => r.AddPhotoAsync(It.IsAny<Guid>(), It.IsAny<string>()), Times.Never);
@@ -410,7 +410,7 @@ public class PhotoServiceTests
             .ReturnsAsync((Listing?)null);
 
         // Act & Assert
-        await Assert.ThrowsAsync<Exception>(() => 
+        await Assert.ThrowsAsync<ArgumentException>(() => 
             _photoService.AddPhotoAsync(listingId, photoUrl));
         
         _photoRepositoryMock.Verify(r => r.AddPhotoAsync(It.IsAny<Guid>(), It.IsAny<string>()), Times.Never);
@@ -468,7 +468,7 @@ public class PhotoServiceTests
             .ReturnsAsync(validationResult);
 
         // Act & Assert
-        await Assert.ThrowsAsync<Exception>(() => 
+        await Assert.ThrowsAsync<ArgumentException>(() => 
             _photoService.UploadPhotoAsync(listingId, fileStream, fileName, contentType));
         
         _photoStorageServiceMock.Verify(s => s.UploadPhotoAsync(It.IsAny<Guid>(), It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
@@ -523,7 +523,7 @@ public class PhotoServiceTests
             .ReturnsAsync((ListingPhoto?)null);
 
         // Act & Assert
-        await Assert.ThrowsAsync<Exception>(() => 
+        await Assert.ThrowsAsync<ArgumentException>(() => 
             _photoService.RemovePhotoAsync(listingId, photoId));
         
         _photoStorageServiceMock.Verify(s => s.DeletePhotoAsync(It.IsAny<string>()), Times.Never);
@@ -582,7 +582,7 @@ public class PhotoServiceTests
             .ReturnsAsync(photo);
 
         // Act & Assert
-        await Assert.ThrowsAsync<Exception>(() => 
+        await Assert.ThrowsAsync<ArgumentException>(() => 
             _photoService.RemovePhotoAsync(listingId, photoId));
         
         _photoStorageServiceMock.Verify(s => s.DeletePhotoAsync(It.IsAny<string>()), Times.Never);
@@ -701,7 +701,7 @@ public class PhotoServiceTests
             .ReturnsAsync(listing);
 
         // Act & Assert
-        await Assert.ThrowsAsync<Exception>(() => 
+        await Assert.ThrowsAsync<ArgumentException>(() => 
             _photoService.ReorderPhotosAsync(listingId, new List<Guid>()));
         
         _photoRepositoryMock.Verify(r => r.ReorderPhotosAsync(It.IsAny<Guid>(), It.IsAny<List<Guid>>()), Times.Never);
@@ -763,7 +763,7 @@ public class PhotoServiceTests
             .ReturnsAsync(photos);
 
         // Act & Assert
-        await Assert.ThrowsAsync<Exception>(() => 
+        await Assert.ThrowsAsync<ArgumentException>(() => 
             _photoService.ReorderPhotosAsync(listingId, orderedPhotoIds));
         
         _photoRepositoryMock.Verify(r => r.ReorderPhotosAsync(It.IsAny<Guid>(), It.IsAny<List<Guid>>()), Times.Never);

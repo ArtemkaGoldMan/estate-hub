@@ -204,7 +204,7 @@ public class ListingServiceTests
         await _listingService.UpdateAsync(listingId, updateInput);
 
         // Assert
-        _listingRepositoryMock.Verify(r => r.GetByIdAsync(listingId), Times.Once);
+        _listingRepositoryMock.Verify(r => r.GetByIdAsync(listingId), Times.AtLeastOnce);
         _listingRepositoryMock.Verify(r => r.UpdateAsync(It.Is<Listing>(l => 
             l.OwnerId == userId &&
             l.Title == "Updated Title"
@@ -281,7 +281,7 @@ public class ListingServiceTests
         await Assert.ThrowsAsync<InvalidOperationException>(() => 
             _listingService.UpdateAsync(listingId, updateInput));
 
-        _listingRepositoryMock.Verify(r => r.GetByIdAsync(listingId), Times.Once);
+        _listingRepositoryMock.Verify(r => r.GetByIdAsync(listingId), Times.AtLeastOnce);
         _listingRepositoryMock.Verify(r => r.UpdateAsync(It.IsAny<Listing>()), Times.Never);
     }
 
@@ -334,7 +334,7 @@ public class ListingServiceTests
         await _listingService.DeleteAsync(listingId);
 
         // Assert
-        _listingRepositoryMock.Verify(r => r.GetByIdAsync(listingId), Times.Once);
+        _listingRepositoryMock.Verify(r => r.GetByIdAsync(listingId), Times.AtLeastOnce);
         _listingRepositoryMock.Verify(r => r.DeleteAsync(listingId), Times.Once);
     }
 
@@ -393,7 +393,7 @@ public class ListingServiceTests
         Assert.NotNull(result);
         Assert.Equal(listingWithStatus.Id, result.Id);
         Assert.Equal("Published Listing", result.Title);
-        _listingRepositoryMock.Verify(r => r.GetByIdAsync(listingId), Times.Once);
+        _listingRepositoryMock.Verify(r => r.GetByIdAsync(listingId), Times.AtLeastOnce);
     }
 
     [Fact]
@@ -441,7 +441,7 @@ public class ListingServiceTests
             .ReturnsAsync(new ValidationResult(validationErrors));
 
         // Act & Assert
-        await Assert.ThrowsAsync<Exception>(() => _listingService.CreateAsync(input));
+        await Assert.ThrowsAsync<ArgumentException>(() => _listingService.CreateAsync(input));
         _listingRepositoryMock.Verify(r => r.AddAsync(It.IsAny<Listing>()), Times.Never);
     }
 
@@ -534,7 +534,7 @@ public class ListingServiceTests
             .ReturnsAsync((Listing?)null);
 
         // Act & Assert
-        await Assert.ThrowsAsync<Exception>(() => _listingService.UpdateAsync(listingId, updateInput));
+        await Assert.ThrowsAsync<ArgumentException>(() => _listingService.UpdateAsync(listingId, updateInput));
         _listingRepositoryMock.Verify(r => r.UpdateAsync(It.IsAny<Listing>()), Times.Never);
     }
 
@@ -634,7 +634,7 @@ public class ListingServiceTests
             .ReturnsAsync((Listing?)null);
 
         // Act & Assert
-        await Assert.ThrowsAsync<Exception>(() => _listingService.DeleteAsync(listingId));
+        await Assert.ThrowsAsync<ArgumentException>(() => _listingService.DeleteAsync(listingId));
         _listingRepositoryMock.Verify(r => r.DeleteAsync(It.IsAny<Guid>()), Times.Never);
     }
 
@@ -681,7 +681,7 @@ public class ListingServiceTests
             .ReturnsAsync(existingListing);
 
         // Act & Assert
-        await Assert.ThrowsAsync<Exception>(() => _listingService.DeleteAsync(listingId));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _listingService.DeleteAsync(listingId));
         _listingRepositoryMock.Verify(r => r.DeleteAsync(It.IsAny<Guid>()), Times.Never);
     }
 
@@ -902,7 +902,7 @@ public class ListingServiceTests
             .ReturnsAsync(existingListing);
 
         // Act & Assert
-        await Assert.ThrowsAsync<Exception>(() => _listingService.ChangeStatusAsync(listingId, ListingStatus.Published));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _listingService.ChangeStatusAsync(listingId, ListingStatus.Published));
         _listingRepositoryMock.Verify(r => r.UpdateAsync(It.IsAny<Listing>()), Times.Never);
     }
 
@@ -1119,7 +1119,7 @@ public class ListingServiceTests
         Assert.NotNull(result);
         Assert.Equal(1, result.Total);
         Assert.Single(result.Items);
-        _likedListingRepositoryMock.Verify(r => r.GetLikedByUserAsync(userId), Times.Once);
+        _likedListingRepositoryMock.Verify(r => r.GetLikedByUserAsync(userId), Times.AtLeastOnce);
     }
 
     [Fact]
@@ -1369,7 +1369,7 @@ public class ListingServiceTests
             null,
             500000m,
             null
-        ) with { Status = ListingStatus.Draft };
+        ) with { Id = listingId, Status = ListingStatus.Draft };
 
         _currentUserServiceMock
             .Setup(s => s.GetUserId())

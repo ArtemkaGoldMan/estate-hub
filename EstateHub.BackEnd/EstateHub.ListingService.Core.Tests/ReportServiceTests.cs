@@ -228,7 +228,7 @@ public class ReportServiceTests
             .ReturnsAsync(report);
 
         // Act & Assert
-        await Assert.ThrowsAsync<Exception>(() => 
+        await Assert.ThrowsAsync<InvalidOperationException>(() => 
             _reportService.DeleteAsync(reportId));
 
         _reportRepositoryMock.Verify(r => r.GetByIdAsync(reportId), Times.Once);
@@ -294,7 +294,7 @@ public class ReportServiceTests
             .ReturnsAsync(new List<Report> { existingReport });
 
         // Act & Assert
-        await Assert.ThrowsAsync<Exception>(() => 
+        await Assert.ThrowsAsync<InvalidOperationException>(() => 
             _reportService.CreateAsync(input));
 
         _reportRepositoryMock.Verify(r => r.AddAsync(It.IsAny<Report>()), Times.Never);
@@ -481,7 +481,7 @@ public class ReportServiceTests
             .ReturnsAsync(report);
 
         // Act & Assert
-        await Assert.ThrowsAsync<Exception>(() => 
+        await Assert.ThrowsAsync<InvalidOperationException>(() => 
             _reportService.ResolveAsync(input));
     }
 
@@ -571,7 +571,7 @@ public class ReportServiceTests
             .ReturnsAsync((Report?)null);
 
         // Act & Assert
-        await Assert.ThrowsAsync<Exception>(() => 
+        await Assert.ThrowsAsync<ArgumentException>(() => 
             _reportService.AssignToModeratorAsync(reportId, moderatorId));
 
         _reportRepositoryMock.Verify(r => r.UpdateAsync(It.IsAny<Report>()), Times.Never);
@@ -589,7 +589,7 @@ public class ReportServiceTests
             listingId,
             ReportReason.Spam,
             "Test description"
-        );
+        ) with { Id = reportId, Status = ReportStatus.Resolved };
 
         _reportRepositoryMock
             .Setup(r => r.GetByIdAsync(reportId))
@@ -794,7 +794,7 @@ public class ReportServiceTests
             listingId,
             ReportReason.Spam,
             "Test description"
-        );
+        ) with { Id = reportId };
 
         _reportRepositoryMock
             .Setup(r => r.GetByIdAsync(reportId))

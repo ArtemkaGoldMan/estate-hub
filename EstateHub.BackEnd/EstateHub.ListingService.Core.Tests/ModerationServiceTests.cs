@@ -178,7 +178,7 @@ public class ModerationServiceTests
             .ReturnsAsync((Listing?)null);
 
         // Act & Assert
-        await Assert.ThrowsAsync<Exception>(() => 
+        await Assert.ThrowsAsync<ArgumentException>(() => 
             _moderationService.CheckModerationAsync(listingId));
 
         _contentModerationServiceMock.Verify(s => s.ModerateAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -228,7 +228,7 @@ public class ModerationServiceTests
             .ReturnsAsync(listing);
 
         // Act & Assert
-        await Assert.ThrowsAsync<Exception>(() => 
+        await Assert.ThrowsAsync<InvalidOperationException>(() => 
             _moderationService.CheckModerationAsync(listingId));
 
         _contentModerationServiceMock.Verify(s => s.ModerateAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
