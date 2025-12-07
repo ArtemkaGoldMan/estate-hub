@@ -2,20 +2,35 @@
 
 namespace EstateHub.Authorization.Domain.DTO.Authentication.Requests;
 
+/// <summary>
+/// Request DTO for user registration.
+/// </summary>
 public class UserRegistrationRequest
 {
-    [Required]
-    [EmailAddress]
-    public string Email { get; set; }
+    /// <summary>
+    /// The user's email address (used as username).
+    /// </summary>
+    [Required(ErrorMessage = "Email is required")]
+    [EmailAddress(ErrorMessage = "Invalid email address format")]
+    public string Email { get; set; } = string.Empty;
 
-    [Required]
+    /// <summary>
+    /// The user's password. Must meet security requirements (minimum 12 characters, uppercase, lowercase, digit, special character).
+    /// </summary>
+    [Required(ErrorMessage = "Password is required")]
     [DataType(DataType.Password)]
-    public string Password { get; set; }
+    public string Password { get; set; } = string.Empty;
 
-    [Required]
+    /// <summary>
+    /// Password confirmation. Must match the Password field.
+    /// </summary>
+    [Required(ErrorMessage = "Password confirmation is required")]
     [DataType(DataType.Password)]
     [Compare("Password", ErrorMessage = "Passwords do not match")]
-    public string ConfirmPassword { get; set; }
+    public string ConfirmPassword { get; set; } = string.Empty;
 
-    public string CallbackUrl { get; set; }
+    /// <summary>
+    /// The callback URL for email confirmation. Required if email confirmation is enabled.
+    /// </summary>
+    public string CallbackUrl { get; set; } = string.Empty;
 }

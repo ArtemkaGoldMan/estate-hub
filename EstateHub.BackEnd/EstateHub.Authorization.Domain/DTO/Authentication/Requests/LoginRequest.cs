@@ -2,13 +2,22 @@
 
 namespace EstateHub.Authorization.Domain.DTO.Authentication.Requests;
 
+/// <summary>
+/// Request DTO for user authentication/login.
+/// </summary>
 public class LoginRequest
 {
-    [Required]
-    [EmailAddress]
-    public string Email { get; set; }
+    /// <summary>
+    /// The user's email address.
+    /// </summary>
+    [Required(ErrorMessage = "Email is required")]
+    [EmailAddress(ErrorMessage = "Invalid email address format")]
+    public string Email { get; set; } = string.Empty;
 
-    [Required]
+    /// <summary>
+    /// The user's password.
+    /// </summary>
+    [Required(ErrorMessage = "Password is required")]
     [DataType(DataType.Password)]
-    public string Password { get; set; }
+    public string Password { get; set; } = string.Empty;
 }

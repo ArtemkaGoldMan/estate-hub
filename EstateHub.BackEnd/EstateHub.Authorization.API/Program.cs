@@ -34,6 +34,29 @@ namespace EstateHub.Authorization.API;
 
 public class Program
 {
+    /// <summary>
+    /// Validates JWT secret strength. Throws exception if secret is invalid.
+    /// </summary>
+    /// <param name="secret">The JWT secret to validate.</param>
+    /// <exception cref="InvalidOperationException">Thrown when secret is null, empty, or too short.</exception>
+    private static void ValidateJwtSecret(string secret)
+    {
+        if (string.IsNullOrWhiteSpace(secret))
+        {
+            throw new InvalidOperationException(
+                "JWT Secret is not configured. Please set JWT:Secret in configuration or environment variables.");
+        }
+
+        // Minimum 32 characters for HMAC-SHA256 (256 bits)
+        const int minimumSecretLength = 32;
+        if (secret.Length < minimumSecretLength)
+        {
+            throw new InvalidOperationException(
+                $"JWT Secret must be at least {minimumSecretLength} characters long for security. " +
+                $"Current length: {secret.Length}. Please use a stronger secret.");
+        }
+    }
+
     public static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
@@ -48,6 +71,13 @@ public class Program
         builder.Host.UseSerilog();
 
         builder.Services.Configure<JWTOptions>(builder.Configuration.GetSection(JWTOptions.JWT));
+        
+        // Validate JWT secret on startup
+        var jwtOptions = builder.Configuration.GetSection(JWTOptions.JWT).Get<JWTOptions>();
+        if (jwtOptions != null)
+        {
+            ValidateJwtSecret(jwtOptions.Secret);
+        }
 
         builder.Services.Configure<SmtpOptions>(
             builder.Configuration.GetSection(SmtpOptions.Smtp));
@@ -121,11 +151,16 @@ public class Program
             .AddRoleManager<RoleManager<RoleEntity>>()
             .AddDefaultTokenProviders();
 
-        builder.Services.Configure<IdentityOptions>(options =>
+        // Configure Identity lockout settings from configuration
+        var identityConfig = builder.Configuration.GetSection(EstateHub.Authorization.Domain.Options.IdentityOptions.Identity)
+            .Get<EstateHub.Authorization.Domain.Options.IdentityOptions>() 
+            ?? new EstateHub.Authorization.Domain.Options.IdentityOptions();
+        
+        builder.Services.Configure<Microsoft.AspNetCore.Identity.IdentityOptions>(options =>
         {
-            options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromSeconds(30);
-            options.Lockout.MaxFailedAccessAttempts = 5;
-            options.Lockout.AllowedForNewUsers = true;
+            options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(identityConfig.LockoutDurationMinutes);
+            options.Lockout.MaxFailedAccessAttempts = identityConfig.MaxFailedAccessAttempts;
+            options.Lockout.AllowedForNewUsers = identityConfig.AllowedForNewUsers;
         });
 
         builder.Services.AddAutoMapper(config =>
@@ -204,6 +239,14 @@ public class Program
                         if (session == null)
                         {
                             context.Fail("Invalid session");
+                            return;
+                        }
+
+                        // Check if session has expired
+                        if (session.ExpirationDate < DateTimeOffset.UtcNow)
+                        {
+                            context.Fail("Session has expired");
+                            return;
                         }
                     },
                 };
