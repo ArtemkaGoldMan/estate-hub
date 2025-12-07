@@ -52,6 +52,9 @@ public class Seed
             // Seed roles if they don't exist
             await SeedRolesAsync();
             
+            // Assign User role to existing users without roles
+            await AssignUserRoleToUsersWithoutRolesAsync();
+            
             // Seed admin user if it doesn't exist
             await SeedAdminUserAsync();
             
@@ -224,6 +227,65 @@ public class Seed
         else
         {
             _logger.LogWarning("User role not found. Test user created but without User role.");
+        }
+    }
+
+    private async Task AssignUserRoleToUsersWithoutRolesAsync()
+    {
+        try
+        {
+            var userRole = await _roleManager.FindByNameAsync("User");
+            if (userRole == null)
+            {
+                _logger.LogWarning("User role not found. Cannot assign roles to existing users.");
+                return;
+            }
+
+            // Get all users
+            var allUsers = _userManager.Users.ToList();
+            var usersWithoutRoles = new List<UserEntity>();
+
+            foreach (var user in allUsers)
+            {
+                var roles = await _userManager.GetRolesAsync(user);
+                if (roles == null || roles.Count == 0)
+                {
+                    usersWithoutRoles.Add(user);
+                }
+            }
+
+            if (usersWithoutRoles.Count > 0)
+            {
+                _logger.LogInformation("Found {Count} users without roles. Assigning User role...", usersWithoutRoles.Count);
+                
+                foreach (var user in usersWithoutRoles)
+                {
+                    // Skip admin user - it will be handled by SeedAdminUserAsync
+                    if (user.Email == "admin@example.com")
+                    {
+                        continue;
+                    }
+
+                    var result = await _userManager.AddToRoleAsync(user, "User");
+                    if (result.Succeeded)
+                    {
+                        _logger.LogInformation("Assigned User role to user: {Email}", user.Email);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Failed to assign User role to user {Email}: {Errors}", 
+                            user.Email, string.Join(", ", result.Errors.Select(e => e.Description)));
+                    }
+                }
+            }
+            else
+            {
+                _logger.LogInformation("All users already have roles assigned.");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error assigning User role to existing users");
         }
     }
 }

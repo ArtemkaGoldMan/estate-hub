@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../shared/context/AuthContext';
 import { Button } from '../../shared/ui';
+import logoImage from '../../assets/Logo_Icon.svg';
 import './Navigation.css';
 
 export const Navigation = () => {
@@ -46,7 +47,12 @@ export const Navigation = () => {
           to="/" 
           className="navigation__logo"
         >
-          EstateHub
+          <img 
+            src={logoImage} 
+            alt="EstateHub" 
+            className="navigation__logo-image"
+          />
+          <span className="navigation__logo-text">EstateHub</span>
         </Link>
         <ul className="navigation__menu">
           {navItems.map((item) => (

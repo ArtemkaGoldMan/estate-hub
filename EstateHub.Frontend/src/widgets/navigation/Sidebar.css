@@ -40,7 +40,7 @@
 }
 
 .sidebar__logo-image {
-  height: 40px;
+  height: 32px;
   width: auto;
   object-fit: contain;
   transition: all 0.3s ease;
@@ -79,6 +79,15 @@
   transition: all 0.2s;
   flex-shrink: 0;
   align-self: flex-start;
+  padding: 0;
+}
+
+.sidebar__toggle svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+  flex-shrink: 0;
+  color: inherit;
 }
 
 .sidebar__toggle:hover {

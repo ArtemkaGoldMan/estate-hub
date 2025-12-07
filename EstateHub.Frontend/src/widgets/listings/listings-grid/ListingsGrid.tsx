@@ -9,6 +9,8 @@ interface ListingsGridProps {
   loading?: boolean;
   onSelect?: (listing: Listing) => void;
   emptyState?: React.ReactNode;
+  showHeader?: boolean;
+  headerTitle?: string;
 }
 
 export const ListingsGrid = ({
@@ -17,15 +19,19 @@ export const ListingsGrid = ({
   loading = false,
   onSelect,
   emptyState,
+  showHeader = true,
+  headerTitle = 'Available properties',
 }: ListingsGridProps) => {
   return (
     <section className="listings-grid">
-      <header className="listings-grid__header">
-        <h2>Available properties</h2>
-        {typeof total === 'number' && (
-          <span className="listings-grid__count">{total} results</span>
-        )}
-      </header>
+      {showHeader && (
+        <header className="listings-grid__header">
+          <h2>{headerTitle}</h2>
+          {typeof total === 'number' && (
+            <span className="listings-grid__count">{total} results</span>
+          )}
+        </header>
+      )}
 
       {loading && (
         <div className="listings-grid__loading">

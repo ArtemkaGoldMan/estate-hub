@@ -94,7 +94,7 @@ public class UserController : SessionAwareControllerBase
     [Authorize(Policy = "AdminAccess")]
     public async Task<IResult> RemoveUserRoleAsync(Guid id, string role)
     {
-        var result = await _usersService.RemoveUserRoleAsync(id, role);
+        var result = await _usersService.RemoveUserRoleAsync(id, role, UserId);
         return result.IsSuccess ? Results.NoContent() : result.ToProblemDetails();
     }
 

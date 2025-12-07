@@ -2,13 +2,10 @@
   width: 100%;
 }
 
-.photo-gallery--empty {
-  min-height: 400px;
+.photo-gallery__viewer--empty {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #f5f5f5;
-  border-radius: 8px;
 }
 
 .photo-gallery__placeholder {

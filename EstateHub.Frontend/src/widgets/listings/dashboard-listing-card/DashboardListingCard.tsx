@@ -1,6 +1,7 @@
 import { memo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
+import { FaClock, FaTimesCircle, FaCheckCircle, FaExclamationTriangle, FaInfoCircle, FaEdit, FaTrash, FaBullhorn, FaFileAlt, FaArchive } from 'react-icons/fa';
 import type { Listing } from '../../../entities/listing/model/types';
 import { useChangeListingStatus } from '../../../entities/listing/api/publish-listing';
 import { useDeleteListing } from '../../../entities/listing/api/delete-listing';
@@ -9,10 +10,13 @@ import { formatCurrency } from '../../../shared';
 import { Button } from '../../../shared/ui';
 import './DashboardListingCard.css';
 
+type DashboardCardMode = 'full' | 'archive-only';
+
 interface DashboardListingCardProps {
   listing: Listing;
   onStatusChange?: () => void;
   className?: string;
+  mode?: DashboardCardMode;
 }
 
 const FALLBACK_IMAGE =
@@ -26,10 +30,10 @@ const getPriceLabel = (listing: Listing) => {
 };
 
 export const DashboardListingCard = memo(
-  ({ listing, onStatusChange, className }: DashboardListingCardProps) => {
+  ({ listing, onStatusChange, className, mode = 'full' }: DashboardListingCardProps) => {
     const navigate = useNavigate();
     const { showSuccess, showError } = useToast();
-    const { publishListing, unpublishListing, loading: statusLoading } = useChangeListingStatus();
+    const { publishListing, unpublishListing, unarchiveListing, archiveListing, loading: statusLoading } = useChangeListingStatus();
     const { deleteListing, loading: deleteLoading } = useDeleteListing();
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -46,6 +50,17 @@ export const DashboardListingCard = memo(
 
     const handleView = () => {
       navigate(`/dashboard/listings/${listing.id}`);
+    };
+
+    const handleUnarchive = async (e: React.MouseEvent) => {
+      e.stopPropagation();
+      try {
+        await unarchiveListing(listing.id);
+        onStatusChange?.();
+        showSuccess('Listing unarchived successfully. It is now in draft status.');
+      } catch (error) {
+        showError(error instanceof Error ? error.message : 'Failed to unarchive listing');
+      }
     };
 
     const handleEdit = (e: React.MouseEvent) => {
@@ -127,17 +142,17 @@ export const DashboardListingCard = memo(
               </span>
               {listing.isModerationApproved === null && (
                 <span className="dashboard-listing-card__badge dashboard-listing-card__badge--moderation-pending">
-                  ⏳ Pending
+                  <FaClock style={{ marginRight: '0.25rem' }} /> Pending
                 </span>
               )}
               {listing.isModerationApproved === false && (
                 <span className="dashboard-listing-card__badge dashboard-listing-card__badge--moderation-rejected">
-                  ❌ Rejected
+                  <FaTimesCircle style={{ marginRight: '0.25rem' }} /> Rejected
                 </span>
               )}
               {listing.isModerationApproved === true && (
                 <span className="dashboard-listing-card__badge dashboard-listing-card__badge--moderation-approved">
-                  ✅ Approved
+                  <FaCheckCircle style={{ marginRight: '0.25rem' }} /> Approved
                 </span>
               )}
             </>
@@ -180,82 +195,122 @@ export const DashboardListingCard = memo(
           </div>
           {moderationRejected && (
             <div className="dashboard-listing-card__moderation-warning">
-              ⚠️ Content rejected: {listing.moderationRejectionReason || 'Please edit and re-check moderation'}
+              <FaExclamationTriangle style={{ marginRight: '0.5rem' }} /> Content rejected: {listing.moderationRejectionReason || 'Please edit and re-check moderation'}
             </div>
           )}
           {moderationPending && (
             <div className="dashboard-listing-card__moderation-info">
-              ℹ️ Moderation not checked yet
+              <FaInfoCircle style={{ marginRight: '0.5rem' }} /> Moderation not checked yet
             </div>
           )}
           <div className="dashboard-listing-card__actions" onClick={(e) => e.stopPropagation()}>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleEdit}
-              disabled={statusLoading || deleteLoading}
-            >
-              ✏️ Edit
-            </Button>
-            {isDraft && (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handlePublish}
-                disabled={statusLoading || deleteLoading || !canPublish}
-                isLoading={statusLoading}
-                title={
-                  !canPublish
-                    ? moderationRejected
-                      ? 'Content must pass moderation before publishing'
-                      : moderationPending
-                      ? 'Please check moderation first'
-                      : 'Content must pass moderation before publishing'
-                    : 'Publish listing'
-                }
-              >
-                📢 Publish
-              </Button>
-            )}
-            {isPublished && (
+            {mode === 'archive-only' ? (
+              // Archive mode: only show Unarchive button
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleUnpublish}
-                disabled={statusLoading || deleteLoading}
+                onClick={handleUnarchive}
+                disabled={statusLoading}
                 isLoading={statusLoading}
+                style={{ width: '100%' }}
               >
-                📝 Unpublish
-              </Button>
-            )}
-            {!showDeleteConfirm ? (
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={handleDelete}
-                disabled={statusLoading || deleteLoading}
-              >
-                🗑️ Delete
+                <FaArchive style={{ marginRight: '0.5rem' }} /> Unarchive
               </Button>
             ) : (
+              // Full mode: show all management buttons
               <>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={handleDelete}
-                  disabled={statusLoading || deleteLoading}
-                  isLoading={deleteLoading}
-                >
-                  ✓ Confirm
-                </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleCancelDelete}
+                  onClick={handleEdit}
                   disabled={statusLoading || deleteLoading}
                 >
-                  Cancel
+                  <FaEdit style={{ marginRight: '0.5rem' }} /> Edit
                 </Button>
+                {isDraft && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handlePublish}
+                    disabled={statusLoading || deleteLoading || !canPublish}
+                    isLoading={statusLoading}
+                    title={
+                      !canPublish
+                        ? moderationRejected
+                          ? 'Content must pass moderation before publishing'
+                          : moderationPending
+                          ? 'Please check moderation first'
+                          : 'Content must pass moderation before publishing'
+                        : 'Publish listing'
+                    }
+                  >
+                    <FaBullhorn style={{ marginRight: '0.5rem' }} /> Publish
+                  </Button>
+                )}
+                {isPublished && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleUnpublish}
+                    disabled={statusLoading || deleteLoading}
+                    isLoading={statusLoading}
+                  >
+                    <FaFileAlt style={{ marginRight: '0.5rem' }} /> Unpublish
+                  </Button>
+                )}
+                {!isArchived && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      if (!confirm('Are you sure you want to archive this listing? It will be hidden from public view.')) {
+                        return;
+                      }
+                      try {
+                        await archiveListing(listing.id);
+                        onStatusChange?.();
+                        showSuccess('Listing archived successfully');
+                      } catch (error) {
+                        showError(error instanceof Error ? error.message : 'Failed to archive listing');
+                      }
+                    }}
+                    disabled={statusLoading || deleteLoading}
+                    isLoading={statusLoading}
+                  >
+                    <FaArchive style={{ marginRight: '0.5rem' }} /> Archive
+                  </Button>
+                )}
+                {!showDeleteConfirm ? (
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={handleDelete}
+                    disabled={statusLoading || deleteLoading}
+                  >
+                    <FaTrash style={{ marginRight: '0.5rem' }} /> Delete
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={handleDelete}
+                      disabled={statusLoading || deleteLoading}
+                      isLoading={deleteLoading}
+                    >
+                      ✓ Confirm
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCancelDelete}
+                      disabled={statusLoading || deleteLoading}
+                    >
+                      Cancel
+                    </Button>
+                  </>
+                )}
               </>
             )}
           </div>

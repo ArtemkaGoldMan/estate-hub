@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useToast } from '../../shared/context/ToastContext';
-import { useAdminUsers, useAdminUserStats, useAdminUserActions } from '../../shared/api/admin';
+import { useAuth } from '../../shared/context/AuthContext';
+import { useAdminUsers, useAdminUserActions } from '../../shared/api/admin';
 import { getUserRoles, hasPermission, PERMISSIONS } from '../../shared/lib/permissions';
 import { UserFriendlyError } from '../../shared/lib/errorParser';
 import { Button, LoadingSpinner, Pagination, Input } from '../../shared/ui';
@@ -11,6 +12,7 @@ const ROLES = ['Admin', 'User'];
 
 export const AdminUsersPage = () => {
   const { showSuccess, showError } = useToast();
+  const { user: currentUser } = useAuth();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [includeDeleted, setIncludeDeleted] = useState(false);
@@ -28,8 +30,6 @@ export const AdminUsersPage = () => {
 
   const { data: usersData, loading: usersLoading, error: usersError, refetch: refetchUsers } =
     useAdminUsers(page, PAGE_SIZE, includeDeleted);
-
-  const { data: statsData, refetch: refetchStats } = useAdminUserStats();
 
   const {
     assignRole,
@@ -71,6 +71,12 @@ export const AdminUsersPage = () => {
   }, [selectedUser, roleToAssign, assignRole, refetchUsers]);
 
   const handleRemoveRole = useCallback(async (userId: string, role: string) => {
+    // Prevent admin from removing their own Admin role
+    if (currentUser && userId === currentUser.id && role === 'Admin') {
+      showError('You cannot remove your own Admin role');
+      return;
+    }
+
     if (!confirm(`Are you sure you want to remove the "${role}" role from this user?`)) {
       return;
     }
@@ -86,7 +92,7 @@ export const AdminUsersPage = () => {
         showError(error instanceof Error ? error.message : 'Failed to remove role');
       }
     }
-  }, [removeRole, refetchUsers]);
+  }, [currentUser, removeRole, refetchUsers, showError, showSuccess]);
 
   const handleSuspend = useCallback(async () => {
     if (!selectedUser || !suspendReason.trim()) return;
@@ -97,7 +103,6 @@ export const AdminUsersPage = () => {
       setSuspendReason('');
       setSelectedUser(null);
       refetchUsers();
-      refetchStats();
       showSuccess('User suspended successfully');
     } catch (error) {
       if (error instanceof UserFriendlyError) {
@@ -106,7 +111,7 @@ export const AdminUsersPage = () => {
         showError(error instanceof Error ? error.message : 'Failed to suspend user');
       }
     }
-  }, [selectedUser, suspendReason, suspendUser, refetchUsers, refetchStats]);
+  }, [selectedUser, suspendReason, suspendUser, refetchUsers]);
 
   const handleActivate = useCallback(async (userId: string) => {
     if (!confirm('Are you sure you want to activate this user?')) {
@@ -116,7 +121,6 @@ export const AdminUsersPage = () => {
     try {
       await activateUser(userId);
       refetchUsers();
-      refetchStats();
       showSuccess('User activated successfully');
     } catch (error) {
       if (error instanceof UserFriendlyError) {
@@ -125,7 +129,7 @@ export const AdminUsersPage = () => {
         showError(error instanceof Error ? error.message : 'Failed to activate user');
       }
     }
-  }, [activateUser, refetchUsers, refetchStats]);
+  }, [activateUser, refetchUsers]);
 
   const handleDelete = useCallback(async () => {
     if (!selectedUser) return;
@@ -135,7 +139,6 @@ export const AdminUsersPage = () => {
       setShowDeleteModal(false);
       setSelectedUser(null);
       refetchUsers();
-      refetchStats();
       showSuccess('User deleted successfully');
     } catch (error) {
       if (error instanceof UserFriendlyError) {
@@ -144,7 +147,7 @@ export const AdminUsersPage = () => {
         showError(error instanceof Error ? error.message : 'Failed to delete user');
       }
     }
-  }, [selectedUser, deleteUser, refetchUsers, refetchStats]);
+  }, [selectedUser, deleteUser, refetchUsers]);
 
   if (!canManageUsers) {
     return null;
@@ -152,32 +155,14 @@ export const AdminUsersPage = () => {
 
   return (
     <div className="admin-users-page">
-      <div className="admin-users-page__header">
-        <h1>User Management</h1>
-        <p>Manage users, roles, and account status</p>
-      </div>
-
-      {/* Statistics Dashboard */}
-      {statsData && (
-        <div className="admin-users-page__stats">
-          <div className="admin-users-page__stat-card">
-            <div className="admin-users-page__stat-value">{statsData.totalUsers}</div>
-            <div className="admin-users-page__stat-label">Total Users</div>
-          </div>
-          <div className="admin-users-page__stat-card">
-            <div className="admin-users-page__stat-value">{statsData.activeUsers}</div>
-            <div className="admin-users-page__stat-label">Active Users</div>
-          </div>
-          <div className="admin-users-page__stat-card">
-            <div className="admin-users-page__stat-value">{statsData.suspendedUsers}</div>
-            <div className="admin-users-page__stat-label">Suspended</div>
-          </div>
-          <div className="admin-users-page__stat-card">
-            <div className="admin-users-page__stat-value">{statsData.newUsersThisMonth}</div>
-            <div className="admin-users-page__stat-label">New This Month</div>
+      <header className="admin-users-page__header">
+        <div className="admin-users-page__header-content">
+          <div>
+            <h1>User Management</h1>
+            <p>Manage users, roles, and account status</p>
           </div>
         </div>
-      )}
+      </header>
 
       {/* Filters */}
       <div className="admin-users-page__filters">
@@ -250,14 +235,16 @@ export const AdminUsersPage = () => {
                               {user.roles.map((role) => (
                                 <span key={role} className="admin-users-page__role-badge">
                                   {role}
-                                  <button
-                                    type="button"
-                                    onClick={() => handleRemoveRole(user.id, role)}
-                                    className="admin-users-page__role-remove"
-                                    title={`Remove ${role} role`}
-                                  >
-                                    ×
-                                  </button>
+                                  {!(currentUser && user.id === currentUser.id && role === 'Admin') && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveRole(user.id, role)}
+                                      className="admin-users-page__role-remove"
+                                      title={`Remove ${role} role`}
+                                    >
+                                      ×
+                                    </button>
+                                  )}
                                 </span>
                               ))}
                             </>

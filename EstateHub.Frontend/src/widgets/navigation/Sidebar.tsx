@@ -1,15 +1,16 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { FaHome, FaBuilding, FaMap, FaChartBar, FaUser, FaClipboardList, FaUsers, FaSignOutAlt, FaSignInAlt, FaUserPlus, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { useAuth } from '../../shared/context/AuthContext';
 import { getUserRoles, hasPermission, PERMISSIONS } from '../../shared/lib/permissions';
 import { Button } from '../../shared/ui';
-import logoImage from '../../assets/Logo-optimized.png';
+import logoImage from '../../assets/Logo_Icon.svg';
 import './Sidebar.css';
 
 interface NavItem {
   path: string;
   label: string;
-  icon?: string;
+  Icon?: React.ComponentType;
   requiresAuth?: boolean;
   requiresAdmin?: boolean;
 }
@@ -29,13 +30,13 @@ export const Sidebar = ({ isMobileOpen = false, onMobileClose }: SidebarProps) =
   const canManageUsers = hasPermission(userRoles, PERMISSIONS.UserManagement);
 
   const navItems: NavItem[] = [
-    { path: '/', label: 'Home', icon: '🏡' },
-    { path: '/listings', label: 'Listings', icon: '🏠' },
-    { path: '/map', label: 'Map Search', icon: '🗺️' },
-    { path: '/dashboard', label: 'Dashboard', icon: '📊', requiresAuth: true },
-    { path: '/profile', label: 'Profile', icon: '👤', requiresAuth: true },
-    { path: '/reports', label: 'Reports', icon: '📋', requiresAuth: true },
-    { path: '/admin/users', label: 'User Management', icon: '👥', requiresAuth: true, requiresAdmin: true } as NavItem,
+    { path: '/', label: 'Home', Icon: FaHome },
+    { path: '/listings', label: 'Listings', Icon: FaBuilding },
+    { path: '/map', label: 'Map Search', Icon: FaMap },
+    { path: '/dashboard', label: 'Dashboard', Icon: FaChartBar, requiresAuth: true },
+    { path: '/profile', label: 'Profile', Icon: FaUser, requiresAuth: true },
+    { path: '/reports', label: 'Reports', Icon: FaClipboardList, requiresAuth: true },
+    { path: '/admin/users', label: 'User Management', Icon: FaUsers, requiresAuth: true, requiresAdmin: true } as NavItem,
   ];
 
   // Filter items based on authentication and permissions
@@ -99,7 +100,7 @@ export const Sidebar = ({ isMobileOpen = false, onMobileClose }: SidebarProps) =
           onClick={() => setIsCollapsed(!isCollapsed)}
           aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {isCollapsed ? '→' : '←'}
+          {isCollapsed ? <FaChevronRight /> : <FaChevronLeft />}
         </button>
       </div>
 
@@ -116,7 +117,11 @@ export const Sidebar = ({ isMobileOpen = false, onMobileClose }: SidebarProps) =
                 onClick={handleLinkClick}
                 aria-current={isActive(item.path) ? 'page' : undefined}
               >
-                {item.icon && <span className="sidebar__icon" aria-hidden="true">{item.icon}</span>}
+                {item.Icon && (
+                  <span className="sidebar__icon" aria-hidden="true">
+                    <item.Icon />
+                  </span>
+                )}
                 {!isCollapsed && <span className="sidebar__label">{item.label}</span>}
               </Link>
             </li>
@@ -147,7 +152,7 @@ export const Sidebar = ({ isMobileOpen = false, onMobileClose }: SidebarProps) =
               title={isCollapsed ? 'Logout' : undefined}
             >
               {!isCollapsed && 'Logout'}
-              {isCollapsed && '🚪'}
+              {isCollapsed && <FaSignOutAlt />}
             </Button>
           </>
         ) : (
@@ -160,7 +165,7 @@ export const Sidebar = ({ isMobileOpen = false, onMobileClose }: SidebarProps) =
               title={isCollapsed ? 'Login' : undefined}
             >
               {!isCollapsed && 'Login'}
-              {isCollapsed && '🔑'}
+              {isCollapsed && <FaSignInAlt />}
             </Button>
             <Button
               variant="primary"
@@ -170,7 +175,7 @@ export const Sidebar = ({ isMobileOpen = false, onMobileClose }: SidebarProps) =
               title={isCollapsed ? 'Sign Up' : undefined}
             >
               {!isCollapsed && 'Sign Up'}
-              {isCollapsed && '✨'}
+              {isCollapsed && <FaUserPlus />}
             </Button>
           </>
         )}

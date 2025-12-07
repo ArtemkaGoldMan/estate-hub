@@ -11,6 +11,7 @@ import { formatCurrency } from '../../shared/lib/formatCurrency';
 import { sanitizeHtml } from '../../shared/lib/sanitizeHtml';
 import { userApi, type GetUserResponse } from '../../shared/api/auth/userApi';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { FaExclamationTriangle, FaCheckCircle, FaTimesCircle, FaClock, FaInfoCircle, FaEdit, FaTrash, FaBullhorn, FaFileAlt, FaArchive } from 'react-icons/fa';
 import 'leaflet/dist/leaflet.css';
 import { Icon } from 'leaflet';
 import './DashboardListingDetailPage.css';
@@ -30,9 +31,13 @@ export const DashboardListingDetailPage = () => {
   const { user } = useAuth();
   const { showSuccess, showError } = useToast();
   
-  const { listing, loading, error, refetch } = useListingQuery(id || '');
+  // Enable polling when moderation is pending (will be determined after listing loads)
+  const { listing, loading, error, refetch } = useListingQuery(id || '', {
+    enablePolling: true, // Enable polling - it will automatically start/stop based on moderation status
+    pollInterval: 10000, // Poll every 10 seconds
+  });
   const { photos } = usePhotosQuery(id || '', true);
-  const { publishListing, unpublishListing, loading: statusLoading } = useChangeListingStatus();
+  const { publishListing, unpublishListing, unarchiveListing, archiveListing, loading: statusLoading } = useChangeListingStatus();
   const { deleteListing, loading: deleteLoading } = useDeleteListing();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [ownerInfo, setOwnerInfo] = useState<GetUserResponse | null>(null);
@@ -41,6 +46,7 @@ export const DashboardListingDetailPage = () => {
   const isOwner = listing && user && listing.ownerId === user.id;
   const isDraft = listing?.status === 'Draft';
   const isPublished = listing?.status === 'Published';
+  const isArchived = listing?.status === 'Archived';
   
   // Moderation status helpers
   const moderationStatus = isDraft
@@ -102,6 +108,34 @@ export const DashboardListingDetailPage = () => {
       showSuccess('Listing unpublished successfully');
     } catch (error) {
       showError(error instanceof Error ? error.message : 'Failed to unpublish listing');
+    }
+  };
+
+  const handleUnarchive = async () => {
+    if (!listing) return;
+    if (!confirm('Are you sure you want to unarchive this listing? It will be moved to draft status.')) {
+      return;
+    }
+    try {
+      await unarchiveListing(listing.id);
+      await refetch();
+      showSuccess('Listing unarchived successfully. It is now in draft status.');
+    } catch (error) {
+      showError(error instanceof Error ? error.message : 'Failed to unarchive listing');
+    }
+  };
+
+  const handleArchive = async () => {
+    if (!listing) return;
+    if (!confirm('Are you sure you want to archive this listing? It will be hidden from public view.')) {
+      return;
+    }
+    try {
+      await archiveListing(listing.id);
+      await refetch();
+      showSuccess('Listing archived successfully');
+    } catch (error) {
+      showError(error instanceof Error ? error.message : 'Failed to archive listing');
     }
   };
 
@@ -178,7 +212,7 @@ export const DashboardListingDetailPage = () => {
       {isDraft && (
         <div className="dashboard-listing-detail-page__draft-notice">
           <div className="dashboard-listing-detail-page__draft-notice-content">
-            <strong>⚠️ Draft Listing</strong>
+            <strong><FaExclamationTriangle style={{ marginRight: '0.5rem' }} /> Draft Listing</strong>
             <p>This listing exists but is not visible to other users. Click "Publish" to make it visible to everyone.</p>
           </div>
         </div>
@@ -397,9 +431,9 @@ export const DashboardListingDetailPage = () => {
           {/* Admin Unpublish Section - Show FIRST when listing was unpublished by admin */}
           {listing.adminUnpublishReason && (
             <div className="dashboard-listing-detail-page__management-section">
-              <h2>⚠️ Admin Action Required</h2>
+              <h2><FaExclamationTriangle style={{ marginRight: '0.5rem' }} /> Admin Action Required</h2>
               <div className="dashboard-listing-detail-page__moderation-review--rejected">
-                <div className="dashboard-listing-detail-page__moderation-status-icon">⚠️</div>
+                <div className="dashboard-listing-detail-page__moderation-status-icon"><FaExclamationTriangle /></div>
                 <div className="dashboard-listing-detail-page__moderation-status-text">
                   <strong>Listing Unpublished by Administrator</strong>
                   <div className="dashboard-listing-detail-page__moderation-reason">
@@ -421,7 +455,7 @@ export const DashboardListingDetailPage = () => {
               <div className="dashboard-listing-detail-page__moderation-review">
                 {moderationStatus === 'approved' && (
                   <div className="dashboard-listing-detail-page__moderation-review--approved">
-                    <div className="dashboard-listing-detail-page__moderation-status-icon">✅</div>
+                    <div className="dashboard-listing-detail-page__moderation-status-icon"><FaCheckCircle /></div>
                     <div className="dashboard-listing-detail-page__moderation-status-text">
                       <strong>Status: OK</strong>
                       <p>Your listing has been approved by moderation. You can publish it now.</p>
@@ -431,7 +465,7 @@ export const DashboardListingDetailPage = () => {
                 
                 {moderationStatus === 'rejected' && (
                   <div className="dashboard-listing-detail-page__moderation-review--rejected">
-                    <div className="dashboard-listing-detail-page__moderation-status-icon">❌</div>
+                    <div className="dashboard-listing-detail-page__moderation-status-icon"><FaTimesCircle /></div>
                     <div className="dashboard-listing-detail-page__moderation-status-text">
                       <strong>Status: Rejected</strong>
                       {listing.moderationRejectionReason && (
@@ -440,16 +474,23 @@ export const DashboardListingDetailPage = () => {
                           <p>{listing.moderationRejectionReason}</p>
                         </div>
                       )}
-                      <div className="dashboard-listing-detail-page__moderation-message">
-                        <p><strong>Change your listing info to test one more time on moderator</strong></p>
-                      </div>
+                      {listing.moderationRejectionReason?.includes('currently unavailable') ? (
+                        <div className="dashboard-listing-detail-page__moderation-message">
+                          <p><strong><FaExclamationTriangle style={{ marginRight: '0.5rem' }} /> Moderation service is temporarily unavailable. Please try again later.</strong></p>
+                          <p>The system will automatically retry moderation when you update your listing.</p>
+                        </div>
+                      ) : (
+                        <div className="dashboard-listing-detail-page__moderation-message">
+                          <p><strong>Change your listing info to test one more time on moderator</strong></p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
                 
                 {moderationStatus === 'pending' && (
                   <div className="dashboard-listing-detail-page__moderation-review--pending">
-                    <div className="dashboard-listing-detail-page__moderation-status-icon">⏳</div>
+                    <div className="dashboard-listing-detail-page__moderation-status-icon"><FaClock /></div>
                     <div className="dashboard-listing-detail-page__moderation-status-text">
                       <strong>Status: Pending</strong>
                       <p>Moderation is being checked. Please wait...</p>
@@ -459,7 +500,7 @@ export const DashboardListingDetailPage = () => {
                 
                 {moderationStatus === null && (
                   <div className="dashboard-listing-detail-page__moderation-review--not-checked">
-                    <div className="dashboard-listing-detail-page__moderation-status-icon">ℹ️</div>
+                    <div className="dashboard-listing-detail-page__moderation-status-icon"><FaInfoCircle /></div>
                     <div className="dashboard-listing-detail-page__moderation-status-text">
                       <strong>Status: Not checked yet</strong>
                       <p>Moderation will be checked automatically.</p>
@@ -474,74 +515,102 @@ export const DashboardListingDetailPage = () => {
           <div className="dashboard-listing-detail-page__management-section">
             <h2>Management</h2>
             <div className="dashboard-listing-detail-page__management-actions">
-              <Button
-                variant="outline"
-                onClick={handleEdit}
-                disabled={statusLoading || deleteLoading}
-                style={{ width: '100%' }}
-              >
-                ✏️ Edit
-              </Button>
-              
-              {isDraft && (
-                <Button
-                  variant="primary"
-                  onClick={handlePublish}
-                  disabled={statusLoading || deleteLoading || !canPublish}
-                  isLoading={statusLoading}
-                  style={{ width: '100%' }}
-                  title={
-                    listing?.adminUnpublishReason
-                      ? 'Listing was unpublished by admin. Make changes and re-moderate before publishing.'
-                      : !canPublish
-                      ? 'Content must pass moderation before publishing'
-                      : 'Publish listing'
-                  }
-                >
-                  📢 Publish
-                </Button>
-              )}
-              
-              {isPublished && (
+              {isArchived ? (
+                // Archive mode: only show Unarchive button
                 <Button
                   variant="outline"
-                  onClick={handleUnpublish}
-                  disabled={statusLoading || deleteLoading}
+                  onClick={handleUnarchive}
+                  disabled={statusLoading}
                   isLoading={statusLoading}
                   style={{ width: '100%' }}
                 >
-                  📝 Unpublish
-                </Button>
-              )}
-              
-              {!showDeleteConfirm ? (
-                <Button
-                  variant="danger"
-                  onClick={handleDelete}
-                  disabled={statusLoading || deleteLoading}
-                  style={{ width: '100%' }}
-                >
-                  🗑️ Delete
+                  <FaArchive style={{ marginRight: '0.5rem' }} /> Unarchive
                 </Button>
               ) : (
+                // Full mode: show all management buttons
                 <>
                   <Button
-                    variant="danger"
-                    onClick={handleDelete}
-                    disabled={statusLoading || deleteLoading}
-                    isLoading={deleteLoading}
-                    style={{ width: '100%' }}
-                  >
-                    ✓ Confirm Delete
-                  </Button>
-                  <Button
                     variant="outline"
-                    onClick={() => setShowDeleteConfirm(false)}
+                    onClick={handleEdit}
                     disabled={statusLoading || deleteLoading}
                     style={{ width: '100%' }}
                   >
-                    Cancel
+                    <FaEdit style={{ marginRight: '0.5rem' }} /> Edit
                   </Button>
+                  
+                  {isDraft && (
+                    <Button
+                      variant="primary"
+                      onClick={handlePublish}
+                      disabled={statusLoading || deleteLoading || !canPublish}
+                      isLoading={statusLoading}
+                      style={{ width: '100%' }}
+                      title={
+                        listing?.adminUnpublishReason
+                          ? 'Listing was unpublished by admin. Make changes and re-moderate before publishing.'
+                          : !canPublish
+                          ? 'Content must pass moderation before publishing'
+                          : 'Publish listing'
+                      }
+                    >
+                      <FaBullhorn style={{ marginRight: '0.5rem' }} /> Publish
+                    </Button>
+                  )}
+                  
+                  {isPublished && (
+                    <Button
+                      variant="outline"
+                      onClick={handleUnpublish}
+                      disabled={statusLoading || deleteLoading}
+                      isLoading={statusLoading}
+                      style={{ width: '100%' }}
+                    >
+                      <FaFileAlt style={{ marginRight: '0.5rem' }} /> Unpublish
+                    </Button>
+                  )}
+                  
+                  {!isArchived && (
+                    <Button
+                      variant="outline"
+                      onClick={handleArchive}
+                      disabled={statusLoading || deleteLoading}
+                      isLoading={statusLoading}
+                      style={{ width: '100%' }}
+                    >
+                      <FaArchive style={{ marginRight: '0.5rem' }} /> Archive
+                    </Button>
+                  )}
+                  
+                  {!showDeleteConfirm ? (
+                    <Button
+                      variant="danger"
+                      onClick={handleDelete}
+                      disabled={statusLoading || deleteLoading}
+                      style={{ width: '100%' }}
+                    >
+                      <FaTrash style={{ marginRight: '0.5rem' }} /> Delete
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        variant="danger"
+                        onClick={handleDelete}
+                        disabled={statusLoading || deleteLoading}
+                        isLoading={deleteLoading}
+                        style={{ width: '100%' }}
+                      >
+                        ✓ Confirm Delete
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowDeleteConfirm(false)}
+                        disabled={statusLoading || deleteLoading}
+                        style={{ width: '100%' }}
+                      >
+                        Cancel
+                      </Button>
+                    </>
+                  )}
                 </>
               )}
             </div>

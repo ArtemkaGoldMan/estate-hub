@@ -137,6 +137,7 @@ public class Program
             .AddType<ReportQueries>()
             .AddType<PhotoQueries>()
             .AddType<ModerationQueries>()
+            .AddType<LocationAIQueries>()
             .AddMutationType<Mutations>()
             .AddType<ReportMutations>()
             .AddType<PhotoMutations>()

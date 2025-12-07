@@ -294,7 +294,7 @@ public class Program
                     factory: partition => new FixedWindowRateLimiterOptions
                     {
                         AutoReplenishment = true,
-                        PermitLimit = 5,
+                        PermitLimit = 30, // Increased from 5 to 30 to allow page reloads
                         Window = TimeSpan.FromMinutes(1)
                     }));
         });

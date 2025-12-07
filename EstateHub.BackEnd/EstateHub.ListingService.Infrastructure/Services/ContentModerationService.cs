@@ -187,37 +187,38 @@ public class ContentModerationService : IContentModerationService
         {
             var totalDuration = DateTime.UtcNow - moderationStartTime;
             _logger.LogError(ex,
-                "[OPENAI] ===== HTTP REQUEST ERROR ===== ErrorType: {ErrorType}, Message: {Message}, Duration: {Duration}ms, StackTrace: {StackTrace}",
+                "[OPENAI] ===== HTTP REQUEST ERROR (AFTER RETRIES) ===== ErrorType: {ErrorType}, Message: {Message}, Duration: {Duration}ms, StackTrace: {StackTrace}",
                 ex.GetType().Name, ex.Message, totalDuration.TotalMilliseconds, ex.StackTrace);
             
             if (_failOpen)
             {
-                _logger.LogWarning("[OPENAI] Moderation failed but fail-open is enabled. Approving automatically. Duration: {Duration}ms", totalDuration.TotalMilliseconds);
+                _logger.LogWarning("[OPENAI] Moderation failed after retries but fail-open is enabled. Approving automatically. Duration: {Duration}ms", totalDuration.TotalMilliseconds);
                 return new ModerationResult(true, null, null);
             }
 
+            // Return a user-friendly error message after all retries failed
             return new ModerationResult(
                 false,
-                $"Moderation service error: {ex.Message}",
-                null);
+                "Moderation service is currently unavailable. Please try again later.",
+                new List<string> { "The moderation service could not be reached after multiple attempts. Please try again in a few moments." });
         }
         catch (TaskCanceledException ex)
         {
             var totalDuration = DateTime.UtcNow - moderationStartTime;
             _logger.LogError(ex,
-                "[OPENAI] ===== REQUEST TIMEOUT ===== ErrorType: {ErrorType}, Message: {Message}, Duration: {Duration}ms, CancellationRequested: {CancellationRequested}",
+                "[OPENAI] ===== REQUEST TIMEOUT (AFTER RETRIES) ===== ErrorType: {ErrorType}, Message: {Message}, Duration: {Duration}ms, CancellationRequested: {CancellationRequested}",
                 ex.GetType().Name, ex.Message, totalDuration.TotalMilliseconds, ex.CancellationToken.IsCancellationRequested);
             
             if (_failOpen)
             {
-                _logger.LogWarning("[OPENAI] Request timeout but fail-open is enabled. Approving automatically.");
+                _logger.LogWarning("[OPENAI] Request timeout after retries but fail-open is enabled. Approving automatically.");
                 return new ModerationResult(true, null, null);
             }
 
             return new ModerationResult(
                 false,
-                "Moderation request timed out. Please try again later.",
-                null);
+                "Moderation service is currently unavailable. Please try again later.",
+                new List<string> { "The moderation service timed out after multiple attempts. Please try again in a few moments." });
         }
         catch (JsonException ex)
         {
@@ -241,19 +242,19 @@ public class ContentModerationService : IContentModerationService
         {
             var totalDuration = DateTime.UtcNow - moderationStartTime;
             _logger.LogError(ex,
-                "[OPENAI] ===== UNEXPECTED ERROR DURING CONTENT MODERATION ===== ErrorType: {ErrorType}, Message: {Message}, Duration: {Duration}ms, StackTrace: {StackTrace}",
+                "[OPENAI] ===== UNEXPECTED ERROR DURING CONTENT MODERATION (AFTER RETRIES) ===== ErrorType: {ErrorType}, Message: {Message}, Duration: {Duration}ms, StackTrace: {StackTrace}",
                 ex.GetType().Name, ex.Message, totalDuration.TotalMilliseconds, ex.StackTrace);
             
             if (_failOpen)
             {
-                _logger.LogWarning("[OPENAI] Unexpected error but fail-open is enabled. Approving automatically.");
+                _logger.LogWarning("[OPENAI] Unexpected error after retries but fail-open is enabled. Approving automatically.");
                 return new ModerationResult(true, null, null);
             }
 
             return new ModerationResult(
                 false,
-                $"An unexpected error occurred during moderation: {ex.Message}",
-                null);
+                "Moderation service is currently unavailable. Please try again later.",
+                new List<string> { "An unexpected error occurred. Please try again in a few moments." });
         }
     }
 

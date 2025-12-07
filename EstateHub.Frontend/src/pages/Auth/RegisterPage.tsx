@@ -7,7 +7,7 @@ import './AuthPages.css';
 
 export const RegisterPage = () => {
   const navigate = useNavigate();
-  const { register, isAuthenticated } = useAuth();
+  const { register, isAuthenticated, isLoading: authLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -16,11 +16,12 @@ export const RegisterPage = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   // Redirect if already authenticated (use useEffect to avoid conditional hook calls)
+  // Only redirect after auth has finished loading
   useEffect(() => {
-    if (isAuthenticated) {
+    if (!authLoading && isAuthenticated) {
       navigate('/listings', { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, authLoading, navigate]);
 
   if (isAuthenticated) {
     return null;

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import clsx from 'clsx';
+import { FaCheck, FaTimes, FaExclamationTriangle, FaInfoCircle } from 'react-icons/fa';
 import './Toast.css';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
@@ -34,15 +35,15 @@ export const ToastItem = ({ toast, onClose }: ToastProps) => {
   const getIcon = () => {
     switch (toast.type) {
       case 'success':
-        return '✓';
+        return <FaCheck />;
       case 'error':
-        return '✕';
+        return <FaTimes />;
       case 'warning':
-        return '⚠';
+        return <FaExclamationTriangle />;
       case 'info':
-        return 'ℹ';
+        return <FaInfoCircle />;
       default:
-        return '';
+        return null;
     }
   };
 
@@ -61,7 +62,7 @@ export const ToastItem = ({ toast, onClose }: ToastProps) => {
         onClick={handleClose}
         aria-label="Close notification"
       >
-        ✕
+        <FaTimes />
       </button>
     </div>
   );

@@ -218,7 +218,7 @@ public class UsersService : IUsersService
             });
     }
 
-    public Task<Result> RemoveUserRoleAsync(Guid userId, string role)
+    public Task<Result> RemoveUserRoleAsync(Guid userId, string role, Guid? currentUserId = null)
     {
         return _resultExecutor.ExecuteWithTransactionAsync(
             async () =>
@@ -226,6 +226,17 @@ public class UsersService : IUsersService
                 if (userId == Guid.Empty)
                 {
                     ErrorHelper.ThrowError(UserErrors.NotFoundById(userId));
+                }
+
+                // Prevent admin from removing their own Admin role
+                if (currentUserId.HasValue && currentUserId.Value == userId && role.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Check if the user actually has the Admin role
+                    var user = await _usersRepository.GetByIdAsync<UserWithRolesDto>(userId);
+                    if (user != null && user.Roles != null && user.Roles.Contains("Admin", StringComparer.OrdinalIgnoreCase))
+                    {
+                        ErrorHelper.ThrowError(UserErrors.CannotRemoveOwnAdminRole());
+                    }
                 }
 
                 var success = await _usersRepository.RemoveUserRoleAsync(userId, role);
