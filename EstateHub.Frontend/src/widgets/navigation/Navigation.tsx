@@ -11,7 +11,6 @@ export const Navigation = () => {
   const navItems = [
     { path: '/listings', label: 'Listings' },
     ...(isAuthenticated ? [{ path: '/dashboard', label: 'Dashboard' }] : []),
-    { path: '/components', label: 'Components' },
   ];
 
   const handleLogout = async () => {
