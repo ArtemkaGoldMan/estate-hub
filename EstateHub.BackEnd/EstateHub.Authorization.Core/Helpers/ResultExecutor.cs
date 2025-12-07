@@ -36,7 +36,7 @@ public class ResultExecutor<TLogger>
 
             return Result.Success(result);
         }
-        catch (Exception e) when (e is ArgumentNullException or ArgumentException or AggregateException)
+        catch (Exception e) when (e is ArgumentNullException or ArgumentException or AggregateException or InvalidOperationException)
         {
             if (beginTransaction)
             {
@@ -86,7 +86,7 @@ public class ResultExecutor<TLogger>
 
             return Result.Success();
         }
-        catch (Exception e) when (e is ArgumentNullException or ArgumentException or AggregateException)
+        catch (Exception e) when (e is ArgumentNullException or ArgumentException or AggregateException or InvalidOperationException)
         {
             if (beginTransaction)
             {
@@ -123,7 +123,7 @@ public class ResultExecutor<TLogger>
             var result = await operation();
             return Result.Success(result);
         }
-        catch (Exception e) when (e is ArgumentNullException or ArgumentException or AggregateException)
+        catch (Exception e) when (e is ArgumentNullException or ArgumentException or AggregateException or InvalidOperationException)
         {
             _logger.LogError("{error}", e.Message);
             
@@ -149,7 +149,7 @@ public class ResultExecutor<TLogger>
             await operation();
             return Result.Success();
         }
-        catch (Exception e) when (e is ArgumentNullException or ArgumentException or AggregateException)
+        catch (Exception e) when (e is ArgumentNullException or ArgumentException or AggregateException or InvalidOperationException)
         {
             _logger.LogError("{error}", e.Message);
             

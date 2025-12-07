@@ -254,7 +254,8 @@ public class ListingRepository : IListingRepository
             Photos = photos,
             IsModerationApproved = entity.IsModerationApproved,
             ModerationCheckedAt = entity.ModerationCheckedAt,
-            ModerationRejectionReason = entity.ModerationRejectionReason
+            ModerationRejectionReason = entity.ModerationRejectionReason,
+            AdminUnpublishReason = entity.AdminUnpublishReason
         };
     }
 
@@ -297,6 +298,7 @@ public class ListingRepository : IListingRepository
             IsModerationApproved = listing.IsModerationApproved,
             ModerationCheckedAt = listing.ModerationCheckedAt,
             ModerationRejectionReason = listing.ModerationRejectionReason,
+            AdminUnpublishReason = listing.AdminUnpublishReason,
             Photos = listing.Photos?.Select(p => new ListingPhotoEntity
             {
                 Id = p.Id,

@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using EstateHub.ListingService.Core.Services;
 using EstateHub.ListingService.Domain.Interfaces;
 using EstateHub.ListingService.Domain.DTO;
 using EstateHub.ListingService.Domain.Enums;
@@ -27,7 +28,7 @@ public class ListingService : IListingService
     private readonly ListingDtoMapper _dtoMapper;
     private readonly ILogger<ListingService> _logger;
     private readonly ResultExecutor<ListingService> _resultExecutor;
-    private readonly IServiceScopeFactory _serviceScopeFactory;
+    private readonly BackgroundModerationService _backgroundModerationService;
 
     public ListingService(
         IListingRepository listingRepository,
@@ -39,7 +40,7 @@ public class ListingService : IListingService
         ListingDtoMapper dtoMapper,
         ILogger<ListingService> logger,
         IUnitOfWork unitOfWork,
-        IServiceScopeFactory serviceScopeFactory)
+        BackgroundModerationService backgroundModerationService)
     {
         _listingRepository = listingRepository;
         _likedListingRepository = likedListingRepository;
@@ -50,7 +51,7 @@ public class ListingService : IListingService
         _dtoMapper = dtoMapper;
         _logger = logger;
         _resultExecutor = new ResultExecutor<ListingService>(logger, unitOfWork);
-        _serviceScopeFactory = serviceScopeFactory;
+        _backgroundModerationService = backgroundModerationService;
     }
 
     public async Task<PagedResult<ListingDto>> GetAllAsync(ListingFilter? filter, int page, int pageSize)
@@ -327,45 +328,8 @@ public class ListingService : IListingService
 
         var listingId = result.Value;
 
-        // Auto-check moderation after creation (fire and forget in background)
-        // Create new service scope for background task to avoid disposed context issues
-        _ = Task.Run(async () =>
-        {
-            var backgroundTaskId = Guid.NewGuid();
-            _logger.LogInformation(
-                "[MODERATION-BG-{TaskId}] ===== STARTING BACKGROUND MODERATION TASK ===== ListingId: {ListingId}, ThreadId: {ThreadId}, Timestamp: {Timestamp}",
-                backgroundTaskId, listingId, Thread.CurrentThread.ManagedThreadId, DateTime.UtcNow);
-            
-            // Create a new service scope for this background task
-            // This ensures we have fresh services (DbContext, repositories) that won't be disposed
-            using (var scope = _serviceScopeFactory.CreateScope())
-            {
-                try
-                {
-                    _logger.LogInformation(
-                        "[MODERATION-BG-{TaskId}] Service scope created - Starting moderation check for newly created listing - ListingId: {ListingId}",
-                        backgroundTaskId, listingId);
-                    
-                    // Get moderation service from the new scope (with its own DbContext)
-                    var moderationService = scope.ServiceProvider.GetRequiredService<IModerationService>();
-                    
-                    var moderationStartTime = DateTime.UtcNow;
-                    await moderationService.CheckModerationAsync(listingId);
-                    var moderationDuration = DateTime.UtcNow - moderationStartTime;
-                    
-                    _logger.LogInformation(
-                        "[MODERATION-BG-{TaskId}] ===== BACKGROUND MODERATION COMPLETED SUCCESSFULLY ===== ListingId: {ListingId}, Duration: {Duration}ms, Timestamp: {Timestamp}",
-                        backgroundTaskId, listingId, moderationDuration.TotalMilliseconds, DateTime.UtcNow);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex,
-                        "[MODERATION-BG-{TaskId}] ===== BACKGROUND MODERATION FAILED ===== ListingId: {ListingId}, ErrorType: {ErrorType}, ErrorMessage: {ErrorMessage}, StackTrace: {StackTrace}, Timestamp: {Timestamp}",
-                        backgroundTaskId, listingId, ex.GetType().Name, ex.Message, ex.StackTrace, DateTime.UtcNow);
-                    // Don't throw - moderation failure shouldn't break listing creation
-                }
-            } // Scope disposed here - all services cleaned up automatically
-        });
+        // Enqueue moderation check with retry logic
+        _backgroundModerationService.EnqueueModerationCheck(listingId, "create");
 
         return listingId;
     }
@@ -498,43 +462,7 @@ public class ListingService : IListingService
         // Auto-check moderation after update if title/description changed
         if (shouldCheckModeration)
         {
-            _ = Task.Run(async () =>
-            {
-                var backgroundTaskId = Guid.NewGuid();
-                _logger.LogInformation(
-                    "[MODERATION-BG-{TaskId}] ===== STARTING BACKGROUND MODERATION AFTER UPDATE ===== ListingId: {ListingId}, ThreadId: {ThreadId}, TitleChanged: {TitleChanged}, DescriptionChanged: {DescChanged}, Timestamp: {Timestamp}",
-                    backgroundTaskId, id, Thread.CurrentThread.ManagedThreadId, titleChanged, descriptionChanged, DateTime.UtcNow);
-                
-                // Create a new service scope for this background task
-                // This ensures we have fresh services (DbContext, repositories) that won't be disposed
-                using (var scope = _serviceScopeFactory.CreateScope())
-                {
-                    try
-                    {
-                        _logger.LogInformation(
-                            "[MODERATION-BG-{TaskId}] Service scope created - Starting moderation check after update - ListingId: {ListingId}",
-                            backgroundTaskId, id);
-                        
-                        // Get moderation service from the new scope (with its own DbContext)
-                        var moderationService = scope.ServiceProvider.GetRequiredService<IModerationService>();
-                        
-                        var moderationStartTime = DateTime.UtcNow;
-                        await moderationService.CheckModerationAsync(id);
-                        var moderationDuration = DateTime.UtcNow - moderationStartTime;
-                        
-                        _logger.LogInformation(
-                            "[MODERATION-BG-{TaskId}] ===== BACKGROUND MODERATION AFTER UPDATE COMPLETED ===== ListingId: {ListingId}, Duration: {Duration}ms, Timestamp: {Timestamp}",
-                            backgroundTaskId, id, moderationDuration.TotalMilliseconds, DateTime.UtcNow);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex,
-                            "[MODERATION-BG-{TaskId}] ===== BACKGROUND MODERATION AFTER UPDATE FAILED ===== ListingId: {ListingId}, ErrorType: {ErrorType}, ErrorMessage: {ErrorMessage}, StackTrace: {StackTrace}, Timestamp: {Timestamp}",
-                            backgroundTaskId, id, ex.GetType().Name, ex.Message, ex.StackTrace, DateTime.UtcNow);
-                        // Don't throw - moderation failure shouldn't break listing update
-                    }
-                } // Scope disposed here - all services cleaned up automatically
-            });
+            _backgroundModerationService.EnqueueModerationCheck(id, $"update(title:{titleChanged},desc:{descriptionChanged})");
         }
         else
         {

@@ -296,5 +296,562 @@ public class PhotoServiceTests
         _photoStorageServiceMock.Verify(s => s.UploadPhotoAsync(listingId, fileStream, fileName, contentType), Times.Once);
         _photoRepositoryMock.Verify(r => r.AddPhotoAsync(listingId, photoUrl), Times.Once);
     }
+
+    [Fact]
+    public async Task AddPhotoAsync_WithEmptyUrl_ThrowsError()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var listingId = Guid.NewGuid();
+        var listing = new Listing(
+            userId,
+            ListingCategory.Sale,
+            PropertyType.Apartment,
+            "Test Listing",
+            "Description",
+            "123 Main St",
+            "Downtown",
+            "Warsaw",
+            "00-001",
+            52.2297m,
+            21.0122m,
+            75.5m,
+            3,
+            Condition.Good,
+            false,
+            false,
+            false,
+            false,
+            false,
+            null,
+            null,
+            null,
+            500000m,
+            null
+        );
+
+        _currentUserServiceMock
+            .Setup(s => s.GetUserId())
+            .Returns(userId);
+
+        _listingRepositoryMock
+            .Setup(r => r.GetByIdAsync(listingId))
+            .ReturnsAsync(listing);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(() => 
+            _photoService.AddPhotoAsync(listingId, string.Empty));
+        
+        _photoRepositoryMock.Verify(r => r.AddPhotoAsync(It.IsAny<Guid>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task AddPhotoAsync_WithInvalidUrl_ThrowsError()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var listingId = Guid.NewGuid();
+        var listing = new Listing(
+            userId,
+            ListingCategory.Sale,
+            PropertyType.Apartment,
+            "Test Listing",
+            "Description",
+            "123 Main St",
+            "Downtown",
+            "Warsaw",
+            "00-001",
+            52.2297m,
+            21.0122m,
+            75.5m,
+            3,
+            Condition.Good,
+            false,
+            false,
+            false,
+            false,
+            false,
+            null,
+            null,
+            null,
+            500000m,
+            null
+        );
+
+        _currentUserServiceMock
+            .Setup(s => s.GetUserId())
+            .Returns(userId);
+
+        _listingRepositoryMock
+            .Setup(r => r.GetByIdAsync(listingId))
+            .ReturnsAsync(listing);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(() => 
+            _photoService.AddPhotoAsync(listingId, "not-a-valid-url"));
+        
+        _photoRepositoryMock.Verify(r => r.AddPhotoAsync(It.IsAny<Guid>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task AddPhotoAsync_WithNonExistentListing_ThrowsError()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var listingId = Guid.NewGuid();
+        var photoUrl = "https://example.com/photo.jpg";
+
+        _currentUserServiceMock
+            .Setup(s => s.GetUserId())
+            .Returns(userId);
+
+        _listingRepositoryMock
+            .Setup(r => r.GetByIdAsync(listingId))
+            .ReturnsAsync((Listing?)null);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(() => 
+            _photoService.AddPhotoAsync(listingId, photoUrl));
+        
+        _photoRepositoryMock.Verify(r => r.AddPhotoAsync(It.IsAny<Guid>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UploadPhotoAsync_WithInvalidFile_ThrowsError()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var listingId = Guid.NewGuid();
+        var fileName = "photo.jpg";
+        var contentType = "image/jpeg";
+        var fileStream = new MemoryStream(new byte[] { 1, 2, 3, 4 });
+
+        var listing = new Listing(
+            userId,
+            ListingCategory.Sale,
+            PropertyType.Apartment,
+            "Test Listing",
+            "Description",
+            "123 Main St",
+            "Downtown",
+            "Warsaw",
+            "00-001",
+            52.2297m,
+            21.0122m,
+            75.5m,
+            3,
+            Condition.Good,
+            false,
+            false,
+            false,
+            false,
+            false,
+            null,
+            null,
+            null,
+            500000m,
+            null
+        );
+
+        var validationResult = new FileValidationResult(IsValid: false, ErrorMessage: "File too large");
+
+        _currentUserServiceMock
+            .Setup(s => s.GetUserId())
+            .Returns(userId);
+
+        _listingRepositoryMock
+            .Setup(r => r.GetByIdAsync(listingId))
+            .ReturnsAsync(listing);
+
+        _photoStorageServiceMock
+            .Setup(s => s.ValidateFileAsync(fileStream, fileName, contentType))
+            .ReturnsAsync(validationResult);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(() => 
+            _photoService.UploadPhotoAsync(listingId, fileStream, fileName, contentType));
+        
+        _photoStorageServiceMock.Verify(s => s.UploadPhotoAsync(It.IsAny<Guid>(), It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _photoRepositoryMock.Verify(r => r.AddPhotoAsync(It.IsAny<Guid>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RemovePhotoAsync_WithNonExistentPhoto_ThrowsError()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var listingId = Guid.NewGuid();
+        var photoId = Guid.NewGuid();
+
+        var listing = new Listing(
+            userId,
+            ListingCategory.Sale,
+            PropertyType.Apartment,
+            "Test Listing",
+            "Description",
+            "123 Main St",
+            "Downtown",
+            "Warsaw",
+            "00-001",
+            52.2297m,
+            21.0122m,
+            75.5m,
+            3,
+            Condition.Good,
+            false,
+            false,
+            false,
+            false,
+            false,
+            null,
+            null,
+            null,
+            500000m,
+            null
+        );
+
+        _currentUserServiceMock
+            .Setup(s => s.GetUserId())
+            .Returns(userId);
+
+        _listingRepositoryMock
+            .Setup(r => r.GetByIdAsync(listingId))
+            .ReturnsAsync(listing);
+
+        _photoRepositoryMock
+            .Setup(r => r.GetByIdAsync(photoId))
+            .ReturnsAsync((ListingPhoto?)null);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(() => 
+            _photoService.RemovePhotoAsync(listingId, photoId));
+        
+        _photoStorageServiceMock.Verify(s => s.DeletePhotoAsync(It.IsAny<string>()), Times.Never);
+        _photoRepositoryMock.Verify(r => r.RemovePhotoAsync(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RemovePhotoAsync_WithPhotoFromDifferentListing_ThrowsError()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var listingId = Guid.NewGuid();
+        var otherListingId = Guid.NewGuid();
+        var photoId = Guid.NewGuid();
+        var photoUrl = "https://example.com/photo.jpg";
+
+        var listing = new Listing(
+            userId,
+            ListingCategory.Sale,
+            PropertyType.Apartment,
+            "Test Listing",
+            "Description",
+            "123 Main St",
+            "Downtown",
+            "Warsaw",
+            "00-001",
+            52.2297m,
+            21.0122m,
+            75.5m,
+            3,
+            Condition.Good,
+            false,
+            false,
+            false,
+            false,
+            false,
+            null,
+            null,
+            null,
+            500000m,
+            null
+        );
+
+        var photo = new ListingPhoto(otherListingId, photoUrl, 0);
+
+        _currentUserServiceMock
+            .Setup(s => s.GetUserId())
+            .Returns(userId);
+
+        _listingRepositoryMock
+            .Setup(r => r.GetByIdAsync(listingId))
+            .ReturnsAsync(listing);
+
+        _photoRepositoryMock
+            .Setup(r => r.GetByIdAsync(photoId))
+            .ReturnsAsync(photo);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(() => 
+            _photoService.RemovePhotoAsync(listingId, photoId));
+        
+        _photoStorageServiceMock.Verify(s => s.DeletePhotoAsync(It.IsAny<string>()), Times.Never);
+        _photoRepositoryMock.Verify(r => r.RemovePhotoAsync(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ReorderPhotosAsync_WithValidOrder_Succeeds()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var listingId = Guid.NewGuid();
+        var photo1Id = Guid.NewGuid();
+        var photo2Id = Guid.NewGuid();
+        var photo3Id = Guid.NewGuid();
+
+        var listing = new Listing(
+            userId,
+            ListingCategory.Sale,
+            PropertyType.Apartment,
+            "Test Listing",
+            "Description",
+            "123 Main St",
+            "Downtown",
+            "Warsaw",
+            "00-001",
+            52.2297m,
+            21.0122m,
+            75.5m,
+            3,
+            Condition.Good,
+            false,
+            false,
+            false,
+            false,
+            false,
+            null,
+            null,
+            null,
+            500000m,
+            null
+        );
+
+        var photos = new List<ListingPhoto>
+        {
+            new ListingPhoto(listingId, "https://example.com/photo1.jpg", 0) { Id = photo1Id },
+            new ListingPhoto(listingId, "https://example.com/photo2.jpg", 1) { Id = photo2Id },
+            new ListingPhoto(listingId, "https://example.com/photo3.jpg", 2) { Id = photo3Id }
+        };
+
+        var orderedPhotoIds = new List<Guid> { photo3Id, photo1Id, photo2Id };
+
+        _currentUserServiceMock
+            .Setup(s => s.GetUserId())
+            .Returns(userId);
+
+        _listingRepositoryMock
+            .Setup(r => r.GetByIdAsync(listingId))
+            .ReturnsAsync(listing);
+
+        _photoRepositoryMock
+            .Setup(r => r.GetPhotosByListingIdAsync(listingId))
+            .ReturnsAsync(photos);
+
+        _photoRepositoryMock
+            .Setup(r => r.ReorderPhotosAsync(listingId, orderedPhotoIds))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        await _photoService.ReorderPhotosAsync(listingId, orderedPhotoIds);
+
+        // Assert
+        _photoRepositoryMock.Verify(r => r.ReorderPhotosAsync(listingId, orderedPhotoIds), Times.Once);
+    }
+
+    [Fact]
+    public async Task ReorderPhotosAsync_WithEmptyOrder_ThrowsError()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var listingId = Guid.NewGuid();
+
+        var listing = new Listing(
+            userId,
+            ListingCategory.Sale,
+            PropertyType.Apartment,
+            "Test Listing",
+            "Description",
+            "123 Main St",
+            "Downtown",
+            "Warsaw",
+            "00-001",
+            52.2297m,
+            21.0122m,
+            75.5m,
+            3,
+            Condition.Good,
+            false,
+            false,
+            false,
+            false,
+            false,
+            null,
+            null,
+            null,
+            500000m,
+            null
+        );
+
+        _currentUserServiceMock
+            .Setup(s => s.GetUserId())
+            .Returns(userId);
+
+        _listingRepositoryMock
+            .Setup(r => r.GetByIdAsync(listingId))
+            .ReturnsAsync(listing);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(() => 
+            _photoService.ReorderPhotosAsync(listingId, new List<Guid>()));
+        
+        _photoRepositoryMock.Verify(r => r.ReorderPhotosAsync(It.IsAny<Guid>(), It.IsAny<List<Guid>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ReorderPhotosAsync_WithInvalidPhotoId_ThrowsError()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var listingId = Guid.NewGuid();
+        var photo1Id = Guid.NewGuid();
+        var invalidPhotoId = Guid.NewGuid();
+
+        var listing = new Listing(
+            userId,
+            ListingCategory.Sale,
+            PropertyType.Apartment,
+            "Test Listing",
+            "Description",
+            "123 Main St",
+            "Downtown",
+            "Warsaw",
+            "00-001",
+            52.2297m,
+            21.0122m,
+            75.5m,
+            3,
+            Condition.Good,
+            false,
+            false,
+            false,
+            false,
+            false,
+            null,
+            null,
+            null,
+            500000m,
+            null
+        );
+
+        var photos = new List<ListingPhoto>
+        {
+            new ListingPhoto(listingId, "https://example.com/photo1.jpg", 0) { Id = photo1Id }
+        };
+
+        var orderedPhotoIds = new List<Guid> { photo1Id, invalidPhotoId };
+
+        _currentUserServiceMock
+            .Setup(s => s.GetUserId())
+            .Returns(userId);
+
+        _listingRepositoryMock
+            .Setup(r => r.GetByIdAsync(listingId))
+            .ReturnsAsync(listing);
+
+        _photoRepositoryMock
+            .Setup(r => r.GetPhotosByListingIdAsync(listingId))
+            .ReturnsAsync(photos);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(() => 
+            _photoService.ReorderPhotosAsync(listingId, orderedPhotoIds));
+        
+        _photoRepositoryMock.Verify(r => r.ReorderPhotosAsync(It.IsAny<Guid>(), It.IsAny<List<Guid>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetPhotosAsync_ReturnsAllPhotos()
+    {
+        // Arrange
+        var listingId = Guid.NewGuid();
+        var photos = new List<ListingPhoto>
+        {
+            new ListingPhoto(listingId, "https://example.com/photo1.jpg", 0),
+            new ListingPhoto(listingId, "https://example.com/photo2.jpg", 1)
+        };
+
+        _photoRepositoryMock
+            .Setup(r => r.GetPhotosByListingIdAsync(listingId))
+            .ReturnsAsync(photos);
+
+        // Act
+        var result = await _photoService.GetPhotosAsync(listingId);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(2, result.Count);
+        _photoRepositoryMock.Verify(r => r.GetPhotosByListingIdAsync(listingId), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetPhotoAsync_WithExistingPhoto_ReturnsPhoto()
+    {
+        // Arrange
+        var photoId = Guid.NewGuid();
+        var listingId = Guid.NewGuid();
+        var photo = new ListingPhoto(listingId, "https://example.com/photo.jpg", 0) { Id = photoId };
+
+        _photoRepositoryMock
+            .Setup(r => r.GetByIdAsync(photoId))
+            .ReturnsAsync(photo);
+
+        // Act
+        var result = await _photoService.GetPhotoAsync(photoId);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(photoId, result.Id);
+        Assert.Equal(listingId, result.ListingId);
+    }
+
+    [Fact]
+    public async Task GetPhotoAsync_WithNonExistentPhoto_ReturnsNull()
+    {
+        // Arrange
+        var photoId = Guid.NewGuid();
+
+        _photoRepositoryMock
+            .Setup(r => r.GetByIdAsync(photoId))
+            .ReturnsAsync((ListingPhoto?)null);
+
+        // Act
+        var result = await _photoService.GetPhotoAsync(photoId);
+
+        // Assert
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task GetPhotoStreamAsync_ReturnsStream()
+    {
+        // Arrange
+        var photoUrl = "https://example.com/photo.jpg";
+        var stream = new MemoryStream(new byte[] { 1, 2, 3, 4 });
+        var contentType = "image/jpeg";
+        var fileName = "photo.jpg";
+
+        _photoStorageServiceMock
+            .Setup(s => s.GetPhotoStreamAsync(photoUrl))
+            .ReturnsAsync((stream, contentType, fileName));
+
+        // Act
+        var result = await _photoService.GetPhotoStreamAsync(photoUrl);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(stream, result.Value.Stream);
+        Assert.Equal(contentType, result.Value.ContentType);
+        Assert.Equal(fileName, result.Value.FileName);
+    }
 }
 

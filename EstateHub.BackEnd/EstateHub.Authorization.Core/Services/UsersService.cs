@@ -13,6 +13,10 @@ using Microsoft.Extensions.Logging;
 
 namespace EstateHub.Authorization.Core.Services;
 
+/// <summary>
+/// Service responsible for user management operations including retrieval, updates, deletion,
+/// and administrative functions such as role management and user suspension.
+/// </summary>
 public class UsersService : IUsersService
 {
     private readonly IUsersRepository _usersRepository;
@@ -20,6 +24,13 @@ public class UsersService : IUsersService
     private readonly ILogger<UsersService> _logger;
     private readonly ResultExecutor<UsersService> _resultExecutor;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="UsersService"/> class.
+    /// </summary>
+    /// <param name="usersRepository">Repository for user data access.</param>
+    /// <param name="sessionsRepository">Repository for session data access.</param>
+    /// <param name="unitOfWork">Unit of work for transaction management.</param>
+    /// <param name="logger">The logger instance for logging operations.</param>
     public UsersService(
         IUsersRepository usersRepository,
         ISessionsRepository sessionsRepository,
@@ -32,6 +43,16 @@ public class UsersService : IUsersService
         _resultExecutor = new ResultExecutor<UsersService>(_logger, unitOfWork);
     }
 
+    /// <summary>
+    /// Retrieves a user by their unique identifier.
+    /// </summary>
+    /// <typeparam name="TProjectTo">The DTO type to project the user data to.</typeparam>
+    /// <param name="id">The unique identifier of the user.</param>
+    /// <param name="includeDeleted">Whether to include soft-deleted users in the search.</param>
+    /// <returns>
+    /// A result containing the user DTO if found.
+    /// Returns failure if ID is empty or user not found.
+    /// </returns>
     public Task<Result<TProjectTo>> GetByIdAsync<TProjectTo>(Guid id, bool includeDeleted)
         where TProjectTo : class
     {
@@ -53,6 +74,16 @@ public class UsersService : IUsersService
             });
     }
 
+    /// <summary>
+    /// Retrieves multiple users by their unique identifiers (batch lookup).
+    /// </summary>
+    /// <typeparam name="TProjectTo">The DTO type to project the user data to.</typeparam>
+    /// <param name="ids">List of unique identifiers of the users to retrieve.</param>
+    /// <param name="includeDeleted">Whether to include soft-deleted users in the search.</param>
+    /// <returns>
+    /// A result containing a list of user DTOs.
+    /// Returns failure if the list is empty or no users found.
+    /// </returns>
     public Task<Result<List<TProjectTo>>> GetByIdsAsync<TProjectTo>(List<Guid> ids, bool includeDeleted)
         where TProjectTo : class
     {
@@ -74,6 +105,15 @@ public class UsersService : IUsersService
             });
     }
 
+    /// <summary>
+    /// Updates user profile information including display name, avatar, contact details, and professional information.
+    /// </summary>
+    /// <param name="id">The unique identifier of the user to update.</param>
+    /// <param name="request">The update request containing fields to update. Empty display name will use existing value.</param>
+    /// <returns>
+    /// A result indicating success if the user was updated successfully.
+    /// Returns failure if user not found or validation fails.
+    /// </returns>
     public Task<Result> UpdateByIdAsync(Guid id, UserUpdateRequest request)
     {
         return _resultExecutor.ExecuteWithTransactionAsync(
@@ -142,6 +182,14 @@ public class UsersService : IUsersService
             });
     }
 
+    /// <summary>
+    /// Soft-deletes a user account and invalidates all their sessions.
+    /// </summary>
+    /// <param name="id">The unique identifier of the user to delete.</param>
+    /// <returns>
+    /// A result indicating success if the user was deleted and sessions were invalidated.
+    /// Returns failure if user not found, ID is empty, or deletion fails.
+    /// </returns>
     public Task<Result> DeleteByIdAsync(Guid id)
     {
         return _resultExecutor.ExecuteWithTransactionAsync(
@@ -173,6 +221,17 @@ public class UsersService : IUsersService
     }
 
     // Admin methods implementation
+    
+    /// <summary>
+    /// Retrieves a paginated list of all users. Admin only.
+    /// </summary>
+    /// <typeparam name="TProjectTo">The DTO type to project the user data to.</typeparam>
+    /// <param name="page">The page number (1-based).</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="includeDeleted">Whether to include soft-deleted users in the results.</param>
+    /// <returns>
+    /// A result containing a paged result with users, total count, page number, and page size.
+    /// </returns>
     public Task<Result<PagedResult<TProjectTo>>> GetUsersAsync<TProjectTo>(int page, int pageSize, bool includeDeleted)
         where TProjectTo : class
     {
@@ -186,6 +245,12 @@ public class UsersService : IUsersService
             });
     }
 
+    /// <summary>
+    /// Retrieves user statistics including total users, active users, suspended users, and new users this month. Admin only.
+    /// </summary>
+    /// <returns>
+    /// A result containing user statistics DTO with counts for different user states.
+    /// </returns>
     public Task<Result<UserStatsDto>> GetUserStatsAsync()
     {
         return _resultExecutor.ExecuteAsync(
@@ -200,6 +265,15 @@ public class UsersService : IUsersService
             });
     }
 
+    /// <summary>
+    /// Assigns a role to a user. Admin only.
+    /// </summary>
+    /// <param name="userId">The unique identifier of the user.</param>
+    /// <param name="role">The role name to assign (e.g., "Admin", "User").</param>
+    /// <returns>
+    /// A result indicating success if the role was assigned successfully.
+    /// Returns failure if user not found, ID is empty, or role assignment fails.
+    /// </returns>
     public Task<Result> AssignUserRoleAsync(Guid userId, string role)
     {
         return _resultExecutor.ExecuteWithTransactionAsync(
@@ -218,6 +292,17 @@ public class UsersService : IUsersService
             });
     }
 
+    /// <summary>
+    /// Removes a role from a user. Admin only.
+    /// Prevents an admin from removing their own Admin role.
+    /// </summary>
+    /// <param name="userId">The unique identifier of the user.</param>
+    /// <param name="role">The role name to remove (e.g., "Admin", "User").</param>
+    /// <param name="currentUserId">Optional. The ID of the current user performing the action. Used to prevent self-admin role removal.</param>
+    /// <returns>
+    /// A result indicating success if the role was removed successfully.
+    /// Returns failure if user not found, ID is empty, attempting to remove own admin role, or role removal fails.
+    /// </returns>
     public Task<Result> RemoveUserRoleAsync(Guid userId, string role, Guid? currentUserId = null)
     {
         return _resultExecutor.ExecuteWithTransactionAsync(
@@ -247,6 +332,15 @@ public class UsersService : IUsersService
             });
     }
 
+    /// <summary>
+    /// Suspends a user account by setting a lockout period. Admin only.
+    /// </summary>
+    /// <param name="userId">The unique identifier of the user to suspend.</param>
+    /// <param name="reason">The reason for suspension (stored for audit purposes).</param>
+    /// <returns>
+    /// A result indicating success if the user was suspended successfully.
+    /// Returns failure if user not found, ID is empty, or suspension fails.
+    /// </returns>
     public Task<Result> SuspendUserAsync(Guid userId, string reason)
     {
         return _resultExecutor.ExecuteWithTransactionAsync(
@@ -265,6 +359,14 @@ public class UsersService : IUsersService
             });
     }
 
+    /// <summary>
+    /// Activates a suspended user account by removing the lockout. Admin only.
+    /// </summary>
+    /// <param name="userId">The unique identifier of the user to activate.</param>
+    /// <returns>
+    /// A result indicating success if the user was activated successfully.
+    /// Returns failure if user not found, ID is empty, or activation fails.
+    /// </returns>
     public Task<Result> ActivateUserAsync(Guid userId)
     {
         return _resultExecutor.ExecuteWithTransactionAsync(
@@ -283,6 +385,15 @@ public class UsersService : IUsersService
             });
     }
 
+    /// <summary>
+    /// Hard-deletes a user account and all associated sessions. Admin only.
+    /// Admins can delete any user including themselves.
+    /// </summary>
+    /// <param name="userId">The unique identifier of the user to delete.</param>
+    /// <returns>
+    /// A result indicating success if the user was deleted and sessions were cleaned up.
+    /// Returns failure if user not found, ID is empty, or deletion fails.
+    /// </returns>
     public Task<Result> AdminDeleteUserAsync(Guid userId)
     {
         return _resultExecutor.ExecuteWithTransactionAsync(

@@ -18,6 +18,10 @@ using Microsoft.Extensions.Options;
 
 namespace EstateHub.Authorization.Core.Services.Authentication;
 
+/// <summary>
+/// Service responsible for user authentication operations including login, registration,
+/// password management, email confirmation, and session management.
+/// </summary>
 public class AuthenticationService : IAuthenticationService
 {
     private readonly ILogger<AuthenticationService> _logger;
@@ -29,6 +33,17 @@ public class AuthenticationService : IAuthenticationService
     private readonly IIdentityService _identityService;
     private readonly ResultExecutor<AuthenticationService> _resultExecutor;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AuthenticationService"/> class.
+    /// </summary>
+    /// <param name="logger">The logger instance for logging operations.</param>
+    /// <param name="options">JWT configuration options.</param>
+    /// <param name="smtpOptions">SMTP configuration options for email services.</param>
+    /// <param name="unitOfWork">Unit of work for transaction management.</param>
+    /// <param name="usersRepository">Repository for user data access.</param>
+    /// <param name="sessionsRepository">Repository for session data access.</param>
+    /// <param name="emailSmtpService">Service for sending emails.</param>
+    /// <param name="identityService">Service for ASP.NET Identity operations.</param>
     public AuthenticationService(
         ILogger<AuthenticationService> logger,
         IOptions<JWTOptions> options,
@@ -49,6 +64,15 @@ public class AuthenticationService : IAuthenticationService
         _resultExecutor = new ResultExecutor<AuthenticationService>(_logger, unitOfWork);
     }
 
+    /// <summary>
+    /// Authenticates a user with email and password credentials.
+    /// </summary>
+    /// <param name="request">Login request containing email and password.</param>
+    /// <param name="beginTransaction">Whether to begin a database transaction. Default is true.</param>
+    /// <returns>
+    /// A result containing <see cref="AuthenticationResult"/> with access token, refresh token, and user information if successful.
+    /// Returns failure if user not found, account is deleted, or password is incorrect.
+    /// </returns>
     public Task<Result<AuthenticationResult>> LoginAsync(LoginRequest request, bool beginTransaction = true)
     {
         return _resultExecutor.ExecuteWithTransactionAsync(
@@ -74,6 +98,15 @@ public class AuthenticationService : IAuthenticationService
             }, beginTransaction);
     }
 
+    /// <summary>
+    /// Registers a new user account.
+    /// </summary>
+    /// <param name="request">Registration request containing email, password, and callback URL for email confirmation.</param>
+    /// <returns>
+    /// If email confirmation is required: Returns null and sends confirmation email.
+    /// If email confirmation is disabled: Returns <see cref="AuthenticationResult"/> with tokens (auto-login).
+    /// Returns failure if email already exists or validation fails.
+    /// </returns>
     public Task<Result<AuthenticationResult?>> RegisterAsync(UserRegistrationRequest request)
     {
         return _resultExecutor.ExecuteWithTransactionAsync<AuthenticationResult?>(async () =>
@@ -144,6 +177,14 @@ public class AuthenticationService : IAuthenticationService
         });
     }
 
+    /// <summary>
+    /// Confirms a user's email address using the token received via email.
+    /// </summary>
+    /// <param name="request">Email confirmation request containing user ID and confirmation token.</param>
+    /// <returns>
+    /// A result containing <see cref="AuthenticationResult"/> with access token, refresh token, and user information if successful.
+    /// Returns failure if user not found or token is invalid.
+    /// </returns>
     public Task<Result<AuthenticationResult>> ConfirmEmailAsync(ConfirmEmailRequest request)
     {
         return _resultExecutor.ExecuteWithTransactionAsync(async () =>
@@ -162,6 +203,15 @@ public class AuthenticationService : IAuthenticationService
         });
     }
 
+    /// <summary>
+    /// Initiates account state management (recovery or hard delete) for deleted accounts.
+    /// Sends an email with a confirmation token to the user's email address.
+    /// </summary>
+    /// <param name="request">Account management request containing email, action type, and return URL.</param>
+    /// <returns>
+    /// A result indicating success if the email was sent successfully.
+    /// Returns failure if user not found, user is not deleted, or email sending fails.
+    /// </returns>
     public Task<Result> ManageAccountState(ManageAccountRequest request)
     {
         return _resultExecutor.ExecuteAsync(async () =>
@@ -191,6 +241,14 @@ public class AuthenticationService : IAuthenticationService
         });
     }
 
+    /// <summary>
+    /// Confirms an account action (recovery or hard delete) using the token received via email.
+    /// </summary>
+    /// <param name="request">Account action confirmation request containing user ID, token, and action type.</param>
+    /// <returns>
+    /// A result indicating success if the action was confirmed successfully.
+    /// Returns failure if user not found, user is not deleted, or token is invalid.
+    /// </returns>
     public Task<Result> ConfirmAccountAction(ConfirmAccountActionRequest request)
     {
         return _resultExecutor.ExecuteAsync(async () =>
@@ -208,6 +266,14 @@ public class AuthenticationService : IAuthenticationService
         });
     }
 
+    /// <summary>
+    /// Initiates the password reset process by sending a password reset token to the user's email.
+    /// </summary>
+    /// <param name="request">Password reset request containing email and return URL.</param>
+    /// <returns>
+    /// A result indicating success if the email was sent (even if user doesn't exist, for security).
+    /// Returns failure if email format is invalid.
+    /// </returns>
     public Task<Result> ForgotPasswordAsync(ForgotPasswordRequest request)
     {
         return _resultExecutor.ExecuteAsync(async () =>
@@ -234,6 +300,15 @@ public class AuthenticationService : IAuthenticationService
         });
     }
 
+    /// <summary>
+    /// Resets a user's password using the token received via email.
+    /// Invalidates all existing sessions for the user after successful password reset.
+    /// </summary>
+    /// <param name="request">Password reset request containing user ID, token, and new password.</param>
+    /// <returns>
+    /// A result indicating success if the password was reset successfully.
+    /// Returns failure if user not found, token is invalid/expired, or password validation fails.
+    /// </returns>
     public Task<Result> ResetPasswordAsync(ResetPasswordRequest request)
     {
         return _resultExecutor.ExecuteWithTransactionAsync(async () =>
@@ -252,6 +327,15 @@ public class AuthenticationService : IAuthenticationService
         });
     }
 
+    /// <summary>
+    /// Refreshes an access token using a valid refresh token.
+    /// Validates the refresh token, checks session expiration, and generates a new access token.
+    /// </summary>
+    /// <param name="refreshToken">The refresh token JWT string.</param>
+    /// <returns>
+    /// A result containing <see cref="AuthenticationResponse"/> with new access token and user information if successful.
+    /// Returns failure if token is invalid, session not found, session expired, or user IDs don't match.
+    /// </returns>
     public Task<Result<AuthenticationResponse>> RefreshAccessTokenAsync(string refreshToken)
     {
         return _resultExecutor.ExecuteWithTransactionAsync(async () =>
@@ -335,6 +419,15 @@ public class AuthenticationService : IAuthenticationService
         });
     }
 
+    /// <summary>
+    /// Logs out a user by invalidating their session.
+    /// Deletes the session associated with the provided refresh token.
+    /// </summary>
+    /// <param name="refreshToken">The refresh token identifying the session to invalidate.</param>
+    /// <returns>
+    /// A result indicating success if the session was deleted successfully.
+    /// Returns failure if session not found or deletion fails.
+    /// </returns>
     public Task<Result> LogoutAsync(string refreshToken)
     {
         return _resultExecutor.ExecuteWithTransactionAsync(async () =>
@@ -357,6 +450,11 @@ public class AuthenticationService : IAuthenticationService
         });
     }
 
+    /// <summary>
+    /// Creates a new user session with access and refresh tokens.
+    /// </summary>
+    /// <param name="user">The user with roles for which to create the session.</param>
+    /// <returns>Authentication result containing access token, refresh token, and user information.</returns>
     private async Task<AuthenticationResult> CreateUserSessionAsync(UserWithRolesDto user)
     {
         var sessionId = Guid.NewGuid();

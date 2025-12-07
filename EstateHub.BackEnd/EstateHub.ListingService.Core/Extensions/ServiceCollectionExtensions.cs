@@ -18,6 +18,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IModerationService, Services.ModerationService>();
         services.AddScoped<IAIQuestionUsageService, Services.AIQuestionUsageService>();
         
+        // Register background services
+        services.AddSingleton<Services.BackgroundModerationService>();
+        
         // Register mappers
         services.AddScoped<ReportDtoMapper>();
         services.AddScoped<ListingDtoMapper>();

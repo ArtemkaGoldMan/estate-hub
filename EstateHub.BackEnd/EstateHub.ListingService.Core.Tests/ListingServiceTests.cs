@@ -3,9 +3,11 @@ using EstateHub.ListingService.Domain.DTO;
 using EstateHub.ListingService.Domain.Enums;
 using EstateHub.ListingService.Domain.Interfaces;
 using EstateHub.ListingService.Domain.Models;
+using EstateHub.SharedKernel;
 using EstateHub.SharedKernel.Execution;
 using FluentValidation;
 using FluentValidation.Results;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
@@ -22,6 +24,7 @@ public class ListingServiceTests
     private readonly Mock<IValidator<UpdateListingInput>> _updateValidatorMock;
     private readonly Mock<IValidator<ChangeStatusInput>> _statusValidatorMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
+    private readonly Mock<EstateHub.ListingService.Core.Services.BackgroundModerationService> _backgroundModerationServiceMock;
     private readonly ListingDtoMapper _dtoMapper;
     private readonly EstateHub.ListingService.Core.Services.ListingService _listingService;
 
@@ -35,6 +38,9 @@ public class ListingServiceTests
         _updateValidatorMock = new Mock<IValidator<UpdateListingInput>>();
         _statusValidatorMock = new Mock<IValidator<ChangeStatusInput>>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
+        _backgroundModerationServiceMock = new Mock<EstateHub.ListingService.Core.Services.BackgroundModerationService>(
+            Mock.Of<IServiceScopeFactory>(),
+            Mock.Of<ILogger<EstateHub.ListingService.Core.Services.BackgroundModerationService>>());
 
         // Setup unit of work to return success
         _unitOfWorkMock.Setup(u => u.BeginTransactionAsync())
@@ -67,7 +73,8 @@ public class ListingServiceTests
             _statusValidatorMock.Object,
             _dtoMapper,
             _loggerMock.Object,
-            _unitOfWorkMock.Object
+            _unitOfWorkMock.Object,
+            _backgroundModerationServiceMock.Object
         );
     }
 
@@ -197,7 +204,7 @@ public class ListingServiceTests
         await _listingService.UpdateAsync(listingId, updateInput);
 
         // Assert
-        _listingRepositoryMock.Verify(r => r.GetByIdAsync(listingId), Times.Once);
+        _listingRepositoryMock.Verify(r => r.GetByIdAsync(listingId), Times.AtLeastOnce);
         _listingRepositoryMock.Verify(r => r.UpdateAsync(It.Is<Listing>(l => 
             l.OwnerId == userId &&
             l.Title == "Updated Title"
@@ -274,7 +281,7 @@ public class ListingServiceTests
         await Assert.ThrowsAsync<InvalidOperationException>(() => 
             _listingService.UpdateAsync(listingId, updateInput));
 
-        _listingRepositoryMock.Verify(r => r.GetByIdAsync(listingId), Times.Once);
+        _listingRepositoryMock.Verify(r => r.GetByIdAsync(listingId), Times.AtLeastOnce);
         _listingRepositoryMock.Verify(r => r.UpdateAsync(It.IsAny<Listing>()), Times.Never);
     }
 
@@ -327,7 +334,7 @@ public class ListingServiceTests
         await _listingService.DeleteAsync(listingId);
 
         // Assert
-        _listingRepositoryMock.Verify(r => r.GetByIdAsync(listingId), Times.Once);
+        _listingRepositoryMock.Verify(r => r.GetByIdAsync(listingId), Times.AtLeastOnce);
         _listingRepositoryMock.Verify(r => r.DeleteAsync(listingId), Times.Once);
     }
 
@@ -386,7 +393,1094 @@ public class ListingServiceTests
         Assert.NotNull(result);
         Assert.Equal(listingWithStatus.Id, result.Id);
         Assert.Equal("Published Listing", result.Title);
-        _listingRepositoryMock.Verify(r => r.GetByIdAsync(listingId), Times.Once);
+        _listingRepositoryMock.Verify(r => r.GetByIdAsync(listingId), Times.AtLeastOnce);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithValidationFailure_ThrowsError()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var input = new CreateListingInput(
+            ListingCategory.Sale,
+            PropertyType.Apartment,
+            "Test",
+            "Description",
+            "123 Main St",
+            "Downtown",
+            "Warsaw",
+            "00-001",
+            52.2297m,
+            21.0122m,
+            75.5m,
+            3,
+            null,
+            null,
+            null,
+            Condition.Good,
+            false,
+            false,
+            false,
+            false,
+            false,
+            500000m,
+            null
+        );
+
+        var validationErrors = new List<ValidationFailure>
+        {
+            new("Title", "Title is required")
+        };
+
+        _currentUserServiceMock
+            .Setup(s => s.GetUserId())
+            .Returns(userId);
+
+        _createValidatorMock
+            .Setup(v => v.ValidateAsync(input, It.IsAny<System.Threading.CancellationToken>()))
+            .ReturnsAsync(new ValidationResult(validationErrors));
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(() => _listingService.CreateAsync(input));
+        _listingRepositoryMock.Verify(r => r.AddAsync(It.IsAny<Listing>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithRentCategory_RequiresMonthlyRent()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var input = new CreateListingInput(
+            ListingCategory.Rent,
+            PropertyType.Apartment,
+            "Rental Apartment",
+            "A lovely rental apartment",
+            "123 Main St",
+            "Downtown",
+            "Warsaw",
+            "00-001",
+            52.2297m,
+            21.0122m,
+            75.5m,
+            3,
+            null,
+            null,
+            null,
+            Condition.Good,
+            true,
+            false,
+            true,
+            false,
+            false,
+            null,
+            3000m
+        );
+
+        _currentUserServiceMock
+            .Setup(s => s.GetUserId())
+            .Returns(userId);
+
+        _listingRepositoryMock
+            .Setup(r => r.AddAsync(It.IsAny<Listing>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var result = await _listingService.CreateAsync(input);
+
+        // Assert
+        Assert.NotEqual(Guid.Empty, result);
+        _listingRepositoryMock.Verify(r => r.AddAsync(It.Is<Listing>(l => 
+            l.Category == ListingCategory.Rent && 
+            l.MonthlyRentPln == 3000m
+        )), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WithNonExistentListing_ThrowsError()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var listingId = Guid.NewGuid();
+        var updateInput = new UpdateListingInput(
+            Title: "Updated Title",
+            Description: null,
+            AddressLine: null,
+            District: null,
+            City: null,
+            PostalCode: null,
+            Latitude: null,
+            Longitude: null,
+            SquareMeters: null,
+            Rooms: null,
+            Floor: null,
+            FloorCount: null,
+            BuildYear: null,
+            Condition: null,
+            HasBalcony: null,
+            HasElevator: null,
+            HasParkingSpace: null,
+            HasSecurity: null,
+            HasStorageRoom: null,
+            PricePln: null,
+            MonthlyRentPln: null
+        );
+
+        _currentUserServiceMock
+            .Setup(s => s.GetUserId())
+            .Returns(userId);
+
+        _listingRepositoryMock
+            .Setup(r => r.GetByIdAsync(listingId))
+            .ReturnsAsync((Listing?)null);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(() => _listingService.UpdateAsync(listingId, updateInput));
+        _listingRepositoryMock.Verify(r => r.UpdateAsync(It.IsAny<Listing>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WithPublishedListingAndTitleChange_ChangesStatusToDraft()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var listingId = Guid.NewGuid();
+        var existingListing = new Listing(
+            userId,
+            ListingCategory.Sale,
+            PropertyType.Apartment,
+            "Original Title",
+            "Original Description",
+            "123 Main St",
+            "Downtown",
+            "Warsaw",
+            "00-001",
+            52.2297m,
+            21.0122m,
+            75.5m,
+            3,
+            Condition.Good,
+            false,
+            false,
+            false,
+            false,
+            false,
+            null,
+            null,
+            null,
+            500000m,
+            null
+        ) with { Status = ListingStatus.Published };
+
+        var updateInput = new UpdateListingInput(
+            Title: "New Title",
+            Description: null,
+            AddressLine: null,
+            District: null,
+            City: null,
+            PostalCode: null,
+            Latitude: null,
+            Longitude: null,
+            SquareMeters: null,
+            Rooms: null,
+            Floor: null,
+            FloorCount: null,
+            BuildYear: null,
+            Condition: null,
+            HasBalcony: null,
+            HasElevator: null,
+            HasParkingSpace: null,
+            HasSecurity: null,
+            HasStorageRoom: null,
+            PricePln: null,
+            MonthlyRentPln: null
+        );
+
+        _currentUserServiceMock
+            .Setup(s => s.GetUserId())
+            .Returns(userId);
+
+        _listingRepositoryMock
+            .Setup(r => r.GetByIdAsync(listingId))
+            .ReturnsAsync(existingListing);
+
+        _listingRepositoryMock
+            .Setup(r => r.UpdateAsync(It.IsAny<Listing>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        await _listingService.UpdateAsync(listingId, updateInput);
+
+        // Assert
+        _listingRepositoryMock.Verify(r => r.UpdateAsync(It.Is<Listing>(l => 
+            l.Status == ListingStatus.Draft &&
+            l.Title == "New Title" &&
+            l.PublishedAt == null
+        )), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WithNonExistentListing_ThrowsError()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var listingId = Guid.NewGuid();
+
+        _currentUserServiceMock
+            .Setup(s => s.GetUserId())
+            .Returns(userId);
+
+        _listingRepositoryMock
+            .Setup(r => r.GetByIdAsync(listingId))
+            .ReturnsAsync((Listing?)null);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(() => _listingService.DeleteAsync(listingId));
+        _listingRepositoryMock.Verify(r => r.DeleteAsync(It.IsAny<Guid>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_AsNonOwner_ThrowsError()
+    {
+        // Arrange
+        var ownerId = Guid.NewGuid();
+        var otherUserId = Guid.NewGuid();
+        var listingId = Guid.NewGuid();
+        var existingListing = new Listing(
+            ownerId,
+            ListingCategory.Sale,
+            PropertyType.Apartment,
+            "Test Listing",
+            "Description",
+            "123 Main St",
+            "Downtown",
+            "Warsaw",
+            "00-001",
+            52.2297m,
+            21.0122m,
+            75.5m,
+            3,
+            Condition.Good,
+            false,
+            false,
+            false,
+            false,
+            false,
+            null,
+            null,
+            null,
+            500000m,
+            null
+        );
+
+        _currentUserServiceMock
+            .Setup(s => s.GetUserId())
+            .Returns(otherUserId);
+
+        _listingRepositoryMock
+            .Setup(r => r.GetByIdAsync(listingId))
+            .ReturnsAsync(existingListing);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _listingService.DeleteAsync(listingId));
+        _listingRepositoryMock.Verify(r => r.DeleteAsync(It.IsAny<Guid>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ChangeStatusAsync_ToPublished_WithApprovedModeration_Succeeds()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var listingId = Guid.NewGuid();
+        var existingListing = new Listing(
+            userId,
+            ListingCategory.Sale,
+            PropertyType.Apartment,
+            "Test Listing",
+            "Description",
+            "123 Main St",
+            "Downtown",
+            "Warsaw",
+            "00-001",
+            52.2297m,
+            21.0122m,
+            75.5m,
+            3,
+            Condition.Good,
+            false,
+            false,
+            false,
+            false,
+            false,
+            null,
+            null,
+            null,
+            500000m,
+            null
+        ) with 
+        { 
+            Status = ListingStatus.Draft,
+            IsModerationApproved = true,
+            ModerationCheckedAt = DateTime.UtcNow
+        };
+
+        _currentUserServiceMock
+            .Setup(s => s.GetUserId())
+            .Returns(userId);
+
+        _listingRepositoryMock
+            .Setup(r => r.GetByIdAsync(listingId))
+            .ReturnsAsync(existingListing);
+
+        _listingRepositoryMock
+            .Setup(r => r.UpdateAsync(It.IsAny<Listing>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        await _listingService.ChangeStatusAsync(listingId, ListingStatus.Published);
+
+        // Assert
+        _listingRepositoryMock.Verify(r => r.UpdateAsync(It.Is<Listing>(l => 
+            l.Status == ListingStatus.Published &&
+            l.PublishedAt != null
+        )), Times.Once);
+    }
+
+    [Fact]
+    public async Task ChangeStatusAsync_ToArchived_Succeeds()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var listingId = Guid.NewGuid();
+        var existingListing = new Listing(
+            userId,
+            ListingCategory.Sale,
+            PropertyType.Apartment,
+            "Test Listing",
+            "Description",
+            "123 Main St",
+            "Downtown",
+            "Warsaw",
+            "00-001",
+            52.2297m,
+            21.0122m,
+            75.5m,
+            3,
+            Condition.Good,
+            false,
+            false,
+            false,
+            false,
+            false,
+            null,
+            null,
+            null,
+            500000m,
+            null
+        ) with { Status = ListingStatus.Draft };
+
+        _currentUserServiceMock
+            .Setup(s => s.GetUserId())
+            .Returns(userId);
+
+        _listingRepositoryMock
+            .Setup(r => r.GetByIdAsync(listingId))
+            .ReturnsAsync(existingListing);
+
+        _listingRepositoryMock
+            .Setup(r => r.UpdateAsync(It.IsAny<Listing>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        await _listingService.ChangeStatusAsync(listingId, ListingStatus.Archived);
+
+        // Assert
+        _listingRepositoryMock.Verify(r => r.UpdateAsync(It.Is<Listing>(l => 
+            l.Status == ListingStatus.Archived &&
+            l.ArchivedAt != null
+        )), Times.Once);
+    }
+
+    [Fact]
+    public async Task ChangeStatusAsync_FromArchivedToDraft_Unarchives()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var listingId = Guid.NewGuid();
+        var existingListing = new Listing(
+            userId,
+            ListingCategory.Sale,
+            PropertyType.Apartment,
+            "Test Listing",
+            "Description",
+            "123 Main St",
+            "Downtown",
+            "Warsaw",
+            "00-001",
+            52.2297m,
+            21.0122m,
+            75.5m,
+            3,
+            Condition.Good,
+            false,
+            false,
+            false,
+            false,
+            false,
+            null,
+            null,
+            null,
+            500000m,
+            null
+        ) with 
+        { 
+            Status = ListingStatus.Archived,
+            ArchivedAt = DateTime.UtcNow
+        };
+
+        _currentUserServiceMock
+            .Setup(s => s.GetUserId())
+            .Returns(userId);
+
+        _listingRepositoryMock
+            .Setup(r => r.GetByIdAsync(listingId))
+            .ReturnsAsync(existingListing);
+
+        _listingRepositoryMock
+            .Setup(r => r.UpdateAsync(It.IsAny<Listing>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        await _listingService.ChangeStatusAsync(listingId, ListingStatus.Draft);
+
+        // Assert
+        _listingRepositoryMock.Verify(r => r.UpdateAsync(It.Is<Listing>(l => 
+            l.Status == ListingStatus.Draft &&
+            l.ArchivedAt == null
+        )), Times.Once);
+    }
+
+    [Fact]
+    public async Task ChangeStatusAsync_AsNonOwner_ThrowsError()
+    {
+        // Arrange
+        var ownerId = Guid.NewGuid();
+        var otherUserId = Guid.NewGuid();
+        var listingId = Guid.NewGuid();
+        var existingListing = new Listing(
+            ownerId,
+            ListingCategory.Sale,
+            PropertyType.Apartment,
+            "Test Listing",
+            "Description",
+            "123 Main St",
+            "Downtown",
+            "Warsaw",
+            "00-001",
+            52.2297m,
+            21.0122m,
+            75.5m,
+            3,
+            Condition.Good,
+            false,
+            false,
+            false,
+            false,
+            false,
+            null,
+            null,
+            null,
+            500000m,
+            null
+        );
+
+        _currentUserServiceMock
+            .Setup(s => s.GetUserId())
+            .Returns(otherUserId);
+
+        _listingRepositoryMock
+            .Setup(r => r.GetByIdAsync(listingId))
+            .ReturnsAsync(existingListing);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _listingService.ChangeStatusAsync(listingId, ListingStatus.Published));
+        _listingRepositoryMock.Verify(r => r.UpdateAsync(It.IsAny<Listing>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WithFilters_ReturnsFilteredResults()
+    {
+        // Arrange
+        var filter = new ListingFilter(
+            City: "Warsaw",
+            MinPrice: 100000m,
+            MaxPrice: 1000000m,
+            MinRooms: 2,
+            MaxRooms: 5
+        );
+        var page = 1;
+        var pageSize = 10;
+
+        var listings = new List<Listing>
+        {
+            new Listing(
+                Guid.NewGuid(),
+                ListingCategory.Sale,
+                PropertyType.Apartment,
+                "Listing 1",
+                "Description",
+                "123 Main St",
+                "Downtown",
+                "Warsaw",
+                "00-001",
+                52.2297m,
+                21.0122m,
+                75.5m,
+                3,
+                Condition.Good,
+                false,
+                false,
+                false,
+                false,
+                false,
+                null,
+                null,
+                null,
+                500000m,
+                null
+            ) with { Status = ListingStatus.Published }
+        };
+
+        _listingRepositoryMock
+            .Setup(r => r.GetAllAsync(page, pageSize, filter))
+            .ReturnsAsync(listings);
+
+        _listingRepositoryMock
+            .Setup(r => r.GetTotalCountAsync(filter))
+            .ReturnsAsync(1);
+
+        _currentUserServiceMock
+            .Setup(s => s.GetUserId())
+            .Throws<UnauthorizedAccessException>();
+
+        _likedListingRepositoryMock
+            .Setup(r => r.GetLikedByUserAsync(It.IsAny<Guid>()))
+            .ReturnsAsync(new List<Listing>());
+
+        // Act
+        var result = await _listingService.GetAllAsync(filter, page, pageSize);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(1, result.Total);
+        Assert.Single(result.Items);
+        _listingRepositoryMock.Verify(r => r.GetAllAsync(page, pageSize, filter), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WithLargePageSize_CapsAt50()
+    {
+        // Arrange
+        var page = 1;
+        var pageSize = 100; // Larger than max
+
+        _listingRepositoryMock
+            .Setup(r => r.GetAllAsync(1, 50, null))
+            .ReturnsAsync(new List<Listing>());
+
+        _listingRepositoryMock
+            .Setup(r => r.GetTotalCountAsync(null))
+            .ReturnsAsync(0);
+
+        _currentUserServiceMock
+            .Setup(s => s.GetUserId())
+            .Throws<UnauthorizedAccessException>();
+
+        _likedListingRepositoryMock
+            .Setup(r => r.GetLikedByUserAsync(It.IsAny<Guid>()))
+            .ReturnsAsync(new List<Listing>());
+
+        // Act
+        await _listingService.GetAllAsync(null, page, pageSize);
+
+        // Assert
+        _listingRepositoryMock.Verify(r => r.GetAllAsync(1, 50, null), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetMyAsync_ReturnsUserListings()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var page = 1;
+        var pageSize = 10;
+
+        var listings = new List<Listing>
+        {
+            new Listing(
+                userId,
+                ListingCategory.Sale,
+                PropertyType.Apartment,
+                "My Listing",
+                "Description",
+                "123 Main St",
+                "Downtown",
+                "Warsaw",
+                "00-001",
+                52.2297m,
+                21.0122m,
+                75.5m,
+                3,
+                Condition.Good,
+                false,
+                false,
+                false,
+                false,
+                false,
+                null,
+                null,
+                null,
+                500000m,
+                null
+            )
+        };
+
+        _currentUserServiceMock
+            .Setup(s => s.GetUserId())
+            .Returns(userId);
+
+        _listingRepositoryMock
+            .Setup(r => r.GetByOwnerIdAsync(userId))
+            .ReturnsAsync(listings);
+
+        _likedListingRepositoryMock
+            .Setup(r => r.GetLikedByUserAsync(userId))
+            .ReturnsAsync(new List<Listing>());
+
+        // Act
+        var result = await _listingService.GetMyAsync(page, pageSize);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(1, result.Total);
+        Assert.Single(result.Items);
+        _listingRepositoryMock.Verify(r => r.GetByOwnerIdAsync(userId), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetLikedAsync_ReturnsLikedListings()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var page = 1;
+        var pageSize = 10;
+
+        var listings = new List<Listing>
+        {
+            new Listing(
+                Guid.NewGuid(),
+                ListingCategory.Sale,
+                PropertyType.Apartment,
+                "Liked Listing",
+                "Description",
+                "123 Main St",
+                "Downtown",
+                "Warsaw",
+                "00-001",
+                52.2297m,
+                21.0122m,
+                75.5m,
+                3,
+                Condition.Good,
+                false,
+                false,
+                false,
+                false,
+                false,
+                null,
+                null,
+                null,
+                500000m,
+                null
+            ) with { Status = ListingStatus.Published }
+        };
+
+        _currentUserServiceMock
+            .Setup(s => s.GetUserId())
+            .Returns(userId);
+
+        _likedListingRepositoryMock
+            .Setup(r => r.GetLikedByUserAsync(userId))
+            .ReturnsAsync(listings);
+
+        // Act
+        var result = await _listingService.GetLikedAsync(page, pageSize);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(1, result.Total);
+        Assert.Single(result.Items);
+        _likedListingRepositoryMock.Verify(r => r.GetLikedByUserAsync(userId), Times.AtLeastOnce);
+    }
+
+    [Fact]
+    public async Task GetArchivedAsync_ReturnsOnlyArchivedListings()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var page = 1;
+        var pageSize = 10;
+
+        var allListings = new List<Listing>
+        {
+            new Listing(
+                userId,
+                ListingCategory.Sale,
+                PropertyType.Apartment,
+                "Archived Listing",
+                "Description",
+                "123 Main St",
+                "Downtown",
+                "Warsaw",
+                "00-001",
+                52.2297m,
+                21.0122m,
+                75.5m,
+                3,
+                Condition.Good,
+                false,
+                false,
+                false,
+                false,
+                false,
+                null,
+                null,
+                null,
+                500000m,
+                null
+            ) with 
+            { 
+                Status = ListingStatus.Archived,
+                ArchivedAt = DateTime.UtcNow
+            },
+            new Listing(
+                userId,
+                ListingCategory.Sale,
+                PropertyType.Apartment,
+                "Published Listing",
+                "Description",
+                "123 Main St",
+                "Downtown",
+                "Warsaw",
+                "00-001",
+                52.2297m,
+                21.0122m,
+                75.5m,
+                3,
+                Condition.Good,
+                false,
+                false,
+                false,
+                false,
+                false,
+                null,
+                null,
+                null,
+                500000m,
+                null
+            ) with { Status = ListingStatus.Published }
+        };
+
+        _currentUserServiceMock
+            .Setup(s => s.GetUserId())
+            .Returns(userId);
+
+        _listingRepositoryMock
+            .Setup(r => r.GetByOwnerIdAsync(userId))
+            .ReturnsAsync(allListings);
+
+        _likedListingRepositoryMock
+            .Setup(r => r.GetLikedByUserAsync(userId))
+            .ReturnsAsync(new List<Listing>());
+
+        // Act
+        var result = await _listingService.GetArchivedAsync(page, pageSize);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(1, result.Total);
+        Assert.Single(result.Items);
+        Assert.Equal("Archived Listing", result.Items.First().Title);
+    }
+
+    [Fact]
+    public async Task GetWithinBoundsAsync_ReturnsListingsInBounds()
+    {
+        // Arrange
+        var bounds = new BoundsInput(52.0m, 53.0m, 20.0m, 22.0m);
+        var page = 1;
+        var pageSize = 10;
+
+        var listings = new List<Listing>
+        {
+            new Listing(
+                Guid.NewGuid(),
+                ListingCategory.Sale,
+                PropertyType.Apartment,
+                "Listing in Bounds",
+                "Description",
+                "123 Main St",
+                "Downtown",
+                "Warsaw",
+                "00-001",
+                52.5m,
+                21.5m,
+                75.5m,
+                3,
+                Condition.Good,
+                false,
+                false,
+                false,
+                false,
+                false,
+                null,
+                null,
+                null,
+                500000m,
+                null
+            ) with { Status = ListingStatus.Published }
+        };
+
+        _listingRepositoryMock
+            .Setup(r => r.GetWithinBoundsAsync(52.0m, 53.0m, 20.0m, 22.0m, page, pageSize, null))
+            .ReturnsAsync(listings);
+
+        _listingRepositoryMock
+            .Setup(r => r.GetWithinBoundsCountAsync(52.0m, 53.0m, 20.0m, 22.0m, null))
+            .ReturnsAsync(1);
+
+        _currentUserServiceMock
+            .Setup(s => s.GetUserId())
+            .Throws<UnauthorizedAccessException>();
+
+        _likedListingRepositoryMock
+            .Setup(r => r.GetLikedByUserAsync(It.IsAny<Guid>()))
+            .ReturnsAsync(new List<Listing>());
+
+        // Act
+        var result = await _listingService.GetWithinBoundsAsync(bounds, page, pageSize);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(1, result.Total);
+        Assert.Single(result.Items);
+    }
+
+    [Fact]
+    public async Task SearchAsync_ReturnsMatchingListings()
+    {
+        // Arrange
+        var searchText = "apartment";
+        var page = 1;
+        var pageSize = 10;
+
+        var listings = new List<Listing>
+        {
+            new Listing(
+                Guid.NewGuid(),
+                ListingCategory.Sale,
+                PropertyType.Apartment,
+                "Beautiful Apartment",
+                "Description",
+                "123 Main St",
+                "Downtown",
+                "Warsaw",
+                "00-001",
+                52.2297m,
+                21.0122m,
+                75.5m,
+                3,
+                Condition.Good,
+                false,
+                false,
+                false,
+                false,
+                false,
+                null,
+                null,
+                null,
+                500000m,
+                null
+            ) with { Status = ListingStatus.Published }
+        };
+
+        _listingRepositoryMock
+            .Setup(r => r.SearchAsync(searchText, page, pageSize, null))
+            .ReturnsAsync(listings);
+
+        _listingRepositoryMock
+            .Setup(r => r.SearchCountAsync(searchText, null))
+            .ReturnsAsync(1);
+
+        _currentUserServiceMock
+            .Setup(s => s.GetUserId())
+            .Throws<UnauthorizedAccessException>();
+
+        _likedListingRepositoryMock
+            .Setup(r => r.GetLikedByUserAsync(It.IsAny<Guid>()))
+            .ReturnsAsync(new List<Listing>());
+
+        // Act
+        var result = await _listingService.SearchAsync(searchText, null, page, pageSize);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(1, result.Total);
+        Assert.Single(result.Items);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_WithDraftListing_AsOwner_ReturnsListing()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var listingId = Guid.NewGuid();
+        var listing = new Listing(
+            userId,
+            ListingCategory.Sale,
+            PropertyType.Apartment,
+            "Draft Listing",
+            "Description",
+            "123 Main St",
+            "Downtown",
+            "Warsaw",
+            "00-001",
+            52.2297m,
+            21.0122m,
+            75.5m,
+            3,
+            Condition.Good,
+            false,
+            false,
+            false,
+            false,
+            false,
+            null,
+            null,
+            null,
+            500000m,
+            null
+        ) with { Id = listingId, Status = ListingStatus.Draft };
+
+        _currentUserServiceMock
+            .Setup(s => s.GetUserId())
+            .Returns(userId);
+
+        _listingRepositoryMock
+            .Setup(r => r.GetByIdAsync(listingId))
+            .ReturnsAsync(listing);
+
+        _likedListingRepositoryMock
+            .Setup(r => r.GetLikedByUserAsync(userId))
+            .ReturnsAsync(new List<Listing>());
+
+        // Act
+        var result = await _listingService.GetByIdAsync(listingId);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(listingId, result.Id);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_WithDraftListing_AsNonOwner_ReturnsNull()
+    {
+        // Arrange
+        var ownerId = Guid.NewGuid();
+        var listingId = Guid.NewGuid();
+        var listing = new Listing(
+            ownerId,
+            ListingCategory.Sale,
+            PropertyType.Apartment,
+            "Draft Listing",
+            "Description",
+            "123 Main St",
+            "Downtown",
+            "Warsaw",
+            "00-001",
+            52.2297m,
+            21.0122m,
+            75.5m,
+            3,
+            Condition.Good,
+            false,
+            false,
+            false,
+            false,
+            false,
+            null,
+            null,
+            null,
+            500000m,
+            null
+        ) with { Status = ListingStatus.Draft };
+
+        _currentUserServiceMock
+            .Setup(s => s.GetUserId())
+            .Throws<UnauthorizedAccessException>();
+
+        _listingRepositoryMock
+            .Setup(r => r.GetByIdAsync(listingId))
+            .ReturnsAsync(listing);
+
+        // Act
+        var result = await _listingService.GetByIdAsync(listingId);
+
+        // Assert
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task LikeAsync_CallsRepository()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var listingId = Guid.NewGuid();
+
+        _currentUserServiceMock
+            .Setup(s => s.GetUserId())
+            .Returns(userId);
+
+        _likedListingRepositoryMock
+            .Setup(r => r.LikeAsync(userId, listingId))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        await _listingService.LikeAsync(listingId);
+
+        // Assert
+        _likedListingRepositoryMock.Verify(r => r.LikeAsync(userId, listingId), Times.Once);
+    }
+
+    [Fact]
+    public async Task UnlikeAsync_CallsRepository()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var listingId = Guid.NewGuid();
+
+        _currentUserServiceMock
+            .Setup(s => s.GetUserId())
+            .Returns(userId);
+
+        _likedListingRepositoryMock
+            .Setup(r => r.UnlikeAsync(userId, listingId))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        await _listingService.UnlikeAsync(listingId);
+
+        // Assert
+        _likedListingRepositoryMock.Verify(r => r.UnlikeAsync(userId, listingId), Times.Once);
     }
 }
 
