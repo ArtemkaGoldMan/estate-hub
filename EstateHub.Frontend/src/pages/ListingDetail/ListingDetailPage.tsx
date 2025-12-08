@@ -37,7 +37,6 @@ export const ListingDetailPage = () => {
     adminUnpublishLoading,
     handleLike,
     handleReport,
-    handleUnpublish,
     handleAdminUnpublishClick,
     handleAdminUnpublishConfirm,
     handleAdminUnpublishClose,
