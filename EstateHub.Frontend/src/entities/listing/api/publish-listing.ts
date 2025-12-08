@@ -1,6 +1,5 @@
 import { gql, useMutation } from '@apollo/client';
 import { GET_MY_LISTINGS } from './get-my-listings';
-import { GET_LISTINGS } from './get-listings';
 import { GET_ARCHIVED_LISTINGS } from './get-archived-listings';
 
 const CHANGE_STATUS = gql`
@@ -25,7 +24,10 @@ export const useChangeListingStatus = () => {
     ChangeStatusData,
     ChangeStatusVariables
   >(CHANGE_STATUS, {
-    refetchQueries: [GET_MY_LISTINGS, GET_LISTINGS, GET_ARCHIVED_LISTINGS],
+    // Only refetch queries that don't require variables
+    // GET_LISTINGS requires variables and causes errors when refetched
+    // Pages using GET_LISTINGS should handle their own refetching
+    refetchQueries: [GET_MY_LISTINGS, GET_ARCHIVED_LISTINGS],
     awaitRefetchQueries: false,
   });
 

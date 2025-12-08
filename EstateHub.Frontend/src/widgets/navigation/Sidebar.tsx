@@ -28,6 +28,7 @@ export const Sidebar = ({ isMobileOpen = false, onMobileClose }: SidebarProps) =
 
   const userRoles = getUserRoles();
   const canManageUsers = hasPermission(userRoles, PERMISSIONS.UserManagement);
+  const isAdmin = userRoles.includes('Admin');
 
   const navItems: NavItem[] = [
     { path: '/', label: 'Home', Icon: FaHome },
@@ -68,7 +69,7 @@ export const Sidebar = ({ isMobileOpen = false, onMobileClose }: SidebarProps) =
     try {
       await logout();
       navigate('/listings', { replace: true });
-    } catch (error) {
+    } catch {
       // Logout errors are handled silently - user is redirected anyway
     }
   };
@@ -138,10 +139,22 @@ export const Sidebar = ({ isMobileOpen = false, onMobileClose }: SidebarProps) =
                   {user.displayName?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase()}
                 </span>
                 <div className="sidebar__user-info">
-                  <span className="sidebar__user-name">
-                    {user.displayName || user.email}
-                  </span>
+                  <div className="sidebar__user-name-row">
+                    <span className="sidebar__user-name">
+                      {user.displayName || user.email}
+                    </span>
+                    {isAdmin && (
+                      <span className="sidebar__admin-badge" title="Administrator">
+                        Admin
+                      </span>
+                    )}
+                  </div>
                 </div>
+              </div>
+            )}
+            {isCollapsed && isAdmin && (
+              <div className="sidebar__admin-badge-collapsed" title="Administrator">
+                A
               </div>
             )}
             <Button

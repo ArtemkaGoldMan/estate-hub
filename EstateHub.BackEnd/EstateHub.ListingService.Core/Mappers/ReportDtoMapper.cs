@@ -52,14 +52,11 @@ public class ReportDtoMapper
             return Enumerable.Empty<ReportDto>();
         }
 
-        // Collect unique IDs for batch fetching
         var (userIds, listingIds) = CollectAllIds(reportsList);
 
-        // Batch fetch related data
         var userEmails = await FetchUserEmailsAsync(userIds);
         var listingTitles = await FetchListingTitlesAsync(listingIds);
 
-        // Map all reports using fetched data
         return reportsList.Select(report => BuildReportDto(report, userEmails, listingTitles));
     }
 
@@ -181,7 +178,6 @@ public class ReportDtoMapper
 
         try
         {
-            // Fetch listings in parallel for better performance
             var listingTasks = listingIds.Select(async id =>
             {
                 var listing = await _listingRepository.GetByIdAsync(id);

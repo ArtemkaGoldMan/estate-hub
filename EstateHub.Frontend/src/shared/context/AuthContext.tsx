@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { authApi, type AuthenticationResponse } from '../api/auth';
+import { isTokenExpired } from '../lib/jwt';
 
 interface AuthContextType {
   user: AuthenticationResponse | null;
@@ -21,13 +22,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUserState] = useState<AuthenticationResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load user from localStorage on mount
+  // Load user from localStorage on mount and validate token expiration
   useEffect(() => {
     const storedUser = localStorage.getItem(USER_KEY);
     const storedToken = localStorage.getItem(ACCESS_TOKEN_KEY);
 
     if (storedUser && storedToken) {
       try {
+        // Check if token is expired
+        if (isTokenExpired(storedToken)) {
+          // Token expired, clear stored data
+          localStorage.removeItem(USER_KEY);
+          localStorage.removeItem(ACCESS_TOKEN_KEY);
+          setIsLoading(false);
+          return;
+        }
+
         const userData = JSON.parse(storedUser);
         setUserState(userData);
       } catch {
@@ -43,6 +53,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const setUser = useCallback((userData: AuthenticationResponse | null) => {
     setUserState(userData);
     if (userData) {
+      // Validate token before storing
+      if (isTokenExpired(userData.accessToken)) {
+        if (import.meta.env.DEV) {
+          console.warn('Attempted to store expired token');
+        }
+        return;
+      }
       localStorage.setItem(USER_KEY, JSON.stringify(userData));
       localStorage.setItem(ACCESS_TOKEN_KEY, userData.accessToken);
     } else {
@@ -84,12 +101,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     try {
       // Try to logout on server if we have a token
-      if (accessToken) {
+      if (accessToken && !isTokenExpired(accessToken)) {
         await authApi.logout(accessToken);
       }
     } catch (error) {
       // Even if logout fails (e.g., token expired), clear local state
-      console.error('Logout error:', error);
+      // Only log in development to avoid exposing errors in production
+      if (import.meta.env.DEV) {
+        console.error('Logout error:', error);
+      }
     } finally {
       // Always clear local state, even if API call fails
       setUser(null);

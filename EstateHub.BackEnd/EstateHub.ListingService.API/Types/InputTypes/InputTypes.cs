@@ -187,3 +187,8 @@ public class PhotoOrderInput
     public Guid PhotoId { get; set; }
     public int Order { get; set; }
 }
+
+public class AdminUnpublishListingInputType
+{
+    public string Reason { get; set; } = string.Empty;
+}

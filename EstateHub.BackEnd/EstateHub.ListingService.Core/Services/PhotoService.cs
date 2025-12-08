@@ -36,7 +36,6 @@ public class PhotoService : IPhotoService
     {
         var result = await _resultExecutor.ExecuteWithTransactionAsync(async () =>
         {
-            // Verify the listing exists and user owns it
             var listing = await _listingRepository.GetByIdAsync(listingId);
             if (listing == null)
             {
@@ -49,7 +48,6 @@ public class PhotoService : IPhotoService
                 ErrorHelper.ThrowErrorOperation(ListingServiceErrors.NotOwner());
             }
 
-            // Validate photo URL
             if (string.IsNullOrWhiteSpace(photoUrl))
             {
                 ErrorHelper.ThrowError(ListingServiceErrors.PhotoUrlEmpty());
@@ -77,7 +75,6 @@ public class PhotoService : IPhotoService
     {
         var result = await _resultExecutor.ExecuteWithTransactionAsync(async () =>
         {
-            // Verify the listing exists and user owns it
             var listing = await _listingRepository.GetByIdAsync(listingId);
             if (listing == null)
             {
@@ -90,20 +87,16 @@ public class PhotoService : IPhotoService
                 ErrorHelper.ThrowErrorOperation(ListingServiceErrors.NotOwner());
             }
 
-            // Validate file first
             var validation = await _photoStorageService.ValidateFileAsync(fileStream, fileName, contentType);
             if (!validation.IsValid)
             {
                 ErrorHelper.ThrowError(ListingServiceErrors.FileValidationFailed(validation.ErrorMessage));
             }
 
-            // Reset stream position after validation
             fileStream.Position = 0;
 
-            // Upload file and get URL
             var photoUrl = await _photoStorageService.UploadPhotoAsync(listingId, fileStream, fileName, contentType);
             
-            // Save photo URL to database
             var photo = await _photoRepository.AddPhotoAsync(listingId, photoUrl);
             return photo.Id;
         });
@@ -121,7 +114,6 @@ public class PhotoService : IPhotoService
     {
         var result = await _resultExecutor.ExecuteWithTransactionAsync(async () =>
         {
-            // Verify the listing exists and user owns it
             var listing = await _listingRepository.GetByIdAsync(listingId);
             if (listing == null)
             {
@@ -134,23 +126,19 @@ public class PhotoService : IPhotoService
                 ErrorHelper.ThrowErrorOperation(ListingServiceErrors.NotOwner());
             }
 
-            // Get photo to retrieve its URL before deletion
             var photo = await _photoRepository.GetByIdAsync(photoId);
             if (photo == null)
             {
                 ErrorHelper.ThrowError(ListingServiceErrors.PhotoNotFound(photoId));
             }
 
-            // Verify photo belongs to this listing
             if (photo.ListingId != listingId)
             {
                 ErrorHelper.ThrowError(ListingServiceErrors.PhotoNotBelongsToListing(photoId, listingId));
             }
 
-            // Delete file from storage
             await _photoStorageService.DeletePhotoAsync(photo.Url);
 
-            // Remove photo from database
             await _photoRepository.RemovePhotoAsync(listingId, photoId);
         });
 
@@ -165,7 +153,6 @@ public class PhotoService : IPhotoService
     {
         var result = await _resultExecutor.ExecuteWithTransactionAsync(async () =>
         {
-            // Verify the listing exists and user owns it
             var listing = await _listingRepository.GetByIdAsync(listingId);
             if (listing == null)
             {
@@ -183,7 +170,6 @@ public class PhotoService : IPhotoService
                 ErrorHelper.ThrowError(ListingServiceErrors.PhotoOrderIdsEmpty());
             }
 
-            // Verify all photos belong to this listing
             var existingPhotos = await _photoRepository.GetPhotosByListingIdAsync(listingId);
             var existingPhotoIds = existingPhotos.Select(p => p.Id).ToHashSet();
             

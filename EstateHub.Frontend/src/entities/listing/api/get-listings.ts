@@ -15,8 +15,10 @@ const LISTING_CORE_FIELDS = gql`
     status
     category
     propertyType
+    addressLine
     city
     district
+    postalCode
     latitude
     longitude
     squareMeters

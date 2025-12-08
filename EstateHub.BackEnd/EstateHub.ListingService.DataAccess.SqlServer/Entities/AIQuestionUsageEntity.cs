@@ -10,3 +10,4 @@ public class AIQuestionUsageEntity
     public DateTime UpdatedAt { get; set; }
 }
 
+

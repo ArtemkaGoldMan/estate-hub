@@ -1,0 +1,28 @@
+.listing-detail-admin-panel {
+  width: 100%;
+  padding: var(--spacing-xl);
+  background: var(--color-background-secondary);
+  border-radius: var(--radius-md);
+  border: 2px solid var(--color-primary);
+}
+
+.listing-detail-admin-panel__header {
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 2px solid var(--color-primary);
+}
+
+.listing-detail-admin-panel__header h2 {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.listing-detail-admin-panel__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+

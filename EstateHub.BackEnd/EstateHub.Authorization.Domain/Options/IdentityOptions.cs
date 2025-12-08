@@ -26,3 +26,4 @@ public class IdentityOptions
     public bool AllowedForNewUsers { get; set; } = true;
 }
 
+

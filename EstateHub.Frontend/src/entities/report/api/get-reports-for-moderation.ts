@@ -35,13 +35,20 @@ type GetReportsForModerationVariables = {
   pageSize: number;
 };
 
-export const useReportsForModerationQuery = (page: number, pageSize: number) => {
+export const useReportsForModerationQuery = (
+  page: number,
+  pageSize: number,
+  options?: { skip?: boolean }
+) => {
+  const { skip = false } = options || {};
+
   const query = useQuery<GetReportsForModerationData, GetReportsForModerationVariables>(
     GET_REPORTS_FOR_MODERATION,
     {
       variables: { page, pageSize },
       fetchPolicy: 'cache-and-network',
       nextFetchPolicy: 'cache-first',
+      skip,
     }
   );
 

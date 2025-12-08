@@ -67,6 +67,13 @@ public static class ServiceCollectionExtensions
             })
             .AddPolicyHandler(retryPolicy);
 
+        // Configure SMTP options
+        services.Configure<Services.SmtpOptions>(
+            configuration.GetSection(Services.SmtpOptions.Smtp));
+
+        // Register email notification service
+        services.AddScoped<Domain.Interfaces.IListingNotificationService, Services.ListingNotificationService>();
+
         return services;
     }
 }

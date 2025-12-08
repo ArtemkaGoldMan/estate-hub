@@ -12,7 +12,7 @@ namespace EstateHub.ListingService.API.Types.Queries;
 public class ReportQueries
 {
     [Authorize]
-    [RequirePermission("ViewReports")] // Only Admins
+    [RequirePermission("ViewReports")]
     public async Task<ReportType?> GetReport(
         Guid id,
         [Service] IReportService reportService)
@@ -22,7 +22,7 @@ public class ReportQueries
     }
 
     [Authorize]
-    [RequirePermission("ViewReports")] // Only Admins
+    [RequirePermission("ViewReports")]
     public async Task<PagedReportsType> GetReports(
         ReportFilterType? filter,
         int page,
@@ -38,7 +38,7 @@ public class ReportQueries
     }
 
     [Authorize]
-    public async Task<PagedReportsType> GetMyReports( // Users can only see their own reports
+    public async Task<PagedReportsType> GetMyReports(
         int page,
         int pageSize,
         [Service] IReportService reportService)
@@ -65,7 +65,7 @@ public class ReportQueries
     }
 
     [Authorize]
-    [RequirePermission("ViewReports")] // Only Admins
+    [RequirePermission("ViewReports")]
     public async Task<List<ReportType>> GetReportsByListing(
         Guid listingId,
         [Service] IReportService reportService)

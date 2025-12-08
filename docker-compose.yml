@@ -73,6 +73,10 @@ services:
       - OpenAI__Model=${OPENAI_MODEL:-gpt-3.5-turbo}
       - Moderation__Enabled=${MODERATION_ENABLED:-true}
       - Moderation__FailOpen=${MODERATION_FAIL_OPEN:-false}
+      - Smtp__Host=${SMTP_HOST:-mailhog}
+      - Smtp__Port=${SMTP_PORT:-1025}
+      - Smtp__User=${SMTP_USER:-}
+      - Smtp__Password=${SMTP_PASSWORD:-}
       - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
       - ASPNETCORE_FORWARDEDHEADERS__FORWARDEDHEADERS=All
       - ASPNETCORE_FORWARDEDHEADERS__KNOWNNETWORKS__0__PREFIX=0.0.0.0
@@ -81,6 +85,7 @@ services:
     depends_on:
       - db
       - mongodb
+      - mailhog
     networks:
       - estatehub-network
     restart: unless-stopped

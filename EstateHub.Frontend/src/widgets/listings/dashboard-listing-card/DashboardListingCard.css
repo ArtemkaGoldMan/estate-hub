@@ -192,3 +192,29 @@
   margin-bottom: 8px;
 }
 
+.dashboard-listing-card__admin-unpublish-warning {
+  padding: 12px;
+  background-color: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 6px;
+  font-size: 13px;
+  color: #92400e;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.dashboard-listing-card__admin-unpublish-warning strong {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.dashboard-listing-card__admin-unpublish-warning p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #78350f;
+}
+

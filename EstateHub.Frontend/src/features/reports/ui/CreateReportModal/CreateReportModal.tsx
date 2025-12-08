@@ -41,7 +41,7 @@ export const CreateReportModal = ({
       setReason('OTHER');
       onSuccess?.();
       onClose();
-    } catch (err) {
+    } catch {
       // Error is handled by the hook
     }
   };

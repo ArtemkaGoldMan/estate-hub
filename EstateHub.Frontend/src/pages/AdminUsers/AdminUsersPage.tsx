@@ -1,153 +1,49 @@
-import { useState, useCallback } from 'react';
-import { useToast } from '../../shared/context/ToastContext';
-import { useAuth } from '../../shared/context/AuthContext';
-import { useAdminUsers, useAdminUserActions } from '../../shared/api/admin';
-import { getUserRoles, hasPermission, PERMISSIONS } from '../../shared/lib/permissions';
-import { UserFriendlyError } from '../../shared/lib/errorParser';
-import { Button, LoadingSpinner, Pagination, Input } from '../../shared/ui';
+import { Button, LoadingSpinner, Pagination } from '../../shared';
+import { useAdminUsersPage } from './hooks/useAdminUsersPage';
+import {
+  AdminUsersPageHeader,
+  AdminUsersFilters,
+  AdminUsersTable,
+  AdminUsersModals,
+} from './components';
 import './AdminUsersPage.css';
 
-const PAGE_SIZE = 20;
-const ROLES = ['Admin', 'User'];
-
 export const AdminUsersPage = () => {
-  const { showSuccess, showError } = useToast();
-  const { user: currentUser } = useAuth();
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState('');
-  const [includeDeleted, setIncludeDeleted] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<string | null>(null);
-  const [showSuspendModal, setShowSuspendModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [suspendReason, setSuspendReason] = useState('');
-  const [roleToAssign, setRoleToAssign] = useState('');
-  const [showRoleModal, setShowRoleModal] = useState(false);
-
-  const userRoles = getUserRoles();
-  const canManageUsers = hasPermission(userRoles, PERMISSIONS.UserManagement);
-
-  // Note: Route protection is now handled by AdminRoute component
-
-  const { data: usersData, loading: usersLoading, error: usersError, refetch: refetchUsers } =
-    useAdminUsers(page, PAGE_SIZE, includeDeleted);
-
   const {
-    assignRole,
-    removeRole,
-    suspendUser,
-    activateUser,
-    deleteUser,
-    loading: actionsLoading,
-  } = useAdminUserActions();
-
-  // Filter users by search
-  const filteredUsers = usersData?.items.filter((user) => {
-    if (!search.trim()) return true;
-    const searchLower = search.toLowerCase();
-    return (
-      user.email.toLowerCase().includes(searchLower) ||
-      user.userName.toLowerCase().includes(searchLower) ||
-      user.displayName.toLowerCase().includes(searchLower)
-    );
-  }) || [];
-
-  const handleAssignRole = useCallback(async () => {
-    if (!selectedUser || !roleToAssign) return;
-
-    try {
-      await assignRole(selectedUser, roleToAssign);
-      setShowRoleModal(false);
-      setRoleToAssign('');
-      setSelectedUser(null);
-      refetchUsers();
-      showSuccess(`Role "${roleToAssign}" assigned successfully`);
-    } catch (error) {
-      if (error instanceof UserFriendlyError) {
-        showError(error.userMessage);
-      } else {
-        showError(error instanceof Error ? error.message : 'Failed to assign role');
-      }
-    }
-  }, [selectedUser, roleToAssign, assignRole, refetchUsers]);
-
-  const handleRemoveRole = useCallback(async (userId: string, role: string) => {
-    // Prevent admin from removing their own Admin role
-    if (currentUser && userId === currentUser.id && role === 'Admin') {
-      showError('You cannot remove your own Admin role');
-      return;
-    }
-
-    if (!confirm(`Are you sure you want to remove the "${role}" role from this user?`)) {
-      return;
-    }
-
-    try {
-      await removeRole(userId, role);
-      refetchUsers();
-      showSuccess(`Role "${role}" removed successfully`);
-    } catch (error) {
-      if (error instanceof UserFriendlyError) {
-        showError(error.userMessage);
-      } else {
-        showError(error instanceof Error ? error.message : 'Failed to remove role');
-      }
-    }
-  }, [currentUser, removeRole, refetchUsers, showError, showSuccess]);
-
-  const handleSuspend = useCallback(async () => {
-    if (!selectedUser || !suspendReason.trim()) return;
-
-    try {
-      await suspendUser(selectedUser, suspendReason.trim());
-      setShowSuspendModal(false);
-      setSuspendReason('');
-      setSelectedUser(null);
-      refetchUsers();
-      showSuccess('User suspended successfully');
-    } catch (error) {
-      if (error instanceof UserFriendlyError) {
-        showError(error.userMessage);
-      } else {
-        showError(error instanceof Error ? error.message : 'Failed to suspend user');
-      }
-    }
-  }, [selectedUser, suspendReason, suspendUser, refetchUsers]);
-
-  const handleActivate = useCallback(async (userId: string) => {
-    if (!confirm('Are you sure you want to activate this user?')) {
-      return;
-    }
-
-    try {
-      await activateUser(userId);
-      refetchUsers();
-      showSuccess('User activated successfully');
-    } catch (error) {
-      if (error instanceof UserFriendlyError) {
-        showError(error.userMessage);
-      } else {
-        showError(error instanceof Error ? error.message : 'Failed to activate user');
-      }
-    }
-  }, [activateUser, refetchUsers]);
-
-  const handleDelete = useCallback(async () => {
-    if (!selectedUser) return;
-
-    try {
-      await deleteUser(selectedUser);
-      setShowDeleteModal(false);
-      setSelectedUser(null);
-      refetchUsers();
-      showSuccess('User deleted successfully');
-    } catch (error) {
-      if (error instanceof UserFriendlyError) {
-        showError(error.userMessage);
-      } else {
-        showError(error instanceof Error ? error.message : 'Failed to delete user');
-      }
-    }
-  }, [selectedUser, deleteUser, refetchUsers]);
+    canManageUsers,
+    page,
+    search,
+    includeDeleted,
+    showSuspendModal,
+    showDeleteModal,
+    showRoleModal,
+    suspendReason,
+    roleToAssign,
+    usersData,
+    usersLoading,
+    usersError,
+    actionsLoading,
+    filteredUsers,
+    currentUser,
+    PAGE_SIZE,
+    setPage,
+    setSearch,
+    setIncludeDeleted,
+    setSuspendReason,
+    setRoleToAssign,
+    setShowSuspendModal,
+    setShowDeleteModal,
+    setShowRoleModal,
+    handleAssignRole,
+    handleRemoveRole,
+    handleSuspend,
+    handleActivate,
+    handleDelete,
+    handleOpenRoleModal,
+    handleOpenSuspendModal,
+    handleOpenDeleteModal,
+    refetchUsers,
+  } = useAdminUsersPage();
 
   if (!canManageUsers) {
     return null;
@@ -155,38 +51,15 @@ export const AdminUsersPage = () => {
 
   return (
     <div className="admin-users-page">
-      <header className="admin-users-page__header">
-        <div className="admin-users-page__header-content">
-          <div>
-            <h1>User Management</h1>
-            <p>Manage users, roles, and account status</p>
-          </div>
-        </div>
-      </header>
+      <AdminUsersPageHeader />
 
-      {/* Filters */}
-      <div className="admin-users-page__filters">
-        <Input
-          type="text"
-          placeholder="Search by email, username, or display name..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="admin-users-page__search"
-        />
-        <label className="admin-users-page__checkbox-label">
-          <input
-            type="checkbox"
-            checked={includeDeleted}
-            onChange={(e) => {
-              setIncludeDeleted(e.target.checked);
-              setPage(1);
-            }}
-          />
-          Include deleted users
-        </label>
-      </div>
+      <AdminUsersFilters
+        search={search}
+        includeDeleted={includeDeleted}
+        onSearchChange={setSearch}
+        onIncludeDeletedChange={setIncludeDeleted}
+      />
 
-      {/* Users Table */}
       {usersError && (
         <div className="admin-users-page__error">
           <p>Failed to load users: {usersError.message}</p>
@@ -203,121 +76,16 @@ export const AdminUsersPage = () => {
 
       {!usersLoading && !usersError && (
         <>
-          <div className="admin-users-page__table-container">
-            <table className="admin-users-page__table">
-              <thead>
-                <tr>
-                  <th>Email</th>
-                  <th>Display Name</th>
-                  <th>Username</th>
-                  <th>Roles</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredUsers.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="admin-users-page__empty">
-                      No users found
-                    </td>
-                  </tr>
-                ) : (
-                  filteredUsers.map((user) => (
-                    <tr key={user.id}>
-                      <td>{user.email}</td>
-                      <td>{user.displayName}</td>
-                      <td>{user.userName}</td>
-                      <td>
-                        <div className="admin-users-page__roles">
-                          {user.roles && user.roles.length > 0 ? (
-                            <>
-                              {user.roles.map((role) => (
-                                <span key={role} className="admin-users-page__role-badge">
-                                  {role}
-                                  {!(currentUser && user.id === currentUser.id && role === 'Admin') && (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleRemoveRole(user.id, role)}
-                                      className="admin-users-page__role-remove"
-                                      title={`Remove ${role} role`}
-                                    >
-                                      ×
-                                    </button>
-                                  )}
-                                </span>
-                              ))}
-                            </>
-                          ) : (
-                            <span className="admin-users-page__no-roles">No roles</span>
-                          )}
-                          <Button
-                            size="xs"
-                            variant="ghost"
-                            onClick={() => {
-                              setSelectedUser(user.id);
-                              setShowRoleModal(true);
-                            }}
-                          >
-                            + Add Role
-                          </Button>
-                        </div>
-                      </td>
-                      <td>
-                        {user.isDeleted ? (
-                          <span className="admin-users-page__status-badge admin-users-page__status-badge--deleted">
-                            Deleted
-                          </span>
-                        ) : (
-                          <span className="admin-users-page__status-badge admin-users-page__status-badge--active">
-                            Active
-                          </span>
-                        )}
-                      </td>
-                      <td>
-                        <div className="admin-users-page__actions">
-                          {!user.isDeleted && (
-                            <>
-                              <Button
-                                size="xs"
-                                variant="outline"
-                                onClick={() => {
-                                  setSelectedUser(user.id);
-                                  setShowSuspendModal(true);
-                                }}
-                                disabled={actionsLoading}
-                              >
-                                Suspend
-                              </Button>
-                              <Button
-                                size="xs"
-                                variant="outline"
-                                onClick={() => handleActivate(user.id)}
-                                disabled={actionsLoading}
-                              >
-                                Activate
-                              </Button>
-                            </>
-                          )}
-                          <Button
-                            size="xs"
-                            variant="danger"
-                            onClick={() => {
-                              setSelectedUser(user.id);
-                              setShowDeleteModal(true);
-                            }}
-                            disabled={actionsLoading}
-                          >
-                            Delete
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+          <AdminUsersTable
+            users={filteredUsers}
+            currentUserId={currentUser?.id}
+            actionsLoading={actionsLoading}
+            onRemoveRole={handleRemoveRole}
+            onOpenRoleModal={handleOpenRoleModal}
+            onOpenSuspendModal={handleOpenSuspendModal}
+            onActivate={handleActivate}
+            onOpenDeleteModal={handleOpenDeleteModal}
+          />
 
           {usersData && usersData.total > PAGE_SIZE && (
             <div className="admin-users-page__pagination">
@@ -333,92 +101,22 @@ export const AdminUsersPage = () => {
         </>
       )}
 
-      {/* Assign Role Modal */}
-      {showRoleModal && (
-        <div className="admin-users-page__modal-overlay" onClick={() => setShowRoleModal(false)}>
-          <div className="admin-users-page__modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Assign Role</h2>
-            <div className="admin-users-page__modal-content">
-              <label>
-                Role:
-                <select
-                  value={roleToAssign}
-                  onChange={(e) => setRoleToAssign(e.target.value)}
-                  className="admin-users-page__select"
-                >
-                  <option value="">Select a role...</option>
-                  {ROLES.map((role) => (
-                    <option key={role} value={role}>
-                      {role}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <div className="admin-users-page__modal-actions">
-              <Button variant="ghost" onClick={() => setShowRoleModal(false)}>
-                Cancel
-              </Button>
-              <Button variant="primary" onClick={handleAssignRole} disabled={!roleToAssign || actionsLoading}>
-                Assign Role
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Suspend User Modal */}
-      {showSuspendModal && (
-        <div className="admin-users-page__modal-overlay" onClick={() => setShowSuspendModal(false)}>
-          <div className="admin-users-page__modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Suspend User</h2>
-            <div className="admin-users-page__modal-content">
-              <label>
-                Reason:
-                <textarea
-                  value={suspendReason}
-                  onChange={(e) => setSuspendReason(e.target.value)}
-                  placeholder="Enter reason for suspension..."
-                  rows={4}
-                  className="admin-users-page__textarea"
-                />
-              </label>
-            </div>
-            <div className="admin-users-page__modal-actions">
-              <Button variant="ghost" onClick={() => setShowSuspendModal(false)}>
-                Cancel
-              </Button>
-              <Button
-                variant="danger"
-                onClick={handleSuspend}
-                disabled={!suspendReason.trim() || actionsLoading}
-              >
-                Suspend User
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delete User Modal */}
-      {showDeleteModal && (
-        <div className="admin-users-page__modal-overlay" onClick={() => setShowDeleteModal(false)}>
-          <div className="admin-users-page__modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Delete User</h2>
-            <div className="admin-users-page__modal-content">
-              <p>Are you sure you want to permanently delete this user? This action cannot be undone.</p>
-            </div>
-            <div className="admin-users-page__modal-actions">
-              <Button variant="ghost" onClick={() => setShowDeleteModal(false)}>
-                Cancel
-              </Button>
-              <Button variant="danger" onClick={handleDelete} disabled={actionsLoading}>
-                Delete User
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AdminUsersModals
+        showRoleModal={showRoleModal}
+        showSuspendModal={showSuspendModal}
+        showDeleteModal={showDeleteModal}
+        roleToAssign={roleToAssign}
+        suspendReason={suspendReason}
+        actionsLoading={actionsLoading}
+        onRoleModalClose={() => setShowRoleModal(false)}
+        onSuspendModalClose={() => setShowSuspendModal(false)}
+        onDeleteModalClose={() => setShowDeleteModal(false)}
+        onRoleToAssignChange={setRoleToAssign}
+        onSuspendReasonChange={setSuspendReason}
+        onAssignRole={handleAssignRole}
+        onSuspend={handleSuspend}
+        onDelete={handleDelete}
+      />
     </div>
   );
 };

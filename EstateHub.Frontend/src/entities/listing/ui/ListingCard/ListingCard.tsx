@@ -84,7 +84,10 @@ export const ListingCard = memo(
             <span className="listing-card__price">{priceLabel}</span>
           </header>
           <p className="listing-card__location">
-            {listing.city}, {listing.district}
+            {listing.addressLine && `${listing.addressLine}, `}
+            {listing.city}
+            {listing.district && `, ${listing.district}`}
+            {listing.postalCode && `, ${listing.postalCode}`}
           </p>
           <dl className="listing-card__meta">
             <div>

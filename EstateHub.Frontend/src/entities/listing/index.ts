@@ -13,6 +13,7 @@ export * from './api/create-listing';
 export * from './api/update-listing';
 export * from './api/delete-listing';
 export * from './api/publish-listing';
+export * from './api/admin-unpublish-listing';
 export * from './api/upload-photo';
 export * from './api/remove-photo';
 export * from './api/reorder-photos';
