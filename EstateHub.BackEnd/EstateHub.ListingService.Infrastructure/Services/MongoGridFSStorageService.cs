@@ -43,21 +43,17 @@ public class MongoGridFSStorageService
 
     public async Task<string> UploadPhotoAsync(Guid listingId, Stream fileStream, string fileName, string contentType)
     {
-        // Validate file first
         var validation = await ValidateFileAsync(fileStream, fileName, contentType);
         if (!validation.IsValid)
         {
             throw new ArgumentException(validation.ErrorMessage);
         }
 
-        // Reset stream position after validation
         fileStream.Position = 0;
 
-        // Generate unique filename with listing ID prefix
         var fileExtension = Path.GetExtension(fileName).ToLowerInvariant();
         var uniqueFileName = $"{listingId}/{Guid.NewGuid()}{fileExtension}";
 
-        // Upload metadata
         var metadata = new BsonDocument
         {
             { "listingId", listingId.ToString() },
@@ -71,7 +67,6 @@ public class MongoGridFSStorageService
             Metadata = metadata
         };
 
-        // Upload to GridFS
         ObjectId fileId;
         try
         {
@@ -85,8 +80,6 @@ public class MongoGridFSStorageService
             throw;
         }
 
-        // Return URL that references the file ID
-        // Format: /api/photo/gridfs/{fileId}
         return $"/api/photo/gridfs/{fileId}";
     }
 
@@ -113,14 +106,11 @@ public class MongoGridFSStorageService
 
     public string GetPhotoUrl(string relativePath)
     {
-        // This method is kept for compatibility but not used with GridFS
-        // GridFS URLs are generated during upload
         return $"/api/photo/gridfs/{relativePath}";
     }
 
     public async Task<FileValidationResult> ValidateFileAsync(Stream fileStream, string fileName, string contentType)
     {
-        // Check file extension
         var fileExtension = Path.GetExtension(fileName).ToLowerInvariant();
         if (!_allowedExtensions.Contains(fileExtension))
         {
@@ -128,14 +118,12 @@ public class MongoGridFSStorageService
                 $"File type {fileExtension} is not allowed. Allowed types: {string.Join(", ", _allowedExtensions)}");
         }
 
-        // Check MIME type
         if (!_allowedMimeTypes.Contains(contentType.ToLowerInvariant()))
         {
             return new FileValidationResult(false, 
                 $"Content type {contentType} is not allowed. Allowed types: {string.Join(", ", _allowedMimeTypes)}");
         }
 
-        // Check file size
         var fileSize = fileStream.Length;
         if (fileSize > _maxFileSize)
         {
@@ -148,7 +136,6 @@ public class MongoGridFSStorageService
             return new FileValidationResult(false, "File is empty");
         }
 
-        // Basic image validation (check file header)
         var isValidImage = await ValidateImageHeaderAsync(fileStream);
         if (!isValidImage)
         {
@@ -165,8 +152,6 @@ public class MongoGridFSStorageService
     {
         try
         {
-            // Use BSON document filter instead of LINQ expression for GridFS
-            // MongoDB driver doesn't support LINQ expressions like x.Id for GridFSFileInfo
             var filter = Builders<GridFSFileInfo>.Filter.Eq("_id", fileId);
             var fileInfo = await _gridFSBucket.Find(filter).FirstOrDefaultAsync();
 
@@ -176,12 +161,8 @@ public class MongoGridFSStorageService
                 return null;
             }
 
-            // Open download stream directly from GridFS
-            // This is more efficient than downloading to MemoryStream for large files
             var downloadStream = await _gridFSBucket.OpenDownloadStreamAsync(fileId);
             
-            // Read the stream into a MemoryStream so we can close the GridFS stream
-            // and return a stream that ASP.NET Core can properly dispose
             var memoryStream = new MemoryStream();
             try
             {
@@ -219,11 +200,10 @@ public class MongoGridFSStorageService
     {
         try
         {
-            // URL format: /api/photo/gridfs/{fileId}
             var parts = photoUrl.Split('/');
             if (parts.Length > 0)
             {
-                var fileIdString = parts[^1]; // Last part
+                var fileIdString = parts[^1];
                 if (ObjectId.TryParse(fileIdString, out var fileId))
                 {
                     return fileId;
@@ -232,7 +212,6 @@ public class MongoGridFSStorageService
         }
         catch
         {
-            // Ignore parsing errors
         }
 
         return null;
@@ -247,7 +226,6 @@ public class MongoGridFSStorageService
             await fileStream.ReadAsync(buffer, 0, 12);
             fileStream.Position = 0;
 
-            // Check for common image file signatures
             return IsJpeg(buffer) || IsPng(buffer) || IsWebP(buffer);
         }
         catch

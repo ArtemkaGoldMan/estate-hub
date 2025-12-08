@@ -3,6 +3,8 @@ using EstateHub.Authorization.Domain.DTO.Authentication.Requests;
 using EstateHub.Authorization.Domain.Errors;
 using EstateHub.Authorization.Domain.Interfaces.ApplicationInterfaces;
 using EstateHub.Authorization.Domain.Interfaces.CoreInterfaces;
+using EstateHub.Authorization.API.Models.Requests;
+using EstateHub.Authorization.API.Models.Responses;
 using EstateHub.SharedKernel.API.Extensions;
 using EstateHub.SharedKernel.Contracts.AuthorizationMicroservice.Requests;
 using EstateHub.SharedKernel.Contracts.AuthorizationMicroservice.Responses;
@@ -187,9 +189,3 @@ public class UserController : SessionAwareControllerBase
         return result.IsSuccess ? Results.Ok(result.Value) : result.ToProblemDetails();
     }
 }
-
-// Request/Response DTOs for admin endpoints
-public record AssignRoleRequest(string Role);
-public record SuspendUserRequest(string Reason);
-public record UserStatsResponse(int TotalUsers, int ActiveUsers, int SuspendedUsers, int NewUsersThisMonth);
-public record PagedUsersResponse(List<GetUserResponse> Users, int Total, int Page, int PageSize);

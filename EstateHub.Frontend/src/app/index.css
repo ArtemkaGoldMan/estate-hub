@@ -1,4 +1,7 @@
 /* App-level styles */
+@import '../shared/styles/design-tokens.css';
+@import '../shared/styles/utilities.css';
+
 #root {
   width: 100%;
   min-height: 100vh;

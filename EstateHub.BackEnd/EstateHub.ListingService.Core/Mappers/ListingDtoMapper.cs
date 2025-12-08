@@ -42,11 +42,7 @@ public class ListingDtoMapper
         {
             return new List<ListingDto>();
         }
-
-        // Batch fetch all liked listings for the user (one query instead of N queries)
         var likedListingIds = await GetLikedListingIdsAsync(currentUserId);
-
-        // Map all listings using the cached liked status
         return listingsList.Select(listing =>
         {
             var isLiked = currentUserId.HasValue && likedListingIds.Contains(listing.Id);
@@ -68,8 +64,10 @@ public class ListingDtoMapper
             listing.Status,
             listing.Category,
             listing.PropertyType,
+            listing.AddressLine,
             listing.City,
             listing.District,
+            listing.PostalCode,
             listing.Latitude,
             listing.Longitude,
             listing.SquareMeters,

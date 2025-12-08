@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../shared/context/AuthContext';
+import { getUserRoles } from '../../shared/lib/permissions';
 import { Button } from '../../shared/ui';
 import logoImage from '../../assets/Logo_Icon.svg';
 import './Navigation.css';
@@ -8,6 +9,8 @@ export const Navigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
+  const userRoles = getUserRoles();
+  const isAdmin = userRoles.includes('Admin');
 
   const navItems = [
     { path: '/listings', label: 'Listings' },
@@ -18,7 +21,7 @@ export const Navigation = () => {
     try {
       await logout();
       navigate('/listings', { replace: true });
-    } catch (error) {
+    } catch {
       // Logout errors are handled silently - user is redirected anyway
     }
   };
@@ -72,14 +75,21 @@ export const Navigation = () => {
           {isAuthenticated ? (
             <>
               {user && (
-                <Link
-                  to="/profile"
-                  className={`navigation__link ${
-                    isActive('/profile') ? 'navigation__link--active' : ''
-                  }`}
-                >
-                  {user.displayName || user.email}
-                </Link>
+                <div className="navigation__user-section">
+                  <Link
+                    to="/profile"
+                    className={`navigation__link ${
+                      isActive('/profile') ? 'navigation__link--active' : ''
+                    }`}
+                  >
+                    {user.displayName || user.email}
+                  </Link>
+                  {isAdmin && (
+                    <span className="navigation__admin-badge" title="Administrator">
+                      Admin
+                    </span>
+                  )}
+                </div>
               )}
               <Button variant="ghost" size="sm" onClick={handleLogout}>
                 Logout

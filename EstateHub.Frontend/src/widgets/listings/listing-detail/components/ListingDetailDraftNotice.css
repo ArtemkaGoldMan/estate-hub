@@ -1,0 +1,26 @@
+.listing-detail-draft-notice {
+  margin-bottom: var(--spacing-2xl);
+  padding: var(--spacing-lg) var(--spacing-xl);
+  background-color: var(--color-warning-light);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-md);
+}
+
+.listing-detail-draft-notice__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.listing-detail-draft-notice__content strong {
+  color: var(--color-warning-dark);
+  font-size: var(--font-size-base);
+}
+
+.listing-detail-draft-notice__content p {
+  margin: 0;
+  color: var(--color-warning-dark);
+  font-size: var(--font-size-sm);
+}
+
+

@@ -45,7 +45,6 @@ public class BackgroundModerationService
     /// </summary>
     public void EnqueueModerationCheck(Guid listingId, string context = "create")
     {
-        // Fire and forget with proper error handling and retry
         _ = Task.Run(async () =>
         {
             var backgroundTaskId = Guid.NewGuid();
@@ -69,13 +68,10 @@ public class BackgroundModerationService
             }
             catch (Exception ex)
             {
-                // Final failure after all retries
                 _logger.LogError(ex,
                     "[MODERATION-BG-{TaskId}] ===== BACKGROUND MODERATION FAILED AFTER ALL RETRIES ===== ListingId: {ListingId}, Context: {Context}, ErrorType: {ErrorType}, ErrorMessage: {ErrorMessage}, Timestamp: {Timestamp}",
                     backgroundTaskId, listingId, context, ex.GetType().Name, ex.Message, DateTime.UtcNow);
 
-                // Optionally: Could enqueue to a dead letter queue or notification system here
-                // For now, we log the failure and continue
             }
         });
     }
@@ -86,8 +82,6 @@ public class BackgroundModerationService
             "[MODERATION-BG-{TaskId}] ===== STARTING MODERATION EXECUTION ===== ListingId: {ListingId}, Context: {Context}, Timestamp: {Timestamp}",
             taskId, listingId, context, DateTime.UtcNow);
 
-        // Create a new service scope for this background task
-        // This ensures we have fresh services (DbContext, repositories) that won't be disposed
         using (var scope = _serviceScopeFactory.CreateScope())
         {
             try
@@ -96,7 +90,6 @@ public class BackgroundModerationService
                     "[MODERATION-BG-{TaskId}] Service scope created - Starting moderation check - ListingId: {ListingId}",
                     taskId, listingId);
 
-                // Get moderation service from the new scope (with its own DbContext)
                 var moderationService = scope.ServiceProvider.GetRequiredService<IModerationService>();
 
                 var moderationStartTime = DateTime.UtcNow;
@@ -119,4 +112,5 @@ public class BackgroundModerationService
         }
     }
 }
+
 

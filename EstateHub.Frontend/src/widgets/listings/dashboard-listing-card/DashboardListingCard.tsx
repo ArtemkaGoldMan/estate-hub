@@ -169,7 +169,10 @@ export const DashboardListingCard = memo(
             <span className="dashboard-listing-card__price">{priceLabel}</span>
           </header>
           <p className="dashboard-listing-card__location">
-            {listing.city}, {listing.district}
+            {listing.addressLine && `${listing.addressLine}, `}
+            {listing.city}
+            {listing.district && `, ${listing.district}`}
+            {listing.postalCode && `, ${listing.postalCode}`}
           </p>
           <dl className="dashboard-listing-card__meta">
             <div>
@@ -201,6 +204,15 @@ export const DashboardListingCard = memo(
           {moderationPending && (
             <div className="dashboard-listing-card__moderation-info">
               <FaInfoCircle style={{ marginRight: '0.5rem' }} /> Moderation not checked yet
+            </div>
+          )}
+          {listing.adminUnpublishReason && (
+            <div className="dashboard-listing-card__admin-unpublish-warning">
+              <FaExclamationTriangle style={{ marginRight: '0.5rem' }} />
+              <div>
+                <strong>Unpublished by Administrator</strong>
+                <p>{listing.adminUnpublishReason}</p>
+              </div>
             </div>
           )}
           <div className="dashboard-listing-card__actions" onClick={(e) => e.stopPropagation()}>

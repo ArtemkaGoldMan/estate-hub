@@ -4,7 +4,6 @@ import type {
 } from '../model/types';
 import { GET_LISTING } from './get-listing';
 import { GET_MY_LISTINGS } from './get-my-listings';
-import { GET_LISTINGS } from './get-listings';
 
 export interface UpdateListingInput {
   title?: string | null;
@@ -50,7 +49,10 @@ export const useUpdateListing = () => {
     UpdateListingData,
     UpdateListingVariables
   >(UPDATE_LISTING, {
-    refetchQueries: [GET_LISTING, GET_MY_LISTINGS, GET_LISTINGS],
+    // Only refetch queries that don't require variables
+    // GET_LISTINGS requires variables and causes errors when refetched
+    // Pages using GET_LISTINGS should handle their own refetching
+    refetchQueries: [GET_LISTING, GET_MY_LISTINGS],
     awaitRefetchQueries: false,
   });
 

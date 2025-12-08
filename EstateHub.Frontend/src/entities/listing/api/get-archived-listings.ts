@@ -29,13 +29,20 @@ type GetArchivedListingsVariables = {
   pageSize: number;
 };
 
-export const useArchivedListingsQuery = (page: number, pageSize: number) => {
+export const useArchivedListingsQuery = (
+  page: number,
+  pageSize: number,
+  options?: { skip?: boolean }
+) => {
+  const { skip = false } = options || {};
+
   const query = useQuery<GetArchivedListingsData, GetArchivedListingsVariables>(
     GET_ARCHIVED_LISTINGS,
     {
       variables: { page, pageSize },
       fetchPolicy: 'cache-and-network',
       nextFetchPolicy: 'cache-first',
+      skip,
     }
   );
 
@@ -59,4 +66,7 @@ export const useArchivedListingsQuery = (page: number, pageSize: number) => {
 };
 
 export { GET_ARCHIVED_LISTINGS };
+
+
+
 

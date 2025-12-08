@@ -44,9 +44,9 @@ type UseMyListingsQueryOptions = {
 export const useMyListingsQuery = (
   page: number,
   pageSize: number,
-  options?: UseMyListingsQueryOptions
+  options?: UseMyListingsQueryOptions & { skip?: boolean }
 ) => {
-  const { enablePolling = false, pollInterval = 10000 } = options || {};
+  const { enablePolling = false, pollInterval = 10000, skip = false } = options || {};
 
   const query = useQuery<GetMyListingsData, GetMyListingsVariables>(
     GET_MY_LISTINGS,
@@ -55,6 +55,7 @@ export const useMyListingsQuery = (
       fetchPolicy: 'cache-and-network',
       nextFetchPolicy: 'cache-first',
       notifyOnNetworkStatusChange: true,
+      skip,
     }
   );
 

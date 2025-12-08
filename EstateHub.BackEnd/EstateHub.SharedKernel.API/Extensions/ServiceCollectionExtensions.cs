@@ -15,16 +15,13 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // Get gRPC service URL
         var authServiceGrpcUrl = configuration["AuthService:GrpcUrl"] ?? "https://localhost:7001";
 
-        // Register gRPC client
         services.AddGrpcClient<UserService.UserServiceClient>(options =>
         {
             options.Address = new Uri(authServiceGrpcUrl);
         });
 
-        // Register gRPC client implementation
         services.AddScoped<IUserServiceClient, UserServiceGrpcClient>();
 
         return services;
@@ -35,10 +32,8 @@ public static class ServiceCollectionExtensions
         IConfiguration configuration,
         string schemeName = "MicroserviceAuth")
     {
-        // First register the auth services
         services.AddGrpcServices(configuration);
 
-        // Register the authentication handler
         services.AddAuthentication(schemeName)
             .AddScheme<AuthenticationSchemeOptions, MicroserviceAuthenticationHandler>(
                 schemeName, options => { });

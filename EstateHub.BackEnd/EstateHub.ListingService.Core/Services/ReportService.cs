@@ -6,6 +6,7 @@ using EstateHub.ListingService.Domain.Errors;
 using EstateHub.ListingService.Core.Mappers;
 using EstateHub.SharedKernel;
 using EstateHub.SharedKernel.API.Authorization;
+using EstateHub.SharedKernel.API.Interfaces;
 using EstateHub.SharedKernel.Execution;
 using EstateHub.SharedKernel.Helpers;
 using FluentValidation;
@@ -22,6 +23,8 @@ public class ReportService : IReportService
     private readonly ReportDtoMapper _dtoMapper;
     private readonly ILogger<ReportService> _logger;
     private readonly ResultExecutor<ReportService> _resultExecutor;
+    private readonly IListingNotificationService _notificationService;
+    private readonly IUserServiceClient _userServiceClient;
 
     public ReportService(
         IReportRepository reportRepository,
@@ -30,7 +33,9 @@ public class ReportService : IReportService
         IValidator<CreateReportInput> createValidator,
         ReportDtoMapper dtoMapper,
         ILogger<ReportService> logger,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IListingNotificationService notificationService,
+        IUserServiceClient userServiceClient)
     {
         _reportRepository = reportRepository;
         _listingRepository = listingRepository;
@@ -39,6 +44,8 @@ public class ReportService : IReportService
         _dtoMapper = dtoMapper;
         _logger = logger;
         _resultExecutor = new ResultExecutor<ReportService>(logger, unitOfWork);
+        _notificationService = notificationService;
+        _userServiceClient = userServiceClient;
     }
 
     public async Task<PagedResult<ReportDto>> GetAllAsync(ReportFilter? filter, int page, int pageSize)
@@ -102,7 +109,6 @@ public class ReportService : IReportService
 
         var result = await _resultExecutor.ExecuteWithTransactionAsync(async () =>
         {
-            // Validate input
             var validationResult = await _createValidator.ValidateAsync(input);
             if (!validationResult.IsValid)
             {
@@ -113,7 +119,6 @@ public class ReportService : IReportService
                 ErrorHelper.ThrowError(error);
             }
 
-            // Check if listing exists
             var listing = await _listingRepository.GetByIdAsync(input.ListingId);
             if (listing == null)
             {
@@ -122,10 +127,8 @@ public class ReportService : IReportService
                 ErrorHelper.ThrowError(ListingServiceErrors.ListingNotFound(input.ListingId));
             }
 
-            // Sanitize HTML content to prevent XSS attacks
             var sanitizedDescription = EstateHub.SharedKernel.Helpers.HtmlSanitizerHelper.Sanitize(input.Description);
 
-            // Check if user already reported this listing
             var existingReports = await _reportRepository.GetByListingIdAsync(input.ListingId);
             if (existingReports.Any(r => r.ReporterId == currentUserId && r.Status != ReportStatus.Dismissed))
             {
@@ -168,7 +171,6 @@ public class ReportService : IReportService
 
             var currentUserId = _currentUserService.GetUserId();
             
-            // Assign to current user if not already assigned, then resolve
             var reportToUpdate = report.ModeratorId == null
                 ? report.AssignToModerator(currentUserId)
                 : report;
@@ -176,7 +178,6 @@ public class ReportService : IReportService
             var resolvedReport = reportToUpdate.Resolve(input.Resolution, input.ModeratorNotes);
             await _reportRepository.UpdateAsync(resolvedReport);
 
-            // If unpublish is requested, unpublish the listing
             if (input.UnpublishListing)
             {
                 if (string.IsNullOrWhiteSpace(input.UnpublishReason))
@@ -196,6 +197,29 @@ public class ReportService : IReportService
                     await _listingRepository.UpdateAsync(unpublishedListing);
                     _logger.LogInformation("Listing unpublished due to report resolution - ListingId: {ListingId}, ReportId: {ReportId}", 
                         listing.Id, report.Id);
+
+                    // Send email notification to listing owner
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            var user = await _userServiceClient.GetUserByIdAsync(listing.OwnerId);
+                            if (user != null && !string.IsNullOrEmpty(user.Email))
+                            {
+                                await _notificationService.SendListingUnpublishedNotificationAsync(
+                                    user.Email,
+                                    listing.Title,
+                                    listing.Id,
+                                    input.UnpublishReason!);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, 
+                                "Failed to send unpublish notification email - ListingId: {ListingId}, OwnerId: {OwnerId}, ReportId: {ReportId}", 
+                                listing.Id, listing.OwnerId, report.Id);
+                        }
+                    });
                 }
             }
         });
@@ -219,7 +243,6 @@ public class ReportService : IReportService
 
         var currentUserId = _currentUserService.GetUserId();
         
-        // Assign to current user if not already assigned, then dismiss
         var reportToUpdate = report.ModeratorId == null
             ? report.AssignToModerator(currentUserId)
             : report;
@@ -291,10 +314,8 @@ public class ReportService : IReportService
                 ErrorHelper.ThrowError(ListingServiceErrors.ReportNotFound(id));
             }
 
-            // Only allow deletion of own reports or by admins
             if (report.ReporterId != currentUserId)
             {
-                // Check if user has admin permissions
                 if (!_currentUserService.HasPermission(PermissionDefinitions.ManageReports))
                 {
                     _logger.LogWarning("Unauthorized deletion attempt - Report: {ReportId}, Reporter: {ReporterId}, User: {UserId}", 

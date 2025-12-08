@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button, LoadingSpinner } from '../../../../shared/ui';
 import { useAskAboutLocation, useRemainingAIQuestions } from '../../../../entities/listing';
 import { useToast } from '../../../../shared/context/ToastContext';
@@ -57,20 +57,11 @@ type AskAIProps = {
 
 export const AskAI = ({ listingId }: AskAIProps) => {
   const { askAboutLocation, loading } = useAskAboutLocation();
-  const { remainingQuestions, refetch: refetchRemaining } = useRemainingAIQuestions();
-  const { showError } = useToast();
   const { isAuthenticated } = useAuth();
+  const { remainingQuestions, refetch: refetchRemaining } = useRemainingAIQuestions(isAuthenticated);
+  const { showError } = useToast();
   const [selectedQuestion, setSelectedQuestion] = useState<string | null>(null);
   const [answer, setAnswer] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      // Silently try to fetch remaining questions, but don't break if it fails
-      refetchRemaining().catch(() => {
-        // Silently handle errors - we'll just show default value
-      });
-    }
-  }, [isAuthenticated, refetchRemaining]);
 
   const handleAskQuestion = async (questionId: string, questionText: string) => {
     if (remainingQuestions <= 0) {

@@ -15,8 +15,10 @@ public class ListingType
     public ListingStatus Status { get; set; }
     public ListingCategory Category { get; set; }
     public PropertyType PropertyType { get; set; }
+    public string AddressLine { get; set; } = string.Empty;
     public string City { get; set; } = string.Empty;
     public string District { get; set; } = string.Empty;
+    public string PostalCode { get; set; } = string.Empty;
     public decimal Latitude { get; set; }
     public decimal Longitude { get; set; }
     public decimal SquareMeters { get; set; }
@@ -60,8 +62,10 @@ public class ListingType
         Status = dto.Status,
         Category = dto.Category,
         PropertyType = dto.PropertyType,
+        AddressLine = dto.AddressLine,
         City = dto.City,
         District = dto.District,
+        PostalCode = dto.PostalCode,
         Latitude = dto.Latitude,
         Longitude = dto.Longitude,
         SquareMeters = dto.SquareMeters,

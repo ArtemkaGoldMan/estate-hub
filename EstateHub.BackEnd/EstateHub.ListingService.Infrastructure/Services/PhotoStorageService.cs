@@ -34,10 +34,8 @@ public class PhotoStorageService : IPhotoStorageService
 
     public async Task<(Stream Stream, string ContentType, string FileName)?> GetPhotoStreamAsync(string photoUrl)
     {
-        // Extract file ID from GridFS URL
         if (!photoUrl.StartsWith("/api/photo/gridfs/"))
         {
-            // Not a GridFS URL, return null (could be external URL or legacy file)
             return null;
         }
 

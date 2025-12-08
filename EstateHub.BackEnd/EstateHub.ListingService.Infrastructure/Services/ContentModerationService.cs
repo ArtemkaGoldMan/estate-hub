@@ -42,7 +42,6 @@ public class ContentModerationService : IContentModerationService
         {
             _logger.LogInformation("OpenAI moderation service initialized - Model: {Model}, Enabled: {Enabled}, FailOpen: {FailOpen}", 
                 _model, _isEnabled, _failOpen);
-            // Log masked API key for verification (first 10 chars only)
             var maskedKey = _apiKey.Length > 10 ? _apiKey.Substring(0, 10) + "..." : "***";
             _logger.LogDebug("OpenAI API key configured (masked): {MaskedKey}", maskedKey);
         }
@@ -109,10 +108,8 @@ public class ContentModerationService : IContentModerationService
                 "[OPENAI] Preparing HTTP request - Model: {Model}, Endpoint: https://api.openai.com/v1/chat/completions, MessagesCount: {MessagesCount}, MaxTokens: 200, Temperature: 0.3",
                 _model, requestBody.messages.Length);
 
-            // Use absolute URI since we can't rely on BaseAddress being set (HttpClient reuse)
             var requestUri = new Uri("https://api.openai.com/v1/chat/completions");
             
-            // Create request message with authorization header
             var request = new HttpRequestMessage(HttpMethod.Post, requestUri)
             {
                 Content = JsonContent.Create(requestBody)

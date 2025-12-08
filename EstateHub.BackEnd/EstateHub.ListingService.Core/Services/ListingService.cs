@@ -9,6 +9,7 @@ using EstateHub.ListingService.Domain.Errors;
 using EstateHub.ListingService.Core.Mappers;
 using EstateHub.SharedKernel;
 using EstateHub.SharedKernel.API.Authorization;
+using EstateHub.SharedKernel.API.Interfaces;
 using EstateHub.SharedKernel.Execution;
 using EstateHub.SharedKernel.Helpers;
 using FluentValidation;
@@ -29,6 +30,8 @@ public class ListingService : IListingService
     private readonly ILogger<ListingService> _logger;
     private readonly ResultExecutor<ListingService> _resultExecutor;
     private readonly BackgroundModerationService _backgroundModerationService;
+    private readonly IListingNotificationService _notificationService;
+    private readonly IUserServiceClient _userServiceClient;
 
     public ListingService(
         IListingRepository listingRepository,
@@ -40,7 +43,9 @@ public class ListingService : IListingService
         ListingDtoMapper dtoMapper,
         ILogger<ListingService> logger,
         IUnitOfWork unitOfWork,
-        BackgroundModerationService backgroundModerationService)
+        BackgroundModerationService backgroundModerationService,
+        IListingNotificationService notificationService,
+        IUserServiceClient userServiceClient)
     {
         _listingRepository = listingRepository;
         _likedListingRepository = likedListingRepository;
@@ -52,6 +57,8 @@ public class ListingService : IListingService
         _logger = logger;
         _resultExecutor = new ResultExecutor<ListingService>(logger, unitOfWork);
         _backgroundModerationService = backgroundModerationService;
+        _notificationService = notificationService;
+        _userServiceClient = userServiceClient;
     }
 
     public async Task<PagedResult<ListingDto>> GetAllAsync(ListingFilter? filter, int page, int pageSize)
@@ -129,9 +136,11 @@ public class ListingService : IListingService
             page = Math.Max(page, 1);
 
             var listings = await _listingRepository.GetByOwnerIdAsync(currentUserId);
-            var total = listings.Count();
+            var nonArchivedListings = listings.Where(l => l.Status != ListingStatus.Archived && !l.IsDeleted);
+            var total = nonArchivedListings.Count();
 
-            var pagedListings = listings
+            var pagedListings = nonArchivedListings
+                .OrderByDescending(l => l.CreatedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToList();
@@ -268,7 +277,6 @@ public class ListingService : IListingService
 
         var result = await _resultExecutor.ExecuteWithTransactionAsync(async () =>
         {
-            // Validate input
             var validationResult = await _createValidator.ValidateAsync(input);
             if (!validationResult.IsValid)
             {
@@ -279,7 +287,6 @@ public class ListingService : IListingService
                 ErrorHelper.ThrowError(error);
             }
 
-            // Sanitize HTML content to prevent XSS attacks
             var sanitizedTitle = EstateHub.SharedKernel.Helpers.HtmlSanitizerHelper.Sanitize(input.Title);
             var sanitizedDescription = EstateHub.SharedKernel.Helpers.HtmlSanitizerHelper.SanitizeRichText(input.Description);
             var sanitizedAddressLine = EstateHub.SharedKernel.Helpers.HtmlSanitizerHelper.Sanitize(input.AddressLine);
@@ -328,7 +335,6 @@ public class ListingService : IListingService
 
         var listingId = result.Value;
 
-        // Enqueue moderation check with retry logic
         _backgroundModerationService.EnqueueModerationCheck(listingId, "create");
 
         return listingId;
@@ -339,7 +345,6 @@ public class ListingService : IListingService
         var currentUserId = _currentUserService.GetUserId();
         _logger.LogInformation("Updating listing - ID: {ListingId}, User: {UserId}", id, currentUserId);
 
-        // Check if title/description changed before transaction (for moderation check)
         var listingBeforeUpdate = await _listingRepository.GetByIdAsync(id);
         if (listingBeforeUpdate == null)
         {
@@ -353,7 +358,6 @@ public class ListingService : IListingService
 
         var result = await _resultExecutor.ExecuteWithTransactionAsync(async () =>
         {
-            // Validate input
             var validationResult = await _updateValidator.ValidateAsync(input);
             if (!validationResult.IsValid)
             {
@@ -399,7 +403,6 @@ public class ListingService : IListingService
                 ? EstateHub.SharedKernel.Helpers.HtmlSanitizerHelper.Sanitize(input.PostalCode) 
                 : listing.PostalCode;
 
-            // Create updated listing using 'with' expression
             var updatedListing = listing
                 .UpdateBasicInfo(
                     sanitizedTitle,
@@ -433,8 +436,6 @@ public class ListingService : IListingService
                     input.MonthlyRentPln ?? listing.MonthlyRentPln
                 );
 
-            // If listing was Published and content (title/description) changed, 
-            // change status back to Draft so it needs to be re-moderated
             if (shouldCheckModeration && listing.Status == ListingStatus.Published)
             {
                 _logger.LogInformation(
@@ -459,7 +460,6 @@ public class ListingService : IListingService
             ErrorHelper.ThrowError(error);
         }
 
-        // Auto-check moderation after update if title/description changed
         if (shouldCheckModeration)
         {
             _backgroundModerationService.EnqueueModerationCheck(id, $"update(title:{titleChanged},desc:{descriptionChanged})");
@@ -527,7 +527,6 @@ public class ListingService : IListingService
                 ErrorHelper.ThrowErrorOperation(ListingServiceErrors.NotOwner());
             }
 
-            // Validate status transition
             var input = new ChangeStatusInput(newStatus);
             var validationResult = await _statusValidator.ValidateAsync(input);
             if (!validationResult.IsValid)
@@ -539,7 +538,6 @@ public class ListingService : IListingService
                 ErrorHelper.ThrowError(error);
             }
 
-            // Use domain methods for status changes (enforces business rules like moderation check)
             Listing updatedListing;
             if (newStatus == ListingStatus.Published)
             {
@@ -551,15 +549,12 @@ public class ListingService : IListingService
             }
             else if (newStatus == ListingStatus.Draft)
             {
-                // Check if we're unarchiving or unpublishing
                 if (listing.Status == ListingStatus.Archived)
                 {
-                    // Unarchive - use domain method to properly clear ArchivedAt
                     updatedListing = listing.Unarchive();
                 }
                 else
                 {
-                    // Unpublish - create new listing with Draft status
                     updatedListing = listing with 
                     { 
                         Status = ListingStatus.Draft,
@@ -576,6 +571,57 @@ public class ListingService : IListingService
             await _listingRepository.UpdateAsync(updatedListing);
             _logger.LogInformation("Listing status changed successfully - ID: {ListingId}, Status: {NewStatus}, User: {UserId}", 
                 id, newStatus, currentUserId);
+        });
+
+        if (result.IsFailure)
+        {
+            var error = result.GetErrorObject();
+            ErrorHelper.ThrowError(error);
+        }
+    }
+
+    public async Task AdminUnpublishAsync(Guid id, string reason)
+    {
+        var currentUserId = _currentUserService.GetUserId();
+        _logger.LogInformation("Admin unpublishing listing - ID: {ListingId}, User: {UserId}, Reason: {Reason}", 
+            id, currentUserId, reason);
+
+        var result = await _resultExecutor.ExecuteWithTransactionAsync(async () =>
+        {
+            var listing = await _listingRepository.GetByIdAsync(id);
+            if (listing == null)
+            {
+                ErrorHelper.ThrowError(ListingServiceErrors.ListingNotFound(id));
+            }
+
+            var unpublishedListing = listing.UnpublishWithReason(reason);
+            await _listingRepository.UpdateAsync(unpublishedListing);
+            
+            _logger.LogInformation("Listing unpublished by admin - ID: {ListingId}, User: {UserId}", 
+                id, currentUserId);
+
+            // Send email notification to listing owner
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var user = await _userServiceClient.GetUserByIdAsync(listing.OwnerId);
+                    if (user != null && !string.IsNullOrEmpty(user.Email))
+                    {
+                        await _notificationService.SendListingUnpublishedNotificationAsync(
+                            user.Email,
+                            listing.Title,
+                            listing.Id,
+                            reason);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, 
+                        "Failed to send unpublish notification email - ListingId: {ListingId}, OwnerId: {OwnerId}", 
+                        listing.Id, listing.OwnerId);
+                }
+            });
         });
 
         if (result.IsFailure)

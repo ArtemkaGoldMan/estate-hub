@@ -23,6 +23,7 @@ public class ReportServiceTests
     private readonly Mock<IValidator<CreateReportInput>> _createValidatorMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<IUserServiceClient> _userServiceClientMock;
+    private readonly Mock<IListingNotificationService> _notificationServiceMock;
     private readonly Mock<ILogger<ReportDtoMapper>> _mapperLoggerMock;
     private readonly ReportDtoMapper _dtoMapper;
     private readonly EstateHub.ListingService.Core.Services.ReportService _reportService;
@@ -36,6 +37,7 @@ public class ReportServiceTests
         _createValidatorMock = new Mock<IValidator<CreateReportInput>>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _userServiceClientMock = new Mock<IUserServiceClient>();
+        _notificationServiceMock = new Mock<IListingNotificationService>();
         _mapperLoggerMock = new Mock<ILogger<ReportDtoMapper>>();
 
         // Setup unit of work to return success
@@ -63,7 +65,9 @@ public class ReportServiceTests
             _createValidatorMock.Object,
             _dtoMapper,
             _loggerMock.Object,
-            _unitOfWorkMock.Object
+            _unitOfWorkMock.Object,
+            _notificationServiceMock.Object,
+            _userServiceClientMock.Object
         );
     }
 

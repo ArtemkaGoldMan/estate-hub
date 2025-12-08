@@ -1,25 +1,28 @@
+/* Page-level layout styles only */
+
 .edit-listing-page {
   display: flex;
   flex-direction: column;
-  gap: 32px;
-  padding: 32px clamp(16px, 4vw, 48px) 48px;
-  background: linear-gradient(180deg, #f8fafc 0%, #eff6ff 100%);
+  gap: var(--spacing-2xl);
+  padding: var(--spacing-2xl) clamp(var(--spacing-lg), 4vw, var(--spacing-3xl)) var(--spacing-3xl);
+  background: linear-gradient(180deg, var(--color-background-secondary) 0%, var(--color-primary-light) 100%);
   min-height: 100vh;
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .edit-listing-page__header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 24px;
+  gap: var(--spacing-xl);
 }
 
 .edit-listing-page__header h1 {
   margin: 0;
-  font-size: clamp(28px, 4vw, 40px);
-  color: #0f172a;
+  font-size: clamp(var(--font-size-3xl), 4vw, var(--font-size-4xl));
+  color: var(--color-text-primary);
 }
 
 .edit-listing-page__loading {
@@ -30,22 +33,22 @@
 }
 
 .edit-listing-page__error {
-  padding: 24px 28px;
-  border-radius: 16px;
+  padding: var(--spacing-xl) var(--spacing-2xl);
+  border-radius: var(--radius-xl);
   background: rgba(239, 68, 68, 0.08);
-  color: #b91c1c;
+  color: var(--color-error-dark);
   text-align: center;
 }
 
 .edit-listing-page__error h2 {
-  margin: 0 0 12px;
+  margin: 0 0 var(--spacing-md);
 }
 
 .edit-listing-page__error-banner {
-  padding: 16px 20px;
-  border-radius: 12px;
+  padding: var(--spacing-lg) var(--spacing-xl);
+  border-radius: var(--radius-lg);
   background: rgba(239, 68, 68, 0.08);
-  color: #b91c1c;
+  color: var(--color-error-dark);
 }
 
 .edit-listing-page__error-banner p {
@@ -55,29 +58,32 @@
 .edit-listing-page__form {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: var(--spacing-2xl);
+  width: 100%;
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .edit-listing-page__section {
-  padding: 24px 28px;
-  border-radius: 16px;
-  background: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: var(--spacing-xl) var(--spacing-2xl);
+  border-radius: var(--radius-xl);
+  background: var(--color-background);
+  box-shadow: var(--shadow-sm);
 }
 
 .edit-listing-page__section h2 {
-  margin: 0 0 24px;
-  font-size: 20px;
-  color: #0f172a;
-  border-bottom: 2px solid #e2e8f0;
-  padding-bottom: 12px;
+  margin: 0 0 var(--spacing-xl);
+  font-size: var(--font-size-xl);
+  color: var(--color-text-primary);
+  border-bottom: 2px solid var(--color-border);
+  padding-bottom: var(--spacing-md);
 }
 
 .edit-listing-page__field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 24px;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-xl);
 }
 
 .edit-listing-page__field:last-child {
@@ -85,20 +91,20 @@
 }
 
 .edit-listing-page__field label {
-  font-size: 14px;
-  font-weight: 600;
-  color: #0f172a;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
 }
 
 .edit-listing-page__field input[type="text"],
 .edit-listing-page__field input[type="number"],
 .edit-listing-page__field select,
 .edit-listing-page__field textarea {
-  padding: 12px 16px;
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 15px;
-  transition: all 0.2s;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  transition: all var(--transition-base);
   font-family: inherit;
 }
 
@@ -107,14 +113,14 @@
 .edit-listing-page__field select:focus,
 .edit-listing-page__field textarea:focus {
   outline: none;
-  border-color: #2563eb;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .edit-listing-page__field input.error,
 .edit-listing-page__field select.error,
 .edit-listing-page__field textarea.error {
-  border-color: #ef4444;
+  border-color: var(--color-error);
 }
 
 .edit-listing-page__field textarea {
@@ -125,97 +131,91 @@
 .edit-listing-page__field-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
+  gap: var(--spacing-lg);
 }
 
 .edit-listing-page__hint {
-  margin: 0 0 8px;
-  font-size: 12px;
-  color: #64748b;
-}
-
-.error-message {
-  color: #ef4444;
-  font-size: 12px;
-  margin-top: 4px;
+  margin: 0 0 var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
 }
 
 .edit-listing-page__map {
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   overflow: hidden;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-border);
 }
 
 .edit-listing-page__features {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
+  gap: var(--spacing-lg);
 }
 
 .edit-listing-page__checkbox {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
   cursor: pointer;
-  padding: 12px;
-  border-radius: 8px;
-  transition: background 0.2s;
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  transition: background var(--transition-base);
 }
 
 .edit-listing-page__checkbox:hover {
-  background: #f1f5f9;
+  background: var(--color-background-tertiary);
 }
 
 .edit-listing-page__checkbox input[type="checkbox"] {
   width: 20px;
   height: 20px;
   cursor: pointer;
-  accent-color: #2563eb;
+  accent-color: var(--color-primary);
 }
 
 .edit-listing-page__checkbox span {
-  font-size: 15px;
-  color: #0f172a;
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
 }
 
 .edit-listing-page__actions {
   display: flex;
-  gap: 12px;
+  gap: var(--spacing-md);
   justify-content: flex-end;
-  padding-top: 24px;
-  border-top: 2px solid #e2e8f0;
+  padding-top: var(--spacing-xl);
+  border-top: 2px solid var(--color-border);
 }
 
 .edit-listing-page__delete-button {
-  border-color: #ef4444;
-  color: #ef4444;
+  border-color: var(--color-error);
+  color: var(--color-error);
 }
 
 .edit-listing-page__delete-button:hover {
-  background: #ef4444;
-  color: white;
+  background: var(--color-error);
+  color: var(--color-background);
 }
 
 .edit-listing-page__delete-modal {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: var(--spacing-xl);
 }
 
 .edit-listing-page__delete-modal p {
   margin: 0;
-  color: #475569;
+  color: var(--color-text-secondary);
 }
 
 .edit-listing-page__delete-modal-actions {
   display: flex;
-  gap: 12px;
+  gap: var(--spacing-md);
   justify-content: flex-end;
 }
 
 @media (max-width: 768px) {
   .edit-listing-page {
-    padding: 24px 16px 40px;
+    padding: var(--spacing-xl) var(--spacing-lg) var(--spacing-2xl);
   }
 
   .edit-listing-page__header {
@@ -223,13 +223,10 @@
   }
 
   .edit-listing-page__section {
-    padding: 20px;
+    padding: var(--spacing-xl);
   }
 
-  .edit-listing-page__field-row {
-    grid-template-columns: 1fr;
-  }
-
+  .edit-listing-page__field-row,
   .edit-listing-page__features {
     grid-template-columns: 1fr;
   }
@@ -242,6 +239,3 @@
     width: 100%;
   }
 }
-
-
-

@@ -16,9 +16,6 @@ public class PhotoQueries
         _logger = logger;
     }
 
-    /// <summary>
-    /// Get a single photo by ID (public - no auth required)
-    /// </summary>
     public async Task<PhotoType?> GetPhoto(
         Guid photoId,
         [Service] IPhotoService photoService)
@@ -29,9 +26,6 @@ public class PhotoQueries
         return result != null ? PhotoType.FromDto(result) : null;
     }
 
-    /// <summary>
-    /// Get all photos for a listing (public - no auth required)
-    /// </summary>
     public async Task<List<PhotoType>> GetPhotos(
         Guid listingId,
         [Service] IPhotoService photoService)

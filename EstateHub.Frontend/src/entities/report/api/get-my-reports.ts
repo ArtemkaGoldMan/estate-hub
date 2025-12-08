@@ -35,11 +35,18 @@ type GetMyReportsVariables = {
   pageSize: number;
 };
 
-export const useMyReportsQuery = (page: number, pageSize: number) => {
+export const useMyReportsQuery = (
+  page: number,
+  pageSize: number,
+  options?: { skip?: boolean }
+) => {
+  const { skip = false } = options || {};
+
   const query = useQuery<GetMyReportsData, GetMyReportsVariables>(GET_MY_REPORTS, {
     variables: { page, pageSize },
     fetchPolicy: 'cache-and-network',
     nextFetchPolicy: 'cache-first',
+    skip,
   });
 
   return {

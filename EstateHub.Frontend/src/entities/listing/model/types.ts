@@ -21,8 +21,10 @@ export interface Listing {
   status: ListingStatus;
   category: ListingCategory;
   propertyType: PropertyType;
+  addressLine: string;
   city: string;
   district: string;
+  postalCode: string;
   latitude: number;
   longitude: number;
   squareMeters: number;

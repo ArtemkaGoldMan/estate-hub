@@ -4,6 +4,7 @@ using EstateHub.ListingService.Domain.Enums;
 using EstateHub.ListingService.Domain.Interfaces;
 using EstateHub.ListingService.Domain.Models;
 using EstateHub.SharedKernel;
+using EstateHub.SharedKernel.API.Interfaces;
 using EstateHub.SharedKernel.Execution;
 using FluentValidation;
 using FluentValidation.Results;
@@ -25,6 +26,8 @@ public class ListingServiceTests
     private readonly Mock<IValidator<ChangeStatusInput>> _statusValidatorMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<EstateHub.ListingService.Core.Services.BackgroundModerationService> _backgroundModerationServiceMock;
+    private readonly Mock<IListingNotificationService> _notificationServiceMock;
+    private readonly Mock<IUserServiceClient> _userServiceClientMock;
     private readonly ListingDtoMapper _dtoMapper;
     private readonly EstateHub.ListingService.Core.Services.ListingService _listingService;
 
@@ -41,6 +44,8 @@ public class ListingServiceTests
         _backgroundModerationServiceMock = new Mock<EstateHub.ListingService.Core.Services.BackgroundModerationService>(
             Mock.Of<IServiceScopeFactory>(),
             Mock.Of<ILogger<EstateHub.ListingService.Core.Services.BackgroundModerationService>>());
+        _notificationServiceMock = new Mock<IListingNotificationService>();
+        _userServiceClientMock = new Mock<IUserServiceClient>();
 
         // Setup unit of work to return success
         _unitOfWorkMock.Setup(u => u.BeginTransactionAsync())
@@ -74,7 +79,9 @@ public class ListingServiceTests
             _dtoMapper,
             _loggerMock.Object,
             _unitOfWorkMock.Object,
-            _backgroundModerationServiceMock.Object
+            _backgroundModerationServiceMock.Object,
+            _notificationServiceMock.Object,
+            _userServiceClientMock.Object
         );
     }
 

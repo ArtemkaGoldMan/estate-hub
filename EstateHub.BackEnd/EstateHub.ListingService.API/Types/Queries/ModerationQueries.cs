@@ -9,7 +9,6 @@ namespace EstateHub.ListingService.API.Types.Queries;
 public class ModerationQueries
 {
     [Authorize]
-    [GraphQLDescription("Check if a listing's content passes moderation. Returns moderation result with approval status and suggestions if rejected.")]
     public async Task<ModerationResultType> CheckListingModeration(
         Guid listingId,
         [Service] IModerationService moderationService)

@@ -1,157 +1,52 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../shared/context/AuthContext';
-import { userApi, type GetUserResponse } from '../../shared/api/auth';
-import { Button, Input, LoadingSpinner, Modal } from '../../shared';
+import { Button, LoadingSpinner } from '../../shared';
+import { useProfilePage } from './hooks/useProfilePage';
+import {
+  ProfilePageHeader,
+  ProfileAvatarSection,
+  ProfileFormFields,
+  ProfileActions,
+  ProfileDangerZone,
+  ProfileDeleteModal,
+} from './components';
 import './ProfilePage.css';
 
 export const ProfilePage = () => {
-  const navigate = useNavigate();
-  const { isAuthenticated, user, logout, setUser } = useAuth();
-  const [profile, setProfile] = useState<GetUserResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [displayName, setDisplayName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [country, setCountry] = useState('');
-  const [city, setCity] = useState('');
-  const [address, setAddress] = useState('');
-  const [postalCode, setPostalCode] = useState('');
-  const [companyName, setCompanyName] = useState('');
-  const [website, setWebsite] = useState('');
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-
-  // Note: Route protection is now handled by ProtectedRoute component
-  useEffect(() => {
-    if (!user) {
-      return;
-    }
-
-    // Load user profile
-    const loadProfile = async () => {
-      try {
-        setLoading(true);
-        setError('');
-        const userProfile = await userApi.getUser(user.id);
-        setProfile(userProfile);
-        setDisplayName(userProfile.displayName);
-        setPhoneNumber(userProfile.phoneNumber || '');
-        setCountry(userProfile.country || '');
-        setCity(userProfile.city || '');
-        setAddress(userProfile.address || '');
-        setPostalCode(userProfile.postalCode || '');
-        setCompanyName(userProfile.companyName || '');
-        setWebsite(userProfile.website || '');
-        if (userProfile.avatar) {
-          setAvatarPreview(userProfile.avatar);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load profile');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadProfile();
-  }, [isAuthenticated, user, navigate]);
-
-  const handleAvatarChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        setError('Please select an image file');
-        return;
-      }
-
-      // Validate file size (2MB)
-      if (file.size > 2 * 1024 * 1024) {
-        setError('Image size must be less than 2MB');
-        return;
-      }
-
-      setAvatarFile(file);
-      setError('');
-
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  }, []);
-
-  const handleSave = useCallback(async () => {
-    if (!user || !profile) return;
-
-    try {
-      setSaving(true);
-      setError('');
-
-      await userApi.updateUser(user.id, {
-        displayName: displayName !== profile.displayName ? displayName : undefined,
-        avatar: avatarFile || undefined,
-        phoneNumber: phoneNumber !== (profile.phoneNumber || '') ? phoneNumber : undefined,
-        country: country !== (profile.country || '') ? country : undefined,
-        city: city !== (profile.city || '') ? city : undefined,
-        address: address !== (profile.address || '') ? address : undefined,
-        postalCode: postalCode !== (profile.postalCode || '') ? postalCode : undefined,
-        companyName: companyName !== (profile.companyName || '') ? companyName : undefined,
-        website: website !== (profile.website || '') ? website : undefined,
-      });
-
-      // Reload profile to get updated data
-      const updatedProfile = await userApi.getUser(user.id);
-      setProfile(updatedProfile);
-      setDisplayName(updatedProfile.displayName);
-      setPhoneNumber(updatedProfile.phoneNumber || '');
-      setCountry(updatedProfile.country || '');
-      setCity(updatedProfile.city || '');
-      setAddress(updatedProfile.address || '');
-      setPostalCode(updatedProfile.postalCode || '');
-      setCompanyName(updatedProfile.companyName || '');
-      setWebsite(updatedProfile.website || '');
-      setAvatarFile(null);
-
-      // Update auth context if display name changed
-      if (user && displayName !== user.displayName) {
-        setUser({
-          ...user,
-          displayName: updatedProfile.displayName,
-          avatar: updatedProfile.avatar,
-        });
-      }
-
-      // Show success message (you can add a toast notification here)
-      alert('Profile updated successfully!');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update profile');
-    } finally {
-      setSaving(false);
-    }
-  }, [user, profile, displayName, phoneNumber, country, city, address, postalCode, companyName, website, avatarFile, setUser]);
-
-  const handleDeleteAccount = useCallback(async () => {
-    if (!user) return;
-
-    try {
-      setDeleting(true);
-      setError('');
-
-      await userApi.deleteUser(user.id);
-      await logout();
-      navigate('/listings', { replace: true });
-      alert('Your account has been deleted.');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete account');
-      setDeleting(false);
-    }
-  }, [user, logout, navigate]);
+  const {
+    profile,
+    loading,
+    saving,
+    error,
+    deleting,
+    isAuthenticated,
+    user,
+    displayName,
+    phoneNumber,
+    country,
+    city,
+    address,
+    postalCode,
+    companyName,
+    website,
+    avatarPreview,
+    avatarFile,
+    showDeleteModal,
+    hasChanges,
+    setDisplayName,
+    setPhoneNumber,
+    setCountry,
+    setCity,
+    setAddress,
+    setPostalCode,
+    setCompanyName,
+    setWebsite,
+    handleAvatarChange,
+    handleCancelAvatar,
+    handleSave,
+    handleCancel,
+    handleDeleteAccount,
+    setShowDeleteModal,
+    navigate,
+  } = useProfilePage();
 
   if (!isAuthenticated || !user) {
     return null;
@@ -181,12 +76,7 @@ export const ProfilePage = () => {
 
   return (
     <div className="profile-page">
-      <div className="profile-page__header">
-        <h1>Profile & Settings</h1>
-        <Button variant="ghost" onClick={() => navigate('/dashboard')}>
-          ← Back to Dashboard
-        </Button>
-      </div>
+      <ProfilePageHeader onBack={() => navigate('/dashboard')} />
 
       {error && (
         <div className="profile-page__error-banner">
@@ -197,248 +87,55 @@ export const ProfilePage = () => {
       <div className="profile-page__content">
         <div className="profile-page__section">
           <h2>Profile Information</h2>
-          
-          <div className="profile-page__avatar-section">
-            <div className="profile-page__avatar-preview">
-              {avatarPreview ? (
-                <img src={avatarPreview} alt="Avatar preview" />
-              ) : (
-                <div className="profile-page__avatar-placeholder">
-                  {displayName.charAt(0).toUpperCase()}
-                </div>
-              )}
-            </div>
-            <div className="profile-page__avatar-controls">
-              <label htmlFor="avatar-upload" className="profile-page__avatar-label">
-                <span className="profile-page__avatar-button">
-                  <Button variant="outline">
-                    Change Avatar
-                  </Button>
-                </span>
-                <input
-                  id="avatar-upload"
-                  type="file"
-                  accept="image/jpeg,image/jpg,image/png"
-                  onChange={handleAvatarChange}
-                  style={{ display: 'none' }}
-                />
-              </label>
-              {avatarFile && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setAvatarFile(null);
-                    setAvatarPreview(profile.avatar || null);
-                  }}
-                >
-                  Cancel
-                </Button>
-              )}
-            </div>
-            <p className="profile-page__avatar-hint">
-              JPG, PNG up to 2MB. Recommended: 32x32px minimum.
-            </p>
-          </div>
 
-          <div className="profile-page__field">
-            <label htmlFor="email">Email</label>
-            <Input
-              id="email"
-              type="email"
-              value={profile.email}
-              disabled
-              readOnly
-            />
-            <p className="profile-page__field-hint">Email cannot be changed</p>
-          </div>
+          <ProfileAvatarSection
+            displayName={displayName}
+            avatarPreview={avatarPreview}
+            avatarFile={avatarFile}
+            onAvatarChange={handleAvatarChange}
+            onCancelAvatar={handleCancelAvatar}
+          />
 
-          <div className="profile-page__field">
-            <label htmlFor="displayName">Display Name</label>
-            <Input
-              id="displayName"
-              type="text"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="Enter your display name"
-              maxLength={50}
-            />
-          </div>
-
-          <div className="profile-page__field">
-            <label htmlFor="phoneNumber">Phone Number</label>
-            <Input
-              id="phoneNumber"
-              type="tel"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              placeholder="Enter your phone number"
-            />
-          </div>
-
-          <div className="profile-page__field">
-            <label htmlFor="country">Country</label>
-            <Input
-              id="country"
-              type="text"
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-              placeholder="Enter your country"
-            />
-          </div>
-
-          <div className="profile-page__field">
-            <label htmlFor="city">City</label>
-            <Input
-              id="city"
-              type="text"
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              placeholder="Enter your city"
-            />
-          </div>
-
-          <div className="profile-page__field">
-            <label htmlFor="address">Address</label>
-            <Input
-              id="address"
-              type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="Enter your address"
-            />
-          </div>
-
-          <div className="profile-page__field">
-            <label htmlFor="postalCode">Postal Code</label>
-            <Input
-              id="postalCode"
-              type="text"
-              value={postalCode}
-              onChange={(e) => setPostalCode(e.target.value)}
-              placeholder="Enter your postal code"
-            />
-          </div>
-
-          <div className="profile-page__field">
-            <label htmlFor="companyName">Company Name</label>
-            <Input
-              id="companyName"
-              type="text"
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-              placeholder="Enter your company name"
-            />
-          </div>
-
-          <div className="profile-page__field">
-            <label htmlFor="website">Website</label>
-            <Input
-              id="website"
-              type="url"
-              value={website}
-              onChange={(e) => setWebsite(e.target.value)}
-              placeholder="Enter your website URL"
-            />
-          </div>
-
-          <div className="profile-page__field">
-            <label>User ID</label>
-            <Input
-              type="text"
-              value={profile.id}
-              disabled
-              readOnly
-            />
-          </div>
+          <ProfileFormFields
+            profile={profile}
+            displayName={displayName}
+            phoneNumber={phoneNumber}
+            country={country}
+            city={city}
+            address={address}
+            postalCode={postalCode}
+            companyName={companyName}
+            website={website}
+            onDisplayNameChange={setDisplayName}
+            onPhoneNumberChange={setPhoneNumber}
+            onCountryChange={setCountry}
+            onCityChange={setCity}
+            onAddressChange={setAddress}
+            onPostalCodeChange={setPostalCode}
+            onCompanyNameChange={setCompanyName}
+            onWebsiteChange={setWebsite}
+          />
         </div>
 
         <div className="profile-page__section">
           <h2>Account Actions</h2>
-          
-          <div className="profile-page__actions">
-            <Button
-              variant="primary"
-              onClick={handleSave}
-              disabled={saving || (
-                displayName === profile.displayName &&
-                phoneNumber === (profile.phoneNumber || '') &&
-                country === (profile.country || '') &&
-                city === (profile.city || '') &&
-                address === (profile.address || '') &&
-                postalCode === (profile.postalCode || '') &&
-                companyName === (profile.companyName || '') &&
-                website === (profile.website || '') &&
-                !avatarFile
-              )}
-              isLoading={saving}
-            >
-              {saving ? 'Saving...' : 'Save Changes'}
-            </Button>
-            
-            <Button
-              variant="outline"
-              onClick={() => {
-                setDisplayName(profile.displayName);
-                setPhoneNumber(profile.phoneNumber || '');
-                setCountry(profile.country || '');
-                setCity(profile.city || '');
-                setAddress(profile.address || '');
-                setPostalCode(profile.postalCode || '');
-                setCompanyName(profile.companyName || '');
-                setWebsite(profile.website || '');
-                setAvatarFile(null);
-                setAvatarPreview(profile.avatar || null);
-                setError('');
-              }}
-              disabled={saving}
-            >
-              Cancel
-            </Button>
-          </div>
+          <ProfileActions
+            saving={saving}
+            hasChanges={hasChanges}
+            onSave={handleSave}
+            onCancel={handleCancel}
+          />
         </div>
 
-        <div className="profile-page__section profile-page__section--danger">
-          <h2>Danger Zone</h2>
-          <p className="profile-page__danger-text">
-            Once you delete your account, there is no going back. Please be certain.
-          </p>
-          <Button
-            variant="danger"
-            onClick={() => setShowDeleteModal(true)}
-            className="profile-page__delete-button"
-          >
-            Delete Account
-          </Button>
-        </div>
+        <ProfileDangerZone onDeleteClick={() => setShowDeleteModal(true)} />
       </div>
 
-      <Modal
+      <ProfileDeleteModal
         isOpen={showDeleteModal}
+        deleting={deleting}
         onClose={() => setShowDeleteModal(false)}
-        title="Delete Account"
-      >
-        <div className="profile-page__delete-modal">
-          <p>Are you sure you want to delete your account? This action cannot be undone.</p>
-          <div className="profile-page__delete-modal-actions">
-            <Button
-              variant="outline"
-              onClick={() => setShowDeleteModal(false)}
-              disabled={deleting}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="danger"
-              onClick={handleDeleteAccount}
-              disabled={deleting}
-              isLoading={deleting}
-            >
-              {deleting ? 'Deleting...' : 'Delete Account'}
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        onConfirm={handleDeleteAccount}
+      />
     </div>
   );
 };

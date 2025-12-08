@@ -1,0 +1,107 @@
+/* Utility Classes - Common Patterns */
+
+/* Card/Section Box */
+.card-box {
+  width: 100%;
+  padding: var(--spacing-2xl);
+  background: var(--color-background);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  box-sizing: border-box;
+}
+
+.card-box--compact {
+  padding: var(--spacing-xl);
+}
+
+.card-box--spacious {
+  padding: var(--spacing-3xl);
+}
+
+/* Section Header */
+.section-header {
+  margin: 0 0 var(--spacing-xl) 0;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  border-bottom: 2px solid var(--color-border);
+  padding-bottom: var(--spacing-md);
+}
+
+.section-header--small {
+  font-size: var(--font-size-xl);
+}
+
+/* Grid Layouts */
+.grid-auto-fit {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.grid-auto-fit--compact {
+  gap: var(--spacing-md);
+}
+
+.grid-auto-fit--spacious {
+  gap: var(--spacing-xl);
+}
+
+/* Flex Utilities */
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-lg);
+}
+
+.flex-start {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-lg);
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+/* Spacing Utilities */
+.gap-sm { gap: var(--spacing-sm); }
+.gap-md { gap: var(--spacing-md); }
+.gap-lg { gap: var(--spacing-lg); }
+.gap-xl { gap: var(--spacing-xl); }
+.gap-2xl { gap: var(--spacing-2xl); }
+
+/* Text Utilities */
+.text-primary { color: var(--color-text-primary); }
+.text-secondary { color: var(--color-text-secondary); }
+.text-tertiary { color: var(--color-text-tertiary); }
+.text-muted { color: var(--color-text-muted); }
+
+.text-sm { font-size: var(--font-size-sm); }
+.text-base { font-size: var(--font-size-base); }
+.text-lg { font-size: var(--font-size-lg); }
+.text-xl { font-size: var(--font-size-xl); }
+.text-2xl { font-size: var(--font-size-2xl); }
+
+.font-medium { font-weight: var(--font-weight-medium); }
+.font-semibold { font-weight: var(--font-weight-semibold); }
+.font-bold { font-weight: var(--font-weight-bold); }
+
+/* Word Wrapping */
+.word-break {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Responsive Padding */
+.page-padding {
+  padding: var(--spacing-2xl) clamp(var(--spacing-lg), 4vw, var(--spacing-3xl)) var(--spacing-3xl);
+}
+
+.page-padding--compact {
+  padding: var(--spacing-xl) clamp(var(--spacing-md), 4vw, var(--spacing-xl)) var(--spacing-2xl);
+}
+
+

@@ -160,7 +160,7 @@ export class UploadLink extends ApolloLink {
             this.clearAuthAndRedirect();
             observer.error(new Error('Session expired. Please log in again.'));
             return;
-          } catch (refreshError) {
+          } catch {
             // Refresh failed, clear auth and redirect
             this.clearAuthAndRedirect();
             observer.error(new Error('Session expired. Please log in again.'));
@@ -309,7 +309,7 @@ export class UploadLink extends ApolloLink {
               observer.complete();
             }
             return;
-          } catch (refreshError) {
+          } catch {
             // Refresh failed, clear auth and redirect
             this.clearAuthAndRedirect();
             observer.error(new Error('Session expired. Please log in again.'));

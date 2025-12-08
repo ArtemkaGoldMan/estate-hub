@@ -133,14 +133,14 @@ export const useAskAboutLocation = () => {
   };
 };
 
-export const useRemainingAIQuestions = () => {
+export const useRemainingAIQuestions = (enabled: boolean = true) => {
   const { data, loading, error, refetch } = useQuery<RemainingQuestionsData>(
     GET_REMAINING_AI_QUESTIONS,
     {
       fetchPolicy: 'network-only',
       pollInterval: 0, // Don't poll by default
       errorPolicy: 'ignore', // Ignore errors and just return default value
-      skip: false, // Always try to fetch, but handle errors gracefully
+      skip: !enabled, // Only fetch if enabled (e.g., when authenticated)
     }
   );
 

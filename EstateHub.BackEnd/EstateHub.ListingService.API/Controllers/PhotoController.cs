@@ -140,18 +140,14 @@ public class PhotoController : ControllerBase
     /// </summary>
     private FileStreamResult FileWithCaching(Stream stream, string contentType, string fileName, string etagValue)
     {
-        // Set ETag for cache validation
         Response.Headers.ETag = $"\"{etagValue}\"";
         
-        // Set cache control headers
         Response.Headers.CacheControl = "public, max-age=31536000, immutable";
         
-        // Use FileStreamResult which properly handles stream disposal
-        // The stream will be disposed by ASP.NET Core after the response is sent
         return new FileStreamResult(stream, contentType)
         {
             FileDownloadName = fileName,
-            EnableRangeProcessing = true, // Enable range requests for better performance
+            EnableRangeProcessing = true,
         };
     }
 }

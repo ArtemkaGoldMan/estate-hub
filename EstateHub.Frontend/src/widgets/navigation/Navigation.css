@@ -68,10 +68,31 @@
   gap: 1rem;
 }
 
+.navigation__user-section {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
 .navigation__user {
   color: inherit;
   font-size: 0.875rem;
   margin-right: 0.5rem;
+}
+
+.navigation__admin-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #ffffff;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+  white-space: nowrap;
 }
 
 /* Light mode */

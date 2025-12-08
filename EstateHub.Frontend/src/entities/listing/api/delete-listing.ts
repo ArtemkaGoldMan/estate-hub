@@ -1,6 +1,5 @@
 import { gql, useMutation } from '@apollo/client';
 import { GET_MY_LISTINGS } from './get-my-listings';
-import { GET_LISTINGS } from './get-listings';
 
 const DELETE_LISTING = gql`
   mutation DeleteListing($id: UUID!) {
@@ -21,7 +20,9 @@ export const useDeleteListing = () => {
     DeleteListingData,
     DeleteListingVariables
   >(DELETE_LISTING, {
-    refetchQueries: [GET_MY_LISTINGS, GET_LISTINGS],
+    // Only refetch GET_MY_LISTINGS - GET_LISTINGS requires variables and causes errors
+    // Pages using GET_LISTINGS should handle their own refetching
+    refetchQueries: [GET_MY_LISTINGS],
     awaitRefetchQueries: false,
   });
 

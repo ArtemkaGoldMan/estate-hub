@@ -1,0 +1,144 @@
+/* Shared styles for listing form components */
+
+.listing-form__section {
+  padding: var(--spacing-xl) var(--spacing-2xl);
+  border-radius: var(--radius-xl);
+  background: var(--color-background);
+  box-shadow: var(--shadow-sm);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.listing-form__section h2 {
+  margin: 0 0 var(--spacing-xl);
+  font-size: var(--font-size-xl);
+  color: var(--color-text-primary);
+  border-bottom: 2px solid var(--color-border);
+  padding-bottom: var(--spacing-md);
+}
+
+.listing-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-xl);
+}
+
+.listing-form__field:last-child {
+  margin-bottom: 0;
+}
+
+.listing-form__field label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.listing-form__field select,
+.listing-form__field input[type="text"],
+.listing-form__field input[type="number"],
+.listing-form__field textarea {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  transition: all var(--transition-base);
+  font-family: inherit;
+  background: var(--color-background);
+}
+
+.listing-form__field select {
+  cursor: pointer;
+}
+
+.listing-form__field select:focus,
+.listing-form__field input:focus,
+.listing-form__field textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.listing-form__field select.error,
+.listing-form__field input.error,
+.listing-form__field textarea.error {
+  border-color: var(--color-error);
+}
+
+.listing-form__field textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.listing-form__field-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-lg);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.listing-form__hint {
+  margin: 0 0 var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.listing-form__map {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 2px solid var(--color-border);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.listing-form__features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.listing-form__checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  transition: background var(--transition-base);
+}
+
+.listing-form__checkbox:hover {
+  background: var(--color-background-tertiary);
+}
+
+.listing-form__checkbox input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.listing-form__checkbox span {
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+}
+
+.error-message {
+  color: var(--color-error);
+  font-size: var(--font-size-xs);
+  margin-top: var(--spacing-xs);
+}
+
+@media (max-width: 768px) {
+  .listing-form__section {
+    padding: var(--spacing-xl);
+  }
+
+  .listing-form__field-row,
+  .listing-form__features {
+    grid-template-columns: 1fr;
+  }
+}
+
+

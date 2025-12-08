@@ -1,0 +1,38 @@
+.listing-detail-map {
+  width: 100%;
+  max-width: 100%;
+  padding: var(--spacing-2xl);
+  background: var(--color-background);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  box-sizing: border-box;
+  margin-top: 0;
+}
+
+.listing-detail-map h2 {
+  margin: 0 0 var(--spacing-lg) 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.listing-detail-map__container {
+  margin-bottom: var(--spacing-lg);
+}
+
+.listing-detail-map__address {
+  padding: var(--spacing-lg);
+  background-color: var(--color-background-secondary);
+  border-radius: var(--radius-md);
+}
+
+.listing-detail-map__address p {
+  margin: 0;
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+}
+
+.listing-detail-map__address strong {
+  font-weight: var(--font-weight-semibold);
+}
+

@@ -39,7 +39,6 @@ public class ModerationService : IModerationService
                 ErrorHelper.ThrowError(ListingServiceErrors.ListingNotFound(listingId));
             }
 
-            // Check authorization only if user context is available (not in background tasks)
             try
             {
                 var currentUserId = _currentUserService.GetUserId();
@@ -53,15 +52,11 @@ public class ModerationService : IModerationService
             }
             catch (UnauthorizedAccessException)
             {
-                // No user context available (background task) - skip authorization check
-                // This is safe because background moderation only happens for listings just created/updated
                 _logger.LogDebug("No user context available (background task) - skipping authorization check for Listing: {ListingId}", listingId);
             }
 
             var result = await _contentModerationService.ModerateAsync(listing.Title, listing.Description);
             
-            // Save moderation result to the listing
-            // Note: UpdateAsync already calls SaveChangesAsync internally
             var updatedListing = listing.SetModerationResult(result.IsApproved, result.RejectionReason);
             await _listingRepository.UpdateAsync(updatedListing);
             

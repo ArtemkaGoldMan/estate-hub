@@ -8,9 +8,6 @@ namespace EstateHub.ListingService.API.Types.Queries;
 [ExtendObjectType(typeof(Queries))]
 public class LocationAIQueries
 {
-    /// <summary>
-    /// Ask AI about what's near a listing location
-    /// </summary>
     [Authorize]
     public async Task<AskAboutLocationResult> AskAboutLocation(
         Guid listingId,
@@ -26,29 +23,24 @@ public class LocationAIQueries
             throw new GraphQLException("User not authenticated");
         }
 
-        // Check and increment usage
         var (canAsk, remainingCount) = await usageService.CheckAndIncrementUsageAsync(userId);
         if (!canAsk)
         {
             throw new GraphQLException($"Daily limit reached. You have used all 5 questions for today. Please try again tomorrow.");
         }
 
-        // Get listing to access location information
         var listing = await listingService.GetByIdAsync(listingId);
         if (listing == null)
         {
             throw new GraphQLException("Listing not found");
         }
 
-        // Validate and map question ID to detailed prompt
         if (!AIQuestionPromptMapper.IsValidQuestionId(questionId))
         {
             throw new GraphQLException($"Invalid question ID: {questionId}");
         }
         
         var detailedPrompt = AIQuestionPromptMapper.GetPromptForQuestion(questionId);
-
-        // Call AI service with location information and detailed prompt
         var answer = await locationAIService.AskAboutLocationAsync(
             detailedPrompt,
             listing.City,
@@ -63,12 +55,8 @@ public class LocationAIQueries
         };
     }
 
-    /// <summary>
-    /// Get remaining AI questions count for the current user
-    /// </summary>
     [Authorize]
     [GraphQLName("getRemainingAIQuestions")]
-    [GraphQLDescription("Get remaining AI questions count for the current user")]
     public async Task<int> GetRemainingAIQuestions(
         [Service] IAIQuestionUsageService usageService,
         [Service] ICurrentUserService currentUserService)

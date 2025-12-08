@@ -77,7 +77,10 @@ export const LikedListingCard = memo(
             <span className="liked-listing-card__price">{priceLabel}</span>
           </header>
           <p className="liked-listing-card__location">
-            {listing.city}, {listing.district}
+            {listing.addressLine && `${listing.addressLine}, `}
+            {listing.city}
+            {listing.district && `, ${listing.district}`}
+            {listing.postalCode && `, ${listing.postalCode}`}
           </p>
           <dl className="liked-listing-card__meta">
             <div>
@@ -117,4 +120,7 @@ export const LikedListingCard = memo(
 );
 
 LikedListingCard.displayName = 'LikedListingCard';
+
+
+
 
