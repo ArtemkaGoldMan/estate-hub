@@ -4,6 +4,7 @@ using EstateHub.ListingService.API.Types.InputTypes;
 using EstateHub.ListingService.API.Types.OutputTypes;
 using EstateHub.ListingService.Core.Extensions;
 using EstateHub.ListingService.Infrastructure.Extensions;
+using EstateHub.ListingService.DataAccess.SqlServer.Extensions;
 using EstateHub.SharedKernel.API.Extensions;
 using EstateHub.SharedKernel.API.Middleware;
 using EstateHub.ListingService.Domain.Enums;
@@ -72,6 +73,9 @@ public class Program
 
         // Add Data Access
         builder.Services.AddListingServiceDataAccess(builder.Configuration);
+        
+        // Add Infrastructure Services
+        builder.Services.AddListingServiceInfrastructure(builder.Configuration);
         
         // Add Core Services
         builder.Services.AddListingCore();
