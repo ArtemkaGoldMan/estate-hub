@@ -7,7 +7,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\EstateHub.Authorization.DataAccess.SqlServer\EstateHub.Authorization.DataAccess.SqlServer.csproj" />
       <ProjectReference Include="..\EstateHub.Authorization.Domain\EstateHub.Authorization.Domain.csproj" />
       <ProjectReference Include="..\EstateHub.SharedKernel\EstateHub.SharedKernel.csproj" />
     </ItemGroup>

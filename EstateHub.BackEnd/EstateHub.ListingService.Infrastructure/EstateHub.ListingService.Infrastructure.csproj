@@ -8,7 +8,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\EstateHub.ListingService.Core\EstateHub.ListingService.Core.csproj" />
-      <ProjectReference Include="..\EstateHub.ListingService.DataAccess.SqlServer\EstateHub.ListingService.DataAccess.SqlServer.csproj" />
       <ProjectReference Include="..\EstateHub.ListingService.Domain\EstateHub.ListingService.Domain.csproj" />
     </ItemGroup>
 
